@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM64 ROM Hacks Speedruns</title>
-    
-    <!-- STYLES (CSS) -->
     <style>
         :root {
             --bg-color: #18181b; --card-color: #27272a; --text-color: #e4e4e7;
@@ -68,6 +66,7 @@
     </nav>
 
     <div class="container">
+        <!-- COMPLETE AND CORRECT HTML STRUCTURE -->
         <div id="login-view" class="view">
              <div class="card">
                 <h2>Moderator Access Login</h2>
@@ -160,7 +159,8 @@
                 const cacheAge = (Date.now() - data.timestamp) / (1000 * 3600);
                 if (cacheAge < cacheDurationHours) return data.content;
             }
-            const response = await fetch(url.startsWith('http') ? url : `${SRC_API_BASE}/${url}`);
+            const fetchUrl = url.startsWith('http') ? url : `${SRC_API_BASE}/${url}`;
+            const response = await fetch(fetchUrl);
             if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
             const apiData = await response.json();
             set(dbRef, { content: apiData.data, timestamp: Date.now() });
