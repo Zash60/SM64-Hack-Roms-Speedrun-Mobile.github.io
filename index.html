@@ -279,6 +279,10 @@
             const gameDataSnapshot = await get(ref(db, `games_cache/${gameId}`));
             if (!gameDataSnapshot.exists()) { ui.title.textContent = 'Game not found in cache. Please sync.'; return; }
             const game = gameDataSnapshot.val();
+
+            // *** DEBUGGING LINE ADDED HERE ***
+            console.log("DEBUG: Data received for gameId " + gameId, game);
+
             ui.title.textContent = game.names.international;
             const fullGameCategories = game.categories.data.filter(c => c.type === 'per-game');
             const levelCategoriesExist = game.categories.data.some(c => c.type === 'per-level');
