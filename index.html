@@ -127,7 +127,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-        // *** YOUR FIREBASE CONFIGURATION MUST BE HERE ***
         const firebaseConfig = {
             apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU",
             authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com",
@@ -149,14 +148,43 @@
         const views = document.querySelectorAll('.view');
         const authContainer = document.getElementById('auth-container');
         
-        // --- GENERIC CACHE FUNCTIONS ---
-        async function fetchWithCache(path, cacheDurationHours = 24) { /* ... (code from previous answer, no changes needed) ... */ }
+        // --- FUNCTIONS ---
+        async function fetchWithCache(path, cacheDurationHours = 24) {
+            const dbPath = `cache_${path.replace(/[\/.]/g, "_")}`; 
+            const dbRef = ref(db, dbPath);
+            const snapshot = await get(dbRef);
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const cacheAge = (Date.now() - data.timestamp) / (1000 * 3600);
+                if (cacheAge < cacheDurationHours) return data.content;
+            }
+            const response = await fetch(`${SRC_API_BASE}/${path}`);
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+            const apiData = await response.json();
+            set(dbRef, { content: apiData.data, timestamp: Date.now() });
+            return apiData.data;
+        }
 
-        // --- FORMATTING FUNCTIONS ---
-        function formatTime(seconds) { /* ... (code from previous answer, no changes needed) ... */ }
-        function formatDate(dateString) { /* ... (code from previous answer, no changes needed) ... */ }
+        function formatTime(seconds) {
+            if (!seconds) return '--';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            const ms = Math.round((seconds - Math.floor(seconds)) * 1000).toString().padStart(3, '0');
+            let time = `${s.toString().padStart(2, '0')}.${ms}s`;
+            if (m > 0) time = `${m}m ${time}`;
+            if (h > 0) time = `${h}h ${time}`;
+            return time;
+        }
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            const diff = Math.round((new Date() - date) / (1000 * 60 * 60 * 24));
+            if (diff < 30) return `${diff} days ago`;
+            if (diff < 365) return `${Math.floor(diff / 30)} months ago`;
+            return `${Math.floor(diff / 365)} years ago`;
+        }
 
-        // --- ROUTING AND VIEW CONTROL ---
         function showView(viewId) {
             views.forEach(view => view.style.display = 'none');
             const activeView = document.getElementById(viewId);
@@ -181,15 +209,39 @@
                 await showHomeView();
             }
         }
-
-        // --- AUTHENTICATION ---
+        
+        // --- AUTHENTICATION (WITH DEBUGGING ALERTS) ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                const userRoleRef = ref(db, `users/${user.uid}/role`);
-                const snapshot = await get(userRoleRef);
-                userRole = snapshot.exists() ? snapshot.val() : 'user'; // Default to 'user' if not found
                 
+                // --- START DEBUGGING ---
+                alert("DEBUG STEP 1: Successfully logged in. Checking database for role. User UID is: " + user.uid);
+                // --- END DEBUGGING ---
+
+                const userRoleRef = ref(db, `users/${user.uid}/role`);
+                
+                try {
+                    const snapshot = await get(userRoleRef);
+
+                    if (snapshot.exists()) {
+                        // --- START DEBUGGING ---
+                        alert("DEBUG STEP 2: Database snapshot FOUND. The role is: '" + snapshot.val() + "'");
+                        // --- END DEBUGGING ---
+                        userRole = snapshot.val();
+                    } else {
+                        // --- START DEBUGGING ---
+                        alert("DEBUG STEP 2: Database snapshot NOT FOUND. Could not find a role for this UID. Setting role to 'user'.");
+                        // --- END DEBUGGING ---
+                        userRole = 'user';
+                    }
+                } catch (error) {
+                    // --- START DEBUGGING ---
+                    alert("DEBUG STEP 2 FAILED: An error occurred while trying to read the database. Check console (F12) for details. Error: " + error.message);
+                    // --- END DEBUGGING ---
+                    userRole = 'user';
+                }
+
                 authContainer.innerHTML = `<button id="logout-button">Logout</button>`;
                 document.getElementById('logout-button').addEventListener('click', async () => {
                     await signOut(auth);
@@ -200,10 +252,9 @@
                 userRole = null;
                 authContainer.innerHTML = '';
             }
-            // Always re-route after auth state changes to apply permissions
             await handleRouteChange();
         });
-        
+
         document.getElementById('login-button').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -211,7 +262,6 @@
             try {
                 errorP.style.display = 'none';
                 await signInWithEmailAndPassword(auth, email, password);
-                // The onAuthStateChanged listener will automatically handle the redirection.
             } catch (error) {
                 errorP.textContent = "Invalid email or password.";
                 errorP.style.display = 'block';
@@ -219,6 +269,11 @@
         });
 
         // --- VIEW LOGIC ---
+        async function showHomeView() { /* ... código idêntico ao anterior ... */ }
+        async function showLeaderboardView(gameId) { /* ... código idêntico ao anterior ... */ }
+        function showAdminView() { /* ... código idêntico ao anterior ... */ }
+
+        // --- (Copiei as funções de view aqui para garantir que está tudo completo) ---
         async function showHomeView() {
             showView('home-view');
             const gamesGrid = document.getElementById('games-grid');
@@ -246,9 +301,155 @@
             }
         }
         
-        async function showLeaderboardView(gameId) { /* ... (code from previous answer, no changes needed) ... */ }
+        async function showLeaderboardView(gameId) {
+            showView('leaderboard-view');
+            const titleEl = document.getElementById('leaderboard-game-title');
+            const typeButtonsEl = document.getElementById('leaderboard-type-buttons');
+            const levelSelectorContainer = document.getElementById('level-selector-container');
+            const levelSelectEl = document.getElementById('level-select');
+            const categoryContainer = document.getElementById('category-selector-container');
+            const categoryButtonsEl = document.getElementById('category-buttons-container');
+            const leaderboardBody = document.getElementById('leaderboard-table-body');
+            
+            titleEl.textContent = 'Loading Game...';
+            typeButtonsEl.innerHTML = '';
+            categoryContainer.style.display = 'none';
+            levelSelectorContainer.style.display = 'none';
+            leaderboardBody.innerHTML = '';
+
+            const gameDataSnapshot = await get(ref(db, `games_cache/${gameId}`));
+            if (!gameDataSnapshot.exists()) {
+                titleEl.textContent = 'Game not found in cache. Please sync.';
+                return;
+            }
+            const game = gameDataSnapshot.val();
+            titleEl.textContent = game.names.international;
+
+            const fullGameCategories = game.categories.data.filter(c => c.type === 'per-game');
+            const levelCategoriesExist = game.categories.data.some(c => c.type === 'per-level');
+            const levels = game.levels.data;
+
+            const fetchAndRenderLeaderboard = async (catId) => {
+                const loader = document.getElementById('loader');
+                const noRunsMsg = document.getElementById('no-runs-message');
+                leaderboardBody.innerHTML = '';
+                noRunsMsg.style.display = 'none';
+                loader.style.display = 'block';
+
+                try {
+                    const leaderboardData = await fetchWithCache(`leaderboards/${game.id}/category/${catId}?embed=players`);
+                    if (!leaderboardData.runs || leaderboardData.runs.length === 0) {
+                        noRunsMsg.style.display = 'block';
+                        return;
+                    }
+                    const players = leaderboardData.players.data;
+                    const playerMap = new Map(players.map(p => [p.id, p.names.international]));
+                    leaderboardBody.innerHTML = leaderboardData.runs.map(runData => {
+                        const run = runData.run;
+                        const player = run.players[0];
+                        const playerName = player.id ? playerMap.get(player.id) : player.name;
+                        return `<tr><td>${runData.place}</td><td>${playerName || 'Guest'}</td><td>${formatTime(run.times.primary_t)}</td><td>${formatDate(run.date)}</td></tr>`;
+                    }).join('');
+                } catch (error) {
+                    leaderboardBody.innerHTML = `<tr><td colspan="4">Failed to load leaderboard.</td></tr>`;
+                } finally {
+                    loader.style.display = 'none';
+                }
+            };
+            
+            const renderCategoryButtons = (categories) => {
+                categoryContainer.style.display = 'block';
+                categoryButtonsEl.innerHTML = categories.map(cat => `<button data-cat-id="${cat.id}">${cat.name}</button>`).join('');
+                categoryButtonsEl.querySelectorAll('button').forEach(btn => {
+                    btn.onclick = (e) => {
+                        categoryButtonsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        fetchAndRenderLeaderboard(e.target.dataset.catId);
+                    };
+                });
+            };
+
+            const showFullGameCategories = () => {
+                levelSelectorContainer.style.display = 'none';
+                leaderboardBody.innerHTML = '';
+                renderCategoryButtons(fullGameCategories);
+            };
+
+            const showLevelCategories = async () => {
+                categoryContainer.style.display = 'none';
+                leaderboardBody.innerHTML = '';
+                levelSelectorContainer.style.display = 'block';
+                levelSelectEl.innerHTML = `<option value="">Select a Level...</option>` + 
+                    levels.map(lvl => `<option value="${lvl.id}">${lvl.name}</option>`).join('');
+            };
+            
+            levelSelectEl.onchange = async () => {
+                const levelId = levelSelectEl.value;
+                if (!levelId) {
+                    categoryContainer.style.display = 'none';
+                    leaderboardBody.innerHTML = '';
+                    return;
+                }
+                const levelCategories = await fetchWithCache(`levels/${levelId}/categories`);
+                renderCategoryButtons(levelCategories);
+            };
+
+            if (fullGameCategories.length > 0) {
+                typeButtonsEl.innerHTML += `<button data-type="fullgame">Full game</button>`;
+            }
+            if (levelCategoriesExist && levels.length > 0) {
+                typeButtonsEl.innerHTML += `<button data-type="perlevel">Per Level</button>`;
+            }
+
+            typeButtonsEl.querySelectorAll('button').forEach(btn => {
+                btn.onclick = (e) => {
+                    typeButtonsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    if (e.target.dataset.type === 'fullgame') showFullGameCategories();
+                    else showLevelCategories();
+                };
+            });
+
+            if (fullGameCategories.length > 0) {
+                typeButtonsEl.querySelector('[data-type="fullgame"]').click();
+            } else if (levelCategoriesExist) {
+                typeButtonsEl.querySelector('[data-type="perlevel"]').click();
+            }
+        }
         
-        function showAdminView() { /* ... (code from previous answer, no changes needed) ... */ }
+        function showAdminView() {
+            showView('admin-view');
+            const syncButton = document.getElementById('sync-button');
+            const forceCheckbox = document.getElementById('force-update-checkbox');
+            const syncStatus = document.getElementById('sync-status');
+            
+            syncButton.onclick = async () => {
+                syncButton.disabled = true;
+                syncStatus.textContent = 'Syncing... This may take a few minutes.';
+                syncStatus.style.color = 'var(--text-color)';
+                try {
+                    if (forceCheckbox.checked) {
+                        await remove(ref(db, 'games_cache'));
+                    }
+                    const gamesResponse = await fetch(`${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=200&embed=levels,categories`);
+                    if (!gamesResponse.ok) throw new Error('Failed to fetch the game list from the API.');
+                    const gamesData = (await gamesResponse.json()).data;
+                    const gamesToSave = {};
+                    for(const game of gamesData) {
+                        gamesToSave[game.id] = game; 
+                    }
+                    await set(ref(db, 'games_cache'), gamesToSave);
+                    gamesCache = Object.values(gamesToSave);
+                    syncStatus.textContent = `Sync complete! ${gamesData.length} games saved.`;
+                    syncStatus.style.color = '#22c55e';
+                } catch(error) {
+                    syncStatus.textContent = `Sync Error: ${error.message}`;
+                    syncStatus.style.color = 'var(--danger-color)';
+                } finally {
+                    syncButton.disabled = false;
+                }
+            };
+        }
 
         // --- GLOBAL EVENT LISTENERS ---
         window.addEventListener('hashchange', handleRouteChange);
