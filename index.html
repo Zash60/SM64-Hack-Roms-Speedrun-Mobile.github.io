@@ -114,33 +114,10 @@
             <p id="no-games-message" style="display: none;">Nenhum jogo encontrado. Um administrador precisa sincronizar os dados.</p>
         </div>
 
-        <!-- "Página" de Leaderboard -->
+        <!-- "Página" de Leaderboard (simplificada por enquanto) -->
         <div id="leaderboard-view" class="view">
             <h2 id="leaderboard-game-title"></h2>
-            <div class="card">
-                <h3>Leaderboard Type</h3>
-                <div class="category-buttons" id="leaderboard-type-buttons">
-                    <button data-type="fullgame" class="active">Full-game</button>
-                    <button data-type="level">Single-Star / Level RTA</button>
-                </div>
-
-                <div id="level-selector-container" style="display: none;">
-                    <h3>Level / Stage</h3>
-                    <select id="level-select" style="width:100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; margin-bottom: 1rem;"></select>
-                </div>
-
-                <h3>Categories</h3>
-                <div class="category-buttons" id="category-buttons-container"></div>
-            </div>
-            
-            <div id="loader">Carregando...</div>
-            <table>
-                <thead>
-                    <tr><th>#</th><th>Player</th><th>Tempo</th><th>Data</th></tr>
-                </thead>
-                <tbody id="leaderboard-table-body"></tbody>
-            </table>
-            <p id="no-runs-message" style="text-align: center; padding: 2rem; display: none;">Nenhuma run encontrada para esta categoria.</p>
+            <p>A funcionalidade completa da leaderboard será implementada aqui.</p>
         </div>
 
         <!-- "Página" de Administração -->
@@ -155,31 +132,31 @@
                 </label>
                 <p id="sync-status" style="margin-top: 1rem;"></p>
             </div>
-            <!-- Futuramente, a seção de "Review Pending Runs" viria aqui -->
         </div>
     </div>
 
     <!-- SCRIPT (JAVASCRIPT) -->
     <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-    // ... outros imports
+        // Importar as funções necessárias dos SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-    // =================================================================================
-    // COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
-    // =================================================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU", // Sua chave real
-      authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com", // Seu domínio real
-      databaseURL: "https://sm64-hacks-rom-speedrun-mobile-default-rtdb.firebaseio.com", // Sua URL real
-      projectId: "sm64-hacks-rom-speedrun-mobile", // Seu ID real
-      storageBucket: "sm64-hacks-rom-speedrun-mobile.appspot.com", // Seu bucket real
-      messagingSenderId: "956519798910", // Seu ID real
-      appId: "1:956519798910:web:722d40876cedd11ec3602f" // Seu App ID real
-    };
+        // =================================================================================
+        // SUA CONFIGURAÇÃO CORRETA FOI INSERIDA AQUI
+        // =================================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU",
+            authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com",
+            databaseURL: "https://sm64-hacks-rom-speedrun-mobile-default-rtdb.firebaseio.com",
+            projectId: "sm64-hacks-rom-speedrun-mobile",
+            storageBucket: "sm64-hacks-rom-speedrun-mobile.appspot.com",
+            messagingSenderId: "956519798910",
+            appId: "1:956519798910:web:722d40876cedd11ec3602f"
+        };
 
-    // --- Inicialização ---
-    const app = initializeApp(firebaseConfig);
-    // ... resto do código
+        // --- Inicialização ---
+        const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
         
@@ -207,7 +184,6 @@
             if (activeView) {
                 activeView.style.display = 'block';
             }
-            // Atualiza link ativo na nav
             document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
             const activeLink = document.querySelector(`nav a[href="#${viewId.replace('-view','')}"]`);
             if(activeLink) activeLink.classList.add('active');
@@ -228,9 +204,9 @@
                 if (userRole === 'admin') {
                     showAdminView();
                 } else {
-                    window.location.hash = '#home'; // Redireciona se não for admin
+                    window.location.hash = '#home'; 
                 }
-            } else { // #home ou qualquer outra coisa
+            } else { 
                 await showHomeView();
             }
         }
@@ -242,18 +218,16 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Busca o role do usuário no DB
                 const userRoleRef = ref(db, `users/${user.uid}/role`);
                 const snapshot = await get(userRoleRef);
                 userRole = snapshot.exists() ? snapshot.val() : 'user';
-                
                 updateUIAfterLogin();
             } else {
                 currentUser = null;
                 userRole = null;
                 updateUIAfterLogout();
             }
-            await handleRouteChange(); // Roda o roteador após mudança de auth
+            await handleRouteChange(); 
         });
         
         function updateUIAfterLogin() {
@@ -263,7 +237,7 @@
         }
 
         function updateUIAfterLogout() {
-            authContainer.innerHTML = ''; // Ou um botão de login se preferir
+            authContainer.innerHTML = '';
             adminLink.style.display = 'none';
             showView('login-view');
         }
@@ -303,7 +277,7 @@
             if (gamesCache && gamesCache.length > 0) {
                 noGamesMsg.style.display = 'none';
                 gamesGrid.innerHTML = gamesCache
-                    .sort((a, b) => new Date(b.created) - new Date(a.created)) // Ordena por mais recente
+                    .sort((a, b) => (b.released || 0) - (a.released || 0)) // Ordena por ano de lançamento
                     .map(game => `
                     <a href="#game/${game.id}" class="game-card">
                         <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
@@ -318,12 +292,15 @@
         
         async function showLeaderboardView(gameId) {
             showView('leaderboard-view');
-            // Lógica para preencher e exibir a leaderboard aqui... (simplificado por enquanto)
-            document.getElementById('leaderboard-game-title').textContent = "Carregando Jogo...";
-            // O código completo para buscar e exibir a leaderboard seria mais complexo,
-            // envolvendo a lógica de buscar categorias, leveis, e a leaderboard em si,
-            // similar ao código da versão anterior, mas adaptado a esta nova estrutura.
-             alert(`Funcionalidade de leaderboard para o jogo ${gameId} ainda a ser implementada nesta versão.`);
+            if(!gamesCache) {
+                 const gamesRef = ref(db, 'games_cache');
+                 const snapshot = await get(gamesRef);
+                 if (snapshot.exists()) {
+                     gamesCache = Object.values(snapshot.val());
+                 }
+            }
+            const game = gamesCache.find(g => g.id === gameId);
+            document.getElementById('leaderboard-game-title').textContent = game ? game.names.international : "Jogo não encontrado";
         }
         
         function showAdminView() {
@@ -340,25 +317,22 @@
                 try {
                     if (forceCheckbox.checked) {
                         await remove(ref(db, 'games_cache'));
-                        await remove(ref(db, 'leaderboards_cache'));
                     }
                     
-                    // 1. Fetch all games from the series
                     const gamesResponse = await fetch(`${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=200&embed=levels,categories`);
                     if (!gamesResponse.ok) throw new Error('Falha ao buscar a lista de jogos da API.');
                     const gamesData = (await gamesResponse.json()).data;
                     
                     const gamesToSave = {};
                     for(const game of gamesData) {
-                        gamesToSave[game.id] = game; // Usamos o ID como chave para fácil acesso
+                        gamesToSave[game.id] = game; 
                     }
                     
-                    // 2. Save to Firebase
                     await set(ref(db, 'games_cache'), gamesToSave);
                     
-                    gamesCache = Object.values(gamesToSave); // Atualiza o cache local
+                    gamesCache = Object.values(gamesToSave);
                     syncStatus.textContent = `Sincronização concluída com sucesso! ${gamesData.length} jogos salvos.`;
-                    syncStatus.style.color = '#22c55e'; // verde
+                    syncStatus.style.color = '#22c55e';
                     
                 } catch(error) {
                     console.error('Erro na sincronização:', error);
@@ -370,11 +344,9 @@
             };
         }
 
-
         // --- Event Listeners Globais ---
         window.addEventListener('hashchange', handleRouteChange);
         document.addEventListener('DOMContentLoaded', () => {
-            // Inicializa o roteador na primeira carga da página
             onAuthStateChanged(auth, user => {
                 if (!user && window.location.hash !== '#login') {
                     window.location.hash = '#login';
