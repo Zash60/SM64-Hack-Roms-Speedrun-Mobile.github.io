@@ -131,7 +131,6 @@
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-        // --- YOUR CORRECT FIREBASE CONFIGURATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU",
             authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com",
@@ -151,21 +150,6 @@
         let currentUser = null, userRole = null, gamesCache = null;
         const playerCache = new Map();
 
-        // --- ALL HELPER AND VIEW FUNCTIONS ---
-        // (No changes to these functions from the previous correct version)
-        
-        async function fetchWithCache(path, cacheDurationHours = 24) { /* ... */ }
-        function formatTime(seconds) { /* ... */ }
-        function formatDate(dateString) { /* ... */ }
-        function showView(viewId) { /* ... */ }
-        async function handleRouteChange() { /* ... */ }
-        onAuthStateChanged(auth, async (user) => { /* ... */ });
-        document.getElementById('login-button').addEventListener('click', async () => { /* ... */ });
-        async function showHomeView() { /* ... */ }
-        async function showLeaderboardView(gameId) { /* ... */ }
-        async function showAdminView() { /* ... */ }
-
-        // --- PASTE THE FULL FUNCTIONS HERE TO BE SAFE ---
         async function fetchWithCache(path, cacheDurationHours = 24) {
             const dbPath = `cache_${path.replace(/[\/.]/g, "_")}`; 
             const dbRef = ref(db, dbPath);
@@ -193,6 +177,7 @@
             if (h > 0) time = `${h}h ${time}`;
             return time;
         }
+
         function formatDate(dateString) {
             if (!dateString) return '--';
             const date = new Date(dateString);
@@ -368,7 +353,6 @@
             };
         }
 
-        // --- GLOBAL EVENT LISTENERS ---
         window.addEventListener('hashchange', handleRouteChange);
         document.addEventListener('DOMContentLoaded', handleRouteChange);
     </script>
