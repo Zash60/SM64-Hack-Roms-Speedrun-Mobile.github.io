@@ -72,15 +72,6 @@
         .game-card:hover { transform: translateY(-5px); }
         .game-card img { width: 100%; height: 120px; object-fit: cover; background-color: #000; }
         .game-card-title { padding: 0.8rem; font-weight: 500; font-size: 0.9rem; }
-
-        /* --- Página Leaderboard --- */
-        .category-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
-        .category-buttons button { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); }
-        .category-buttons button.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { background-color: #3f3f46; }
-        tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body>
@@ -88,10 +79,10 @@
     <nav>
         <div id="main-nav-links">
             <a href="#home">Home</a>
-            <a href="#admin" id="admin-link" style="display: none;">Moderation</a>
+            <a href="#admin">Moderation</a> <!-- Link agora sempre visível -->
         </div>
         <div id="auth-container">
-             <!-- Botão de Login/Logout aparecerá aqui -->
+             <!-- Botão de Login/Logout aparecerá aqui se o usuário estiver logado -->
         </div>
     </nav>
 
@@ -99,7 +90,8 @@
         <!-- "Página" de Login -->
         <div id="login-view" class="view">
              <div class="card">
-                <h2>Login</h2>
+                <h2>Login para Acesso de Moderador</h2>
+                <p>Você precisa estar logado como administrador para acessar esta página.</p>
                 <input type="email" id="login-email" placeholder="Email">
                 <input type="password" id="login-password" placeholder="Senha">
                 <button id="login-button">Entrar</button>
@@ -137,14 +129,11 @@
 
     <!-- SCRIPT (JAVASCRIPT) -->
     <script type="module">
-        // Importar as funções necessárias dos SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
         import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
-        // =================================================================================
-        // SUA CONFIGURAÇÃO CORRETA FOI INSERIDA AQUI
-        // =================================================================================
+        // *** A SUA CONFIGURAÇÃO DO FIREBASE DEVE ESTAR AQUI ***
         const firebaseConfig = {
             apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU",
             authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com",
@@ -169,10 +158,7 @@
 
         // --- Elementos do DOM ---
         const views = document.querySelectorAll('.view');
-        const mainNavLinks = document.getElementById('main-nav-links');
-        const adminLink = document.getElementById('admin-link');
         const authContainer = document.getElementById('auth-container');
-        const loader = document.getElementById('loader');
         
         // =================================================================================
         // ROTEAMENTO E CONTROLE DE VISUALIZAÇÃO
@@ -181,9 +167,8 @@
         function showView(viewId) {
             views.forEach(view => view.style.display = 'none');
             const activeView = document.getElementById(viewId);
-            if (activeView) {
-                activeView.style.display = 'block';
-            }
+            if (activeView) activeView.style.display = 'block';
+            
             document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
             const activeLink = document.querySelector(`nav a[href="#${viewId.replace('-view','')}"]`);
             if(activeLink) activeLink.classList.add('active');
@@ -192,20 +177,16 @@
         async function handleRouteChange() {
             const hash = window.location.hash || '#home';
             
-            if (!currentUser) {
-                showView('login-view');
-                return;
-            }
-
-            if (hash.startsWith('#game/')) {
-                const gameId = hash.split('/')[1];
-                await showLeaderboardView(gameId);
-            } else if (hash === '#admin') {
-                if (userRole === 'admin') {
+            if (hash === '#admin') {
+                if (currentUser && userRole === 'admin') {
                     showAdminView();
                 } else {
-                    window.location.hash = '#home'; 
+                    // Se não for admin, mostra a tela de login.
+                    showView('login-view');
                 }
+            } else if (hash.startsWith('#game/')) {
+                const gameId = hash.split('/')[1];
+                await showLeaderboardView(gameId);
             } else { 
                 await showHomeView();
             }
@@ -221,27 +202,28 @@
                 const userRoleRef = ref(db, `users/${user.uid}/role`);
                 const snapshot = await get(userRoleRef);
                 userRole = snapshot.exists() ? snapshot.val() : 'user';
-                updateUIAfterLogin();
+                
+                // Mostra botão de Logout se estiver logado
+                authContainer.innerHTML = `<button id="logout-button">Logout</button>`;
+                document.getElementById('logout-button').addEventListener('click', async () => {
+                    await signOut(auth);
+                    window.location.hash = '#home'; // Redireciona para home após logout
+                });
+
+                // Se o usuário fez login com sucesso e estava tentando acessar a aba de admin,
+                // reavalia a rota para dar acesso.
+                if(window.location.hash === '#admin'){
+                    handleRouteChange();
+                }
+
             } else {
                 currentUser = null;
                 userRole = null;
-                updateUIAfterLogout();
+                authContainer.innerHTML = ''; // Limpa o botão de logout
+                handleRouteChange(); // Reavalia a rota para tirar o acesso de admin se ele deslogar
             }
-            await handleRouteChange(); 
         });
         
-        function updateUIAfterLogin() {
-            authContainer.innerHTML = `<button id="logout-button">Logout</button>`;
-            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
-            adminLink.style.display = (userRole === 'admin') ? 'inline' : 'none';
-        }
-
-        function updateUIAfterLogout() {
-            authContainer.innerHTML = '';
-            adminLink.style.display = 'none';
-            showView('login-view');
-        }
-
         document.getElementById('login-button').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
@@ -249,7 +231,7 @@
             try {
                 errorP.style.display = 'none';
                 await signInWithEmailAndPassword(auth, email, password);
-                window.location.hash = '#home';
+                // O onAuthStateChanged vai cuidar do redirecionamento
             } catch (error) {
                 errorP.textContent = 'Email ou senha inválidos.';
                 errorP.style.display = 'block';
@@ -277,7 +259,7 @@
             if (gamesCache && gamesCache.length > 0) {
                 noGamesMsg.style.display = 'none';
                 gamesGrid.innerHTML = gamesCache
-                    .sort((a, b) => (b.released || 0) - (a.released || 0)) // Ordena por ano de lançamento
+                    .sort((a, b) => (b.released || 0) - (a.released || 0))
                     .map(game => `
                     <a href="#game/${game.id}" class="game-card">
                         <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
@@ -299,8 +281,8 @@
                      gamesCache = Object.values(snapshot.val());
                  }
             }
-            const game = gamesCache.find(g => g.id === gameId);
-            document.getElementById('leaderboard-game-title').textContent = game ? game.names.international : "Jogo não encontrado";
+            const game = gamesCache ? gamesCache.find(g => g.id === gameId) : null;
+            document.getElementById('leaderboard-game-title').textContent = game ? game.names.international : "Carregando...";
         }
         
         function showAdminView() {
@@ -346,14 +328,7 @@
 
         // --- Event Listeners Globais ---
         window.addEventListener('hashchange', handleRouteChange);
-        document.addEventListener('DOMContentLoaded', () => {
-            onAuthStateChanged(auth, user => {
-                if (!user && window.location.hash !== '#login') {
-                    window.location.hash = '#login';
-                }
-                handleRouteChange();
-            });
-        });
+        document.addEventListener('DOMContentLoaded', handleRouteChange);
 
     </script>
 </body>
