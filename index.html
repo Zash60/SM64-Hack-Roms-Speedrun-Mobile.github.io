@@ -280,13 +280,15 @@
             if (!gameDataSnapshot.exists()) { ui.title.textContent = 'Game not found in cache. Please sync.'; return; }
             const game = gameDataSnapshot.val();
 
-            // *** DEBUGGING LINE ADDED HERE ***
-            console.log("DEBUG: Data received for gameId " + gameId, game);
-
             ui.title.textContent = game.names.international;
-            const fullGameCategories = game.categories.data.filter(c => c.type === 'per-game');
-            const levelCategoriesExist = game.categories.data.some(c => c.type === 'per-level');
-            const levels = game.levels.data;
+            
+            // *** THE FINAL FIX IS HERE: ADDING SAFETY CHECKS ***
+            const allCategories = (game.categories && game.categories.data) ? game.categories.data : [];
+            const levels = (game.levels && game.levels.data) ? game.levels.data : [];
+
+            const fullGameCategories = allCategories.filter(c => c.type === 'per-game');
+            const levelCategoriesExist = allCategories.some(c => c.type === 'per-level');
+            
             const fetchPlayerName = async (playerId) => { if (playerCache.has(playerId)) return playerCache.get(playerId); try { const player = await fetchWithCache(`users/${playerId}`); const name = player.names.international; playerCache.set(playerId, name); return name; } catch { return '...'; } };
             const renderLeaderboard = async (catId) => {
                 ui.tableBody.innerHTML = ''; ui.noRunsMsg.style.display = 'none'; ui.loader.style.display = 'block';
