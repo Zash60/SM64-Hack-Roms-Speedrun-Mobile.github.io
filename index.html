@@ -148,7 +148,6 @@
         const views = document.querySelectorAll('.view');
         const authContainer = document.getElementById('auth-container');
         
-        // --- FUNCTIONS ---
         async function fetchWithCache(path, cacheDurationHours = 24) {
             const dbPath = `cache_${path.replace(/[\/.]/g, "_")}`; 
             const dbRef = ref(db, dbPath);
@@ -210,35 +209,15 @@
             }
         }
         
-        // --- AUTHENTICATION (WITH DEBUGGING ALERTS) ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                
-                // --- START DEBUGGING ---
-                alert("DEBUG STEP 1: Successfully logged in. Checking database for role. User UID is: " + user.uid);
-                // --- END DEBUGGING ---
-
                 const userRoleRef = ref(db, `users/${user.uid}/role`);
-                
                 try {
                     const snapshot = await get(userRoleRef);
-
-                    if (snapshot.exists()) {
-                        // --- START DEBUGGING ---
-                        alert("DEBUG STEP 2: Database snapshot FOUND. The role is: '" + snapshot.val() + "'");
-                        // --- END DEBUGGING ---
-                        userRole = snapshot.val();
-                    } else {
-                        // --- START DEBUGGING ---
-                        alert("DEBUG STEP 2: Database snapshot NOT FOUND. Could not find a role for this UID. Setting role to 'user'.");
-                        // --- END DEBUGGING ---
-                        userRole = 'user';
-                    }
+                    userRole = snapshot.exists() ? snapshot.val() : 'user';
                 } catch (error) {
-                    // --- START DEBUGGING ---
-                    alert("DEBUG STEP 2 FAILED: An error occurred while trying to read the database. Check console (F12) for details. Error: " + error.message);
-                    // --- END DEBUGGING ---
+                    console.error("Error reading user role:", error);
                     userRole = 'user';
                 }
 
@@ -269,11 +248,6 @@
         });
 
         // --- VIEW LOGIC ---
-        async function showHomeView() { /* ... código idêntico ao anterior ... */ }
-        async function showLeaderboardView(gameId) { /* ... código idêntico ao anterior ... */ }
-        function showAdminView() { /* ... código idêntico ao anterior ... */ }
-
-        // --- (Copiei as funções de view aqui para garantir que está tudo completo) ---
         async function showHomeView() {
             showView('home-view');
             const gamesGrid = document.getElementById('games-grid');
