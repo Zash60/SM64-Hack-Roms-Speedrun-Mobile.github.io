@@ -161,25 +161,25 @@
 
     <!-- SCRIPT (JAVASCRIPT) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    // ... outros imports
 
-        // =================================================================================
-        // COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
-        // =================================================================================
-        const firebaseConfig = {
-            apiKey: "AIza...",
-            authDomain: "seu-projeto.firebaseapp.com",
-            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
-            projectId: "seu-projeto",
-            storageBucket: "seu-projeto.appspot.com",
-            messagingSenderId: "...",
-            appId: "..."
-        };
+    // =================================================================================
+    // COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
+    // =================================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU", // Sua chave real
+      authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com", // Seu domínio real
+      databaseURL: "https://sm64-hacks-rom-speedrun-mobile-default-rtdb.firebaseio.com", // Sua URL real
+      projectId: "sm64-hacks-rom-speedrun-mobile", // Seu ID real
+      storageBucket: "sm64-hacks-rom-speedrun-mobile.appspot.com", // Seu bucket real
+      messagingSenderId: "956519798910", // Seu ID real
+      appId: "1:956519798910:web:722d40876cedd11ec3602f" // Seu App ID real
+    };
 
-        // --- Inicialização ---
-        const app = initializeApp(firebaseConfig);
+    // --- Inicialização ---
+    const app = initializeApp(firebaseConfig);
+    // ... resto do código
         const auth = getAuth(app);
         const db = getDatabase(app);
         
