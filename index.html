@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM64 ROM Hacks Speedruns</title>
+    
+    <!-- ESTILOS (CSS) -->
+    <style>
+        :root {
+            --bg-color: #18181b;
+            --card-color: #27272a;
+            --text-color: #e4e4e7;
+            --primary-color: #3b82f6;
+            --border-color: #3f3f46;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: var(--card-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        select, button {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        select:disabled {
+            opacity: 0.5;
+        }
+        #loader {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            display: none; /* Inicia escondido */
+        }
+        .leaderboard-container {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 0.8rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: #3f3f46;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        td:nth-child(1) { width: 40px; text-align: center; }
+        .date {
+            font-size: 0.8em;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>SM64 ROM Hacks Speedruns</h1>
+        </header>
+
+        <main>
+            <div class="controls">
+                <label for="game-select">Escolha um Jogo:</label>
+                <select id="game-select" disabled>
+                    <option>Carregando jogos...</option>
+                </select>
+
+                <label for="category-type-select">Tipo de Categoria:</label>
+                <select id="category-type-select" disabled>
+                    <option>Selecione um jogo primeiro</option>
+                </select>
+
+                <div id="level-controls" style="display:none;">
+                    <label for="level-select">Level:</label>
+                    <select id="level-select"></select>
+                </div>
+                
+                <label for="category-select">Categoria:</label>
+                <select id="category-select" disabled>
+                     <option>Selecione um tipo primeiro</option>
+                </select>
+            </div>
+
+            <div id="loader">Carregando leaderboard...</div>
+
+            <div class="leaderboard-container">
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Player</th>
+                            <th>Tempo</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linhas da leaderboard serão inseridas aqui -->
+                    </tbody>
+                </table>
+            </div>
+             <p id="no-runs-message" style="text-align: center; padding: 2rem; display: none;">Nenhuma run encontrada para esta categoria.</p>
+        </main>
+    </div>
+
+    <!-- SCRIPT (JAVASCRIPT) -->
+
+    <!-- Importar Firebase -->
+    <script type="module">
+        // Importar funções necessárias do Firebase SDK
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+
+        // =================================================================================
+        // COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
+        // Substitua este objeto pelo que você copiou do console do Firebase
+        // =================================================================================
+        const firebaseConfig = {
+            apiKey: "AIza...",
+            authDomain: "seu-projeto.firebaseapp.com",
+            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
+            projectId: "seu-projeto",
+            storageBucket: "seu-projeto.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // =================================================================================
+        // LÓGICA DA APLICAÇÃO
+        // =================================================================================
+
+        // --- Constantes e Variáveis Globais ---
+        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
+        const SM64_HACKS_SERIES_ID = 'sm64romhacks'; // ID da série no SRC
+        let gamesCache = []; // Cache local para evitar múltiplas buscas de jogos
+        let levelsCache = {}; // Cache local para os levels de cada jogo
+        let categoriesCache = {}; // Cache local para as categorias de cada jogo/level
+
+        // --- Elementos do DOM ---
+        const gameSelect = document.getElementById('game-select');
+        const categoryTypeSelect = document.getElementById('category-type-select');
+        const levelControls = document.getElementById('level-controls');
+        const levelSelect = document.getElementById('level-select');
+        const categorySelect = document.getElementById('category-select');
+        const leaderboardTableBody = document.querySelector('#leaderboard-table tbody');
+        const loader = document.getElementById('loader');
+        const noRunsMessage = document.getElementById('no-runs-message');
+
+        // --- Funções de Fetch (com Cache no Firebase) ---
+
+        // Função genérica para buscar dados da API do SRC com cache do Firebase
+        async function fetchWithCache(path, cacheDurationHours = 24) {
+            const dbRef = ref(db, path);
+            const snapshot = await get(dbRef);
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const now = new Date().getTime();
+                const cacheAge = (now - data.timestamp) / (1000 * 60 * 60);
+                if (cacheAge < cacheDurationHours) {
+                    console.log(`Cache HIT para: ${path}`);
+                    return data.content;
+                }
+            }
+            
+            console.log(`Cache MISS para: ${path}. Buscando da API...`);
+            const response = await fetch(`${SRC_API_BASE}/${path.replace(/__/g, "/")}`);
+            if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+            const apiData = await response.json();
+
+            // Salva no Firebase com timestamp
+            set(dbRef, {
+                content: apiData.data,
+                timestamp: new Date().getTime()
+            });
+
+            return apiData.data;
+        }
+
+        // --- Funções de Formatação ---
+
+        function formatTime(seconds) {
+            if (!seconds) return '--';
+            const h = Math.floor(seconds / 3600).toString();
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            const ms = Math.round((seconds - Math.floor(seconds)) * 1000).toString().padStart(3, '0');
+            
+            let timeString = `${m}m ${s}s ${ms}ms`;
+            if (h > 0) {
+              timeString = `${h}h ${timeString}`;
+            }
+            return timeString;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '--';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        // --- Funções de Renderização na Tela ---
+
+        function populateSelect(selectElement, options, defaultText) {
+            selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                option.textContent = opt.text;
+                selectElement.appendChild(option);
+            });
+            selectElement.disabled = false;
+        }
+
+        async function renderLeaderboard(leaderboardData) {
+            leaderboardTableBody.innerHTML = '';
+            
+            if (!leaderboardData || leaderboardData.runs.length === 0) {
+                noRunsMessage.style.display = 'block';
+                return;
+            }
+            noRunsMessage.style.display = 'none';
+
+            // Resolve os nomes dos players, já que a API os retorna como IDs
+            const playerIds = leaderboardData.runs.map(run => run.run.players[0].id).filter(id => id);
+            const uniquePlayerIds = [...new Set(playerIds)];
+            
+            let playerNames = {};
+            if(uniquePlayerIds.length > 0) {
+                 const playersData = await fetchWithCache(`users?ids=${uniquePlayerIds.join(',')}`);
+                 playersData.forEach(player => {
+                    playerNames[player.id] = player.names.international;
+                 });
+            }
+
+            leaderboardData.runs.forEach(run => {
+                const player = run.run.players[0];
+                const playerName = player.id ? playerNames[player.id] : player.name; // Usa nome de guest se não tiver ID
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${run.place}</td>
+                    <td>${playerName || 'Guest'}</td>
+                    <td>${formatTime(run.run.times.primary_t)}</td>
+                    <td class="date">${formatDate(run.run.date)}</td>
+                `;
+                leaderboardTableBody.appendChild(row);
+            });
+        }
+        
+        // --- Lógica de Eventos e Controle ---
+
+        async function onGameChange() {
+            const gameId = gameSelect.value;
+            resetSelects(categoryTypeSelect, levelSelect, categorySelect);
+            if (!gameId) return;
+
+            loader.style.display = 'block';
+            leaderboardTableBody.innerHTML = '';
+
+            try {
+                // Busca categorias e levels em paralelo
+                const [categoriesData, levelsData] = await Promise.all([
+                    fetchWithCache(`games/${gameId}/categories`),
+                    fetchWithCache(`games/${gameId}/levels`)
+                ]);
+                
+                categoriesCache[gameId] = categoriesData;
+                levelsCache[gameId] = levelsData;
+
+                populateSelect(categoryTypeSelect, [
+                    { value: 'fullgame', text: 'Full Game' },
+                    { value: 'level', text: 'Per Level (ILs)' }
+                ], "Selecione o tipo");
+
+            } catch (error) {
+                console.error("Erro ao buscar dados do jogo:", error);
+                alert("Não foi possível carregar os dados para este jogo.");
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        
+        function onCategoryTypeChange() {
+            const type = categoryTypeSelect.value;
+            const gameId = gameSelect.value;
+            resetSelects(categorySelect);
+            
+            if(type === 'fullgame') {
+                levelControls.style.display = 'none';
+                const fullGameCategories = categoriesCache[gameId]
+                    .filter(cat => cat.type === 'per-game')
+                    .map(cat => ({ value: cat.id, text: cat.name }));
+                populateSelect(categorySelect, fullGameCategories, "Selecione a categoria");
+            } else if (type === 'level') {
+                levelControls.style.display = 'block';
+                 const levels = levelsCache[gameId].map(lvl => ({ value: lvl.id, text: lvl.name }));
+                populateSelect(levelSelect, levels, "Selecione o level");
+            } else {
+                 levelControls.style.display = 'none';
+            }
+        }
+        
+        async function onLevelChange() {
+             const levelId = levelSelect.value;
+             resetSelects(categorySelect);
+             if (!levelId) return;
+             
+             try {
+                const levelCategories = await fetchWithCache(`levels/${levelId}/categories`);
+                categoriesCache[levelId] = levelCategories;
+                const options = levelCategories.map(cat => ({ value: cat.id, text: cat.name }));
+                populateSelect(categorySelect, options, "Selecione a estrela/missão");
+             } catch(error) {
+                 console.error("Erro ao buscar categorias do level:", error);
+             }
+        }
+
+        async function onCategoryChange() {
+            const categoryId = categorySelect.value;
+            if (!categoryId) {
+                 leaderboardTableBody.innerHTML = '';
+                 noRunsMessage.style.display = 'none';
+                 return;
+            };
+
+            loader.style.display = 'block';
+            leaderboardTableBody.innerHTML = '';
+            noRunsMessage.style.display = 'none';
+
+            try {
+                // O caminho no firebase não pode ter "/", então substituímos
+                const path = `leaderboards/${categoryId}/category`.replace(/\//g, "__");
+                const leaderboard = await fetchWithCache(path);
+                await renderLeaderboard(leaderboard);
+            } catch (error) {
+                console.error("Erro ao buscar leaderboard:", error);
+                alert("Não foi possível carregar a leaderboard.");
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+        
+        function resetSelects(...selects) {
+            selects.forEach(sel => {
+                sel.innerHTML = '<option>...</option>';
+                sel.disabled = true;
+            });
+            leaderboardTableBody.innerHTML = '';
+            noRunsMessage.style.display = 'none';
+            levelControls.style.display = 'none';
+        }
+
+        // --- Função de Inicialização ---
+        async function init() {
+            try {
+                // Usamos um path diferente no firebase para a lista de jogos
+                const games = await fetchWithCache(`series/${SM64_HACKS_SERIES_ID}/games?max=200`);
+                gamesCache = games.sort((a,b) => a.names.international.localeCompare(b.names.international));
+                
+                const gameOptions = gamesCache.map(game => ({
+                    value: game.id,
+                    text: `${game.names.international} (${game.released})`
+                }));
+                populateSelect(gameSelect, gameOptions, "Selecione um jogo");
+
+            } catch (error) {
+                console.error("Erro ao inicializar:", error);
+                gameSelect.innerHTML = '<option>Falha ao carregar jogos</option>';
+            }
+        }
+
+        // --- Adicionar Event Listeners ---
+        gameSelect.addEventListener('change', onGameChange);
+        categoryTypeSelect.addEventListener('change', onCategoryTypeChange);
+        levelSelect.addEventListener('change', onLevelChange);
+        categorySelect.addEventListener('change', onCategoryChange);
+
+        // --- Iniciar a aplicação ---
+        document.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
