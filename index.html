@@ -13,408 +13,375 @@
             --text-color: #e4e4e7;
             --primary-color: #3b82f6;
             --border-color: #3f3f46;
+            --danger-color: #ef4444;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 1rem;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-        .controls {
+        .container { max-width: 900px; margin: 0 auto; padding: 1rem; }
+        .view { display: none; } /* Todas as "páginas" começam escondidas */
+        
+        /* --- Navegação --- */
+        nav {
             display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            background-color: var(--card-color);
+            justify-content: space-between;
+            align-items: center;
             padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        select, button {
-            width: 100%;
-            padding: 0.8rem;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-        }
-        select:disabled {
-            opacity: 0.5;
-        }
-        #loader {
-            text-align: center;
-            padding: 2rem;
-            font-size: 1.2rem;
-            display: none; /* Inicia escondido */
-        }
-        .leaderboard-container {
             background-color: var(--card-color);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 0.8rem 1rem;
-            text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
-        th {
-            background-color: #3f3f46;
+        nav a { color: var(--text-color); text-decoration: none; font-weight: 500; padding: 0.5rem; }
+        nav a.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
+        #auth-container button {
+            background: var(--primary-color);
+            color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer;
         }
-        tr:last-child td {
-            border-bottom: none;
+
+        /* --- Componentes Gerais --- */
+        h1, h2 { border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; margin-top: 0;}
+        button {
+            padding: 0.8rem; background-color: var(--primary-color); color: white;
+            border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;
+            transition: background-color 0.2s;
         }
-        td:nth-child(1) { width: 40px; text-align: center; }
-        .date {
-            font-size: 0.8em;
-            opacity: 0.7;
+        button:hover { background-color: #2563eb; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-danger:hover { background-color: #dc2626; }
+        input[type="email"], input[type="password"] {
+            width: 100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;
         }
+        .card { background-color: var(--card-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
+        #loader { text-align: center; padding: 2rem; font-size: 1.2rem; display: none; }
+
+        /* --- Página Home (Grid de Jogos) --- */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        .game-card {
+            background-color: var(--card-color); border-radius: 8px; overflow: hidden;
+            text-decoration: none; color: var(--text-color); display: block;
+            transition: transform 0.2s;
+        }
+        .game-card:hover { transform: translateY(-5px); }
+        .game-card img { width: 100%; height: 120px; object-fit: cover; background-color: #000; }
+        .game-card-title { padding: 0.8rem; font-weight: 500; font-size: 0.9rem; }
+
+        /* --- Página Leaderboard --- */
+        .category-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .category-buttons button { background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); }
+        .category-buttons button.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background-color: #3f3f46; }
+        tr:last-child td { border-bottom: none; }
     </style>
 </head>
 <body>
 
+    <nav>
+        <div id="main-nav-links">
+            <a href="#home">Home</a>
+            <a href="#admin" id="admin-link" style="display: none;">Moderation</a>
+        </div>
+        <div id="auth-container">
+             <!-- Botão de Login/Logout aparecerá aqui -->
+        </div>
+    </nav>
+
     <div class="container">
-        <header>
-            <h1>SM64 ROM Hacks Speedruns</h1>
-        </header>
+        <!-- "Página" de Login -->
+        <div id="login-view" class="view">
+             <div class="card">
+                <h2>Login</h2>
+                <input type="email" id="login-email" placeholder="Email">
+                <input type="password" id="login-password" placeholder="Senha">
+                <button id="login-button">Entrar</button>
+                <p id="login-error" style="color: var(--danger-color); display:none;"></p>
+            </div>
+        </div>
 
-        <main>
-            <div class="controls">
-                <label for="game-select">Escolha um Jogo:</label>
-                <select id="game-select" disabled>
-                    <option>Carregando jogos...</option>
-                </select>
+        <!-- "Página" Home -->
+        <div id="home-view" class="view">
+            <h2>Jogos</h2>
+            <div id="games-grid"></div>
+            <p id="no-games-message" style="display: none;">Nenhum jogo encontrado. Um administrador precisa sincronizar os dados.</p>
+        </div>
 
-                <label for="category-type-select">Tipo de Categoria:</label>
-                <select id="category-type-select" disabled>
-                    <option>Selecione um jogo primeiro</option>
-                </select>
-
-                <div id="level-controls" style="display:none;">
-                    <label for="level-select">Level:</label>
-                    <select id="level-select"></select>
+        <!-- "Página" de Leaderboard -->
+        <div id="leaderboard-view" class="view">
+            <h2 id="leaderboard-game-title"></h2>
+            <div class="card">
+                <h3>Leaderboard Type</h3>
+                <div class="category-buttons" id="leaderboard-type-buttons">
+                    <button data-type="fullgame" class="active">Full-game</button>
+                    <button data-type="level">Single-Star / Level RTA</button>
                 </div>
-                
-                <label for="category-select">Categoria:</label>
-                <select id="category-select" disabled>
-                     <option>Selecione um tipo primeiro</option>
-                </select>
-            </div>
 
-            <div id="loader">Carregando leaderboard...</div>
+                <div id="level-selector-container" style="display: none;">
+                    <h3>Level / Stage</h3>
+                    <select id="level-select" style="width:100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; margin-bottom: 1rem;"></select>
+                </div>
 
-            <div class="leaderboard-container">
-                <table id="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <th>Tempo</th>
-                            <th>Data</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Linhas da leaderboard serão inseridas aqui -->
-                    </tbody>
-                </table>
+                <h3>Categories</h3>
+                <div class="category-buttons" id="category-buttons-container"></div>
             </div>
-             <p id="no-runs-message" style="text-align: center; padding: 2rem; display: none;">Nenhuma run encontrada para esta categoria.</p>
-        </main>
+            
+            <div id="loader">Carregando...</div>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Player</th><th>Tempo</th><th>Data</th></tr>
+                </thead>
+                <tbody id="leaderboard-table-body"></tbody>
+            </table>
+            <p id="no-runs-message" style="text-align: center; padding: 2rem; display: none;">Nenhuma run encontrada para esta categoria.</p>
+        </div>
+
+        <!-- "Página" de Administração -->
+        <div id="admin-view" class="view">
+            <h2>Painel de Moderação</h2>
+            <div class="card">
+                <h3>Sincronização</h3>
+                <p>Busca e adiciona novos SM64 Hack Roms, categorias e leveis diretamente da série oficial do Speedrun.com.</p>
+                <button id="sync-button">Sync with Speedrun.com</button>
+                <label style="display: block; margin-top: 1rem;">
+                    <input type="checkbox" id="force-update-checkbox"> Forçar atualização (deleta todos os dados existentes)
+                </label>
+                <p id="sync-status" style="margin-top: 1rem;"></p>
+            </div>
+            <!-- Futuramente, a seção de "Review Pending Runs" viria aqui -->
+        </div>
     </div>
 
     <!-- SCRIPT (JAVASCRIPT) -->
-
-    <!-- Importar Firebase -->
     <script type="module">
-        // Importar funções necessárias do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
 
         // =================================================================================
         // COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
-        // Substitua este objeto pelo que você copiou do console do Firebase
         // =================================================================================
         const firebaseConfig = {
             apiKey: "AIza...",
             authDomain: "seu-projeto.firebaseapp.com",
-            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com",
+            databaseURL: "https://seu-projeto-default-rtdb.firebaseio.com/",
             projectId: "seu-projeto",
             storageBucket: "seu-projeto.appspot.com",
             messagingSenderId: "...",
             appId: "..."
         };
 
-        // Inicializar Firebase
+        // --- Inicialização ---
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getDatabase(app);
-
-        // =================================================================================
-        // LÓGICA DA APLICAÇÃO
-        // =================================================================================
-
-        // --- Constantes e Variáveis Globais ---
+        
+        // --- Variáveis Globais ---
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
-        const SM64_HACKS_SERIES_ID = 'sm64romhacks'; // ID da série no SRC
-        let gamesCache = []; // Cache local para evitar múltiplas buscas de jogos
-        let levelsCache = {}; // Cache local para os levels de cada jogo
-        let categoriesCache = {}; // Cache local para as categorias de cada jogo/level
+        const SM64_HACKS_SERIES_ID = 'sm64romhacks';
+        let currentUser = null;
+        let userRole = null;
+        let gamesCache = null;
 
         // --- Elementos do DOM ---
-        const gameSelect = document.getElementById('game-select');
-        const categoryTypeSelect = document.getElementById('category-type-select');
-        const levelControls = document.getElementById('level-controls');
-        const levelSelect = document.getElementById('level-select');
-        const categorySelect = document.getElementById('category-select');
-        const leaderboardTableBody = document.querySelector('#leaderboard-table tbody');
+        const views = document.querySelectorAll('.view');
+        const mainNavLinks = document.getElementById('main-nav-links');
+        const adminLink = document.getElementById('admin-link');
+        const authContainer = document.getElementById('auth-container');
         const loader = document.getElementById('loader');
-        const noRunsMessage = document.getElementById('no-runs-message');
-
-        // --- Funções de Fetch (com Cache no Firebase) ---
-
-        // Função genérica para buscar dados da API do SRC com cache do Firebase
-        async function fetchWithCache(path, cacheDurationHours = 24) {
-            const dbRef = ref(db, path);
-            const snapshot = await get(dbRef);
-
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                const now = new Date().getTime();
-                const cacheAge = (now - data.timestamp) / (1000 * 60 * 60);
-                if (cacheAge < cacheDurationHours) {
-                    console.log(`Cache HIT para: ${path}`);
-                    return data.content;
-                }
+        
+        // =================================================================================
+        // ROTEAMENTO E CONTROLE DE VISUALIZAÇÃO
+        // =================================================================================
+        
+        function showView(viewId) {
+            views.forEach(view => view.style.display = 'none');
+            const activeView = document.getElementById(viewId);
+            if (activeView) {
+                activeView.style.display = 'block';
             }
+            // Atualiza link ativo na nav
+            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+            const activeLink = document.querySelector(`nav a[href="#${viewId.replace('-view','')}"]`);
+            if(activeLink) activeLink.classList.add('active');
+        }
+
+        async function handleRouteChange() {
+            const hash = window.location.hash || '#home';
             
-            console.log(`Cache MISS para: ${path}. Buscando da API...`);
-            const response = await fetch(`${SRC_API_BASE}/${path.replace(/__/g, "/")}`);
-            if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
-            const apiData = await response.json();
-
-            // Salva no Firebase com timestamp
-            set(dbRef, {
-                content: apiData.data,
-                timestamp: new Date().getTime()
-            });
-
-            return apiData.data;
-        }
-
-        // --- Funções de Formatação ---
-
-        function formatTime(seconds) {
-            if (!seconds) return '--';
-            const h = Math.floor(seconds / 3600).toString();
-            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
-            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
-            const ms = Math.round((seconds - Math.floor(seconds)) * 1000).toString().padStart(3, '0');
-            
-            let timeString = `${m}m ${s}s ${ms}ms`;
-            if (h > 0) {
-              timeString = `${h}h ${timeString}`;
-            }
-            return timeString;
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return '--';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
-        }
-
-        // --- Funções de Renderização na Tela ---
-
-        function populateSelect(selectElement, options, defaultText) {
-            selectElement.innerHTML = `<option value="">${defaultText}</option>`;
-            options.forEach(opt => {
-                const option = document.createElement('option');
-                option.value = opt.value;
-                option.textContent = opt.text;
-                selectElement.appendChild(option);
-            });
-            selectElement.disabled = false;
-        }
-
-        async function renderLeaderboard(leaderboardData) {
-            leaderboardTableBody.innerHTML = '';
-            
-            if (!leaderboardData || leaderboardData.runs.length === 0) {
-                noRunsMessage.style.display = 'block';
+            if (!currentUser) {
+                showView('login-view');
                 return;
             }
-            noRunsMessage.style.display = 'none';
 
-            // Resolve os nomes dos players, já que a API os retorna como IDs
-            const playerIds = leaderboardData.runs.map(run => run.run.players[0].id).filter(id => id);
-            const uniquePlayerIds = [...new Set(playerIds)];
-            
-            let playerNames = {};
-            if(uniquePlayerIds.length > 0) {
-                 const playersData = await fetchWithCache(`users?ids=${uniquePlayerIds.join(',')}`);
-                 playersData.forEach(player => {
-                    playerNames[player.id] = player.names.international;
-                 });
+            if (hash.startsWith('#game/')) {
+                const gameId = hash.split('/')[1];
+                await showLeaderboardView(gameId);
+            } else if (hash === '#admin') {
+                if (userRole === 'admin') {
+                    showAdminView();
+                } else {
+                    window.location.hash = '#home'; // Redireciona se não for admin
+                }
+            } else { // #home ou qualquer outra coisa
+                await showHomeView();
             }
-
-            leaderboardData.runs.forEach(run => {
-                const player = run.run.players[0];
-                const playerName = player.id ? playerNames[player.id] : player.name; // Usa nome de guest se não tiver ID
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${run.place}</td>
-                    <td>${playerName || 'Guest'}</td>
-                    <td>${formatTime(run.run.times.primary_t)}</td>
-                    <td class="date">${formatDate(run.run.date)}</td>
-                `;
-                leaderboardTableBody.appendChild(row);
-            });
         }
-        
-        // --- Lógica de Eventos e Controle ---
 
-        async function onGameChange() {
-            const gameId = gameSelect.value;
-            resetSelects(categoryTypeSelect, levelSelect, categorySelect);
-            if (!gameId) return;
+        // =================================================================================
+        // AUTENTICAÇÃO
+        // =================================================================================
 
-            loader.style.display = 'block';
-            leaderboardTableBody.innerHTML = '';
-
-            try {
-                // Busca categorias e levels em paralelo
-                const [categoriesData, levelsData] = await Promise.all([
-                    fetchWithCache(`games/${gameId}/categories`),
-                    fetchWithCache(`games/${gameId}/levels`)
-                ]);
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                // Busca o role do usuário no DB
+                const userRoleRef = ref(db, `users/${user.uid}/role`);
+                const snapshot = await get(userRoleRef);
+                userRole = snapshot.exists() ? snapshot.val() : 'user';
                 
-                categoriesCache[gameId] = categoriesData;
-                levelsCache[gameId] = levelsData;
-
-                populateSelect(categoryTypeSelect, [
-                    { value: 'fullgame', text: 'Full Game' },
-                    { value: 'level', text: 'Per Level (ILs)' }
-                ], "Selecione o tipo");
-
-            } catch (error) {
-                console.error("Erro ao buscar dados do jogo:", error);
-                alert("Não foi possível carregar os dados para este jogo.");
-            } finally {
-                loader.style.display = 'none';
-            }
-        }
-        
-        function onCategoryTypeChange() {
-            const type = categoryTypeSelect.value;
-            const gameId = gameSelect.value;
-            resetSelects(categorySelect);
-            
-            if(type === 'fullgame') {
-                levelControls.style.display = 'none';
-                const fullGameCategories = categoriesCache[gameId]
-                    .filter(cat => cat.type === 'per-game')
-                    .map(cat => ({ value: cat.id, text: cat.name }));
-                populateSelect(categorySelect, fullGameCategories, "Selecione a categoria");
-            } else if (type === 'level') {
-                levelControls.style.display = 'block';
-                 const levels = levelsCache[gameId].map(lvl => ({ value: lvl.id, text: lvl.name }));
-                populateSelect(levelSelect, levels, "Selecione o level");
+                updateUIAfterLogin();
             } else {
-                 levelControls.style.display = 'none';
+                currentUser = null;
+                userRole = null;
+                updateUIAfterLogout();
             }
-        }
+            await handleRouteChange(); // Roda o roteador após mudança de auth
+        });
         
-        async function onLevelChange() {
-             const levelId = levelSelect.value;
-             resetSelects(categorySelect);
-             if (!levelId) return;
-             
-             try {
-                const levelCategories = await fetchWithCache(`levels/${levelId}/categories`);
-                categoriesCache[levelId] = levelCategories;
-                const options = levelCategories.map(cat => ({ value: cat.id, text: cat.name }));
-                populateSelect(categorySelect, options, "Selecione a estrela/missão");
-             } catch(error) {
-                 console.error("Erro ao buscar categorias do level:", error);
-             }
+        function updateUIAfterLogin() {
+            authContainer.innerHTML = `<button id="logout-button">Logout</button>`;
+            document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+            adminLink.style.display = (userRole === 'admin') ? 'inline' : 'none';
         }
 
-        async function onCategoryChange() {
-            const categoryId = categorySelect.value;
-            if (!categoryId) {
-                 leaderboardTableBody.innerHTML = '';
-                 noRunsMessage.style.display = 'none';
-                 return;
-            };
+        function updateUIAfterLogout() {
+            authContainer.innerHTML = ''; // Ou um botão de login se preferir
+            adminLink.style.display = 'none';
+            showView('login-view');
+        }
 
-            loader.style.display = 'block';
-            leaderboardTableBody.innerHTML = '';
-            noRunsMessage.style.display = 'none';
-
+        document.getElementById('login-button').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorP = document.getElementById('login-error');
             try {
-                // O caminho no firebase não pode ter "/", então substituímos
-                const path = `leaderboards/${categoryId}/category`.replace(/\//g, "__");
-                const leaderboard = await fetchWithCache(path);
-                await renderLeaderboard(leaderboard);
+                errorP.style.display = 'none';
+                await signInWithEmailAndPassword(auth, email, password);
+                window.location.hash = '#home';
             } catch (error) {
-                console.error("Erro ao buscar leaderboard:", error);
-                alert("Não foi possível carregar a leaderboard.");
-            } finally {
-                loader.style.display = 'none';
+                errorP.textContent = 'Email ou senha inválidos.';
+                errorP.style.display = 'block';
+                console.error("Erro de login:", error);
+            }
+        });
+
+        // =================================================================================
+        // LÓGICA DAS VIEWS
+        // =================================================================================
+
+        async function showHomeView() {
+            showView('home-view');
+            const gamesGrid = document.getElementById('games-grid');
+            const noGamesMsg = document.getElementById('no-games-message');
+            
+            if (!gamesCache) {
+                 const gamesRef = ref(db, 'games_cache');
+                 const snapshot = await get(gamesRef);
+                 if (snapshot.exists()) {
+                     gamesCache = Object.values(snapshot.val());
+                 }
+            }
+
+            if (gamesCache && gamesCache.length > 0) {
+                noGamesMsg.style.display = 'none';
+                gamesGrid.innerHTML = gamesCache
+                    .sort((a, b) => new Date(b.created) - new Date(a.created)) // Ordena por mais recente
+                    .map(game => `
+                    <a href="#game/${game.id}" class="game-card">
+                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
+                        <div class="game-card-title">${game.names.international}</div>
+                    </a>
+                `).join('');
+            } else {
+                gamesGrid.innerHTML = '';
+                noGamesMsg.style.display = 'block';
             }
         }
         
-        function resetSelects(...selects) {
-            selects.forEach(sel => {
-                sel.innerHTML = '<option>...</option>';
-                sel.disabled = true;
-            });
-            leaderboardTableBody.innerHTML = '';
-            noRunsMessage.style.display = 'none';
-            levelControls.style.display = 'none';
+        async function showLeaderboardView(gameId) {
+            showView('leaderboard-view');
+            // Lógica para preencher e exibir a leaderboard aqui... (simplificado por enquanto)
+            document.getElementById('leaderboard-game-title').textContent = "Carregando Jogo...";
+            // O código completo para buscar e exibir a leaderboard seria mais complexo,
+            // envolvendo a lógica de buscar categorias, leveis, e a leaderboard em si,
+            // similar ao código da versão anterior, mas adaptado a esta nova estrutura.
+             alert(`Funcionalidade de leaderboard para o jogo ${gameId} ainda a ser implementada nesta versão.`);
         }
-
-        // --- Função de Inicialização ---
-        async function init() {
-            try {
-                // Usamos um path diferente no firebase para a lista de jogos
-                const games = await fetchWithCache(`series/${SM64_HACKS_SERIES_ID}/games?max=200`);
-                gamesCache = games.sort((a,b) => a.names.international.localeCompare(b.names.international));
+        
+        function showAdminView() {
+            showView('admin-view');
+            const syncButton = document.getElementById('sync-button');
+            const forceCheckbox = document.getElementById('force-update-checkbox');
+            const syncStatus = document.getElementById('sync-status');
+            
+            syncButton.onclick = async () => {
+                syncButton.disabled = true;
+                syncStatus.textContent = 'Sincronizando... Isso pode levar alguns minutos.';
+                syncStatus.style.color = 'var(--text-color)';
                 
-                const gameOptions = gamesCache.map(game => ({
-                    value: game.id,
-                    text: `${game.names.international} (${game.released})`
-                }));
-                populateSelect(gameSelect, gameOptions, "Selecione um jogo");
-
-            } catch (error) {
-                console.error("Erro ao inicializar:", error);
-                gameSelect.innerHTML = '<option>Falha ao carregar jogos</option>';
-            }
+                try {
+                    if (forceCheckbox.checked) {
+                        await remove(ref(db, 'games_cache'));
+                        await remove(ref(db, 'leaderboards_cache'));
+                    }
+                    
+                    // 1. Fetch all games from the series
+                    const gamesResponse = await fetch(`${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=200&embed=levels,categories`);
+                    if (!gamesResponse.ok) throw new Error('Falha ao buscar a lista de jogos da API.');
+                    const gamesData = (await gamesResponse.json()).data;
+                    
+                    const gamesToSave = {};
+                    for(const game of gamesData) {
+                        gamesToSave[game.id] = game; // Usamos o ID como chave para fácil acesso
+                    }
+                    
+                    // 2. Save to Firebase
+                    await set(ref(db, 'games_cache'), gamesToSave);
+                    
+                    gamesCache = Object.values(gamesToSave); // Atualiza o cache local
+                    syncStatus.textContent = `Sincronização concluída com sucesso! ${gamesData.length} jogos salvos.`;
+                    syncStatus.style.color = '#22c55e'; // verde
+                    
+                } catch(error) {
+                    console.error('Erro na sincronização:', error);
+                    syncStatus.textContent = `Erro na sincronização: ${error.message}`;
+                    syncStatus.style.color = 'var(--danger-color)';
+                } finally {
+                    syncButton.disabled = false;
+                }
+            };
         }
 
-        // --- Adicionar Event Listeners ---
-        gameSelect.addEventListener('change', onGameChange);
-        categoryTypeSelect.addEventListener('change', onCategoryTypeChange);
-        levelSelect.addEventListener('change', onLevelChange);
-        categorySelect.addEventListener('change', onCategoryChange);
 
-        // --- Iniciar a aplicação ---
-        document.addEventListener('DOMContentLoaded', init);
+        // --- Event Listeners Globais ---
+        window.addEventListener('hashchange', handleRouteChange);
+        document.addEventListener('DOMContentLoaded', () => {
+            // Inicializa o roteador na primeira carga da página
+            onAuthStateChanged(auth, user => {
+                if (!user && window.location.hash !== '#login') {
+                    window.location.hash = '#login';
+                }
+                handleRouteChange();
+            });
+        });
 
     </script>
 </body>
