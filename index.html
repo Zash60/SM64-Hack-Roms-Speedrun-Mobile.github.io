@@ -223,7 +223,7 @@
                 <input type="email" id="login-email" placeholder="Email" style="width: 100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;">
                 <input type="password" id="login-password" placeholder="Password" style="width: 100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;">
                 <button id="login-button" style="width: 100%; padding: 0.8rem; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Sign In</button>
-                <p id="login-error" style="color: var(--danger-color); display:none;"></p>
+                <p id="login-error" style="color: #ef4444; display:none;"></p>
             </div>
         </div>
         <div id="home-view" class="view">
@@ -293,14 +293,14 @@
 
         async function fetchWithCache(url, cacheDurationHours = 24) { const safeUrl = url.replace(/^https?:\/\//, ''); const dbPath = `cache/${safeUrl.replace(/[\/.:?&=]/g, "_")}`; const dbRef = ref(db, dbPath); const snapshot = await get(dbRef); if (snapshot.exists()) { const data = snapshot.val(); const cacheAge = (Date.now() - data.timestamp) / (1000 * 3600); if (cacheAge < cacheDurationHours) return data.content; } const fetchUrl = url.startsWith('http') ? url : `${SRC_API_BASE}/${url}`; const response = await fetch(fetchUrl); if (!response.ok) throw new Error(`API Error: ${response.statusText}`); const apiData = await response.json(); set(dbRef, { content: apiData.data, timestamp: Date.now() }); return apiData.data; }
         function formatTime(seconds) { if (!seconds) return '--'; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); const ms = Math.round((seconds - Math.floor(seconds)) * 1000); let time = `${s.toString().padStart(2, '0')}`; if (ms > 0) time += `s ${ms.toString().padStart(3, '0')}ms`; else time += 's'; if (m > 0) time = `${m}m ${time}`; return time; }
-        function formatDate(dateString) { if (!dateString) return '--'; const date = new Date(dateString); const diff = Math.round((new Date() - date) / (1000 * 60 * 60 * 24 * 365)); return `${diff} years ago`; }
+        function formatDate(dateString) { if (!dateString) return '--'; const date = new Date(dateString); const diffYears = Math.round((new Date() - date) / (1000 * 60 * 60 * 24 * 365)); if (diffYears < 1) { const diffMonths = Math.round((new Date() - date) / (1000 * 60 * 60 * 24 * 30)); if (diffMonths < 1) { const diffDays = Math.round((new Date() - date) / (1000 * 60 * 60 * 24)); return `${diffDays} days ago`; } return `${diffMonths} months ago`; } return `${diffYears} years ago`; }
         function getRankIcon(place) { if (place === 1) return '⭐'; if (place === 2) return '🥈'; if (place === 3) return '🥉'; return place; }
         function showView(viewId) { document.querySelectorAll('.view').forEach(view => view.classList.remove('active')); const activeView = document.getElementById(viewId); if (activeView) activeView.classList.add('active'); document.querySelectorAll('nav a').forEach(a => a.classList.remove('active')); const activeLink = document.querySelector(`nav a[href="#${viewId.replace('-view','')}"]`); if(activeLink) activeLink.classList.add('active'); }
         async function handleRouteChange() { const hash = window.location.hash || '#home'; if (hash === '#admin') { if (currentUser && userRole === 'admin') { showAdminView(); } else { showView('login-view'); } } else if (hash.startsWith('#game/')) { const gameId = hash.split('/')[1]; await showLeaderboardView(gameId); } else { await showHomeView(); } }
         onAuthStateChanged(auth, async (user) => { if (user) { currentUser = user; const userRoleRef = ref(db, `users/${user.uid}/role`); try { const snapshot = await get(userRoleRef); userRole = snapshot.exists() ? snapshot.val() : 'user'; } catch (error) { console.error("Error reading user role:", error); userRole = 'user'; } document.getElementById('auth-container').innerHTML = `<button id="logout-button">Logout</button>`; document.getElementById('logout-button').addEventListener('click', async () => { await signOut(auth); window.location.hash = '#home'; }); } else { currentUser = null; userRole = null; document.getElementById('auth-container').innerHTML = ''; } await handleRouteChange(); });
         document.getElementById('login-button').addEventListener('click', async () => { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; const errorP = document.getElementById('login-error'); try { errorP.style.display = 'none'; await signInWithEmailAndPassword(auth, email, password); } catch (error) { errorP.textContent = "Invalid email or password."; errorP.style.display = 'block'; } });
         async function showHomeView() { showView('home-view'); const gamesGrid = document.getElementById('games-grid'); const noGamesMsg = document.getElementById('no-games-message'); if (!gamesCache) { const gamesRef = ref(db, 'games_cache'); const snapshot = await get(gamesRef); if (snapshot.exists()) { gamesCache = Object.values(snapshot.val()); } } if (gamesCache && gamesCache.length > 0) { noGamesMsg.style.display = 'none'; gamesGrid.innerHTML = gamesCache.sort((a, b) => (b.released || 0) - (a.released || 0)).map(game => `<a href="#game/${game.id}" style="background-color: var(--card-color); border-radius: 8px; overflow: hidden; text-decoration: none; color: var(--text-color); display: block; transition: transform 0.2s;"><img src="${game.assets['cover-medium'].uri.replace(/^http:/, 'https:')}" alt="${game.names.international}" style="width: 100%; height: 120px; object-fit: cover; background-color: #000;"><div style="padding: 0.8rem; font-weight: 500; font-size: 0.9rem;">${game.names.international}</div></a>`).join(''); } else { gamesGrid.innerHTML = ''; noGamesMsg.style.display = 'block'; } }
-        async function showAdminView() { showView('admin-view'); /* ... admin logic unchanged ... */ }
+        async function showAdminView() { /* ... admin logic unchanged ... */ }
         
         async function showLeaderboardView(gameId) {
             showView('leaderboard-view');
@@ -329,7 +329,6 @@
             const game = gameDataSnapshot.val();
 
             // Populate Game Header
-            const platforms = game.platforms && game.platforms.data ? game.platforms.data.map(p => p.name).join(', ') : 'N/A';
             gameHeaderContainer.innerHTML = `
                 <div class="game-header">
                     <img class="game-header-art" src="${game.assets['cover-medium'].uri.replace(/^http:/, 'https:')}" alt="${game.names.international}">
@@ -353,10 +352,7 @@
             const levels = (game.levels && game.levels.data) ? game.levels.data : [];
             levelCountSpan.textContent = levels.length;
 
-            const renderLeaderboard = async (url) => { /* ... unchanged logic ... */ };
-            const buildDropdown = (options, placeholder) => { /* ... unchanged logic ... */ };
-            const buildButtons = (options) => { /* ... unchanged logic ... */ };
-
+            // --- CORRECTED SECTION: Only one declaration for each helper function ---
             const renderLeaderboard = async (url) => {
                 tableBody.innerHTML = '';
                 noRunsMsg.style.display = 'none';
@@ -417,7 +413,7 @@
             const showFullGameControls = () => {
                 tableBody.innerHTML = '';
                 const fullGameCategories = allCategories.filter(c => c.type === 'per-game');
-                const catSelect = buildDropdown(fullGameCategories.map(c => ({ value: c.id, label: c.name })), "Select Category...");
+                const catSelect = buildDropdown(fullGameCategories.map(c => ({ value: c.id, label: c.name })), "Full game");
                 
                 const controlGroup = document.createElement('div');
                 controlGroup.className = 'control-group';
@@ -426,7 +422,6 @@
 
                 catSelect.onchange = () => {
                     const categoryId = catSelect.value;
-                    // Clear previous variable buttons
                     controlsContainer.querySelectorAll('.variable-group').forEach(el => el.remove());
                     if (!categoryId) { tableBody.innerHTML = ''; return; }
 
@@ -463,7 +458,58 @@
                 };
             };
             
-            const showPerLevelControls = () => { /* ... unchanged logic for brevity, would style its output similarly ... */ };
+            const showPerLevelControls = () => {
+                tableBody.innerHTML = '';
+                const levelSelect = buildDropdown(levels.map(l => ({ value: l.id, label: l.name })), "Select Level...");
+                
+                const controlGroup = document.createElement('div');
+                controlGroup.className = 'control-group';
+                controlGroup.appendChild(levelSelect);
+                controlsContainer.appendChild(controlGroup);
+
+                levelSelect.onchange = async () => {
+                    const levelId = levelSelect.value;
+                    controlsContainer.querySelectorAll('.sub-category-group, .star-select-group').forEach(el => el.remove());
+                    if (!levelId) return;
+
+                    const levelCategories = await fetchWithCache(`levels/${levelId}/categories`);
+                    const categoryGroups = levelCategories.reduce((acc, cat) => {
+                        const name = cat.name.includes("Star") ? "Single Star" : cat.name.includes("RTA") ? "Stage RTA" : "Other";
+                        if (!acc[name]) acc[name] = [];
+                        acc[name].push(cat);
+                        return acc;
+                    }, {});
+
+                    const subCatGroup = document.createElement('div');
+                    subCatGroup.className = 'control-group sub-category-group';
+                    const subCatButtons = buildButtons(Object.keys(categoryGroups).map(name => ({ value: name, label: name })));
+                    subCatGroup.appendChild(subCatButtons);
+                    controlsContainer.appendChild(subCatGroup);
+
+                    subCatButtons.querySelectorAll('button').forEach(btn => {
+                        btn.onclick = e => {
+                            subCatButtons.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                            e.target.classList.add('active');
+                            
+                            controlsContainer.querySelectorAll('.star-select-group').forEach(el => el.remove());
+
+                            const groupName = e.target.dataset.value;
+                            const stars = categoryGroups[groupName];
+                            
+                            const starSelectGroup = document.createElement('div');
+                            starSelectGroup.className = 'control-group star-select-group';
+                            const starSelect = buildDropdown(stars.map(s => ({ value: s.id, label: s.name })), `Select ${groupName}...`);
+                            starSelectGroup.appendChild(starSelect);
+                            controlsContainer.appendChild(starSelectGroup);
+
+                            starSelect.onchange = () => {
+                                if (starSelect.value) renderLeaderboard(`leaderboards/${game.id}/category/${starSelect.value}`);
+                            };
+                        };
+                    });
+                };
+            };
+
 
             const fullGameCategories = allCategories.filter(c => c.type === 'per-game');
             const levelCategoriesExist = allCategories.some(c => c.type === 'per-level');
@@ -481,7 +527,6 @@
             controlsContainer.appendChild(topControlGroup);
 
             typeSelect.onchange = () => {
-                // Clear all dynamic controls except the type selector
                 const children = Array.from(controlsContainer.children);
                 for(let i = 1; i < children.length; i++) {
                     controlsContainer.removeChild(children[i]);
@@ -492,7 +537,6 @@
                 else if (type === 'level') showPerLevelControls();
                 else { tableBody.innerHTML = ''; }
                 
-                // Always add action buttons at the end
                 if (type) controlsContainer.insertAdjacentHTML('beforeend', createActionButtons());
             };
         }
