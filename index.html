@@ -1,470 +1,280 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 ROM Hacks Speedrun Mobile</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
-            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
-            projectId: "sm64-hack-roms-speedrun-mobile",
-            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
-            messagingSenderId: "499101981060",
-            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        // Speedrun.com API base URL
-        const API_BASE = 'https://www.speedrun.com/api/v1';
-        
-        // Global variables
-        let allGames = [];
-        let currentGame = null;
-        let currentCategory = null;
-        let loading = false;
-
-        // DOM elements
-        const gamesList = document.getElementById('gamesList');
-        const gameDetails = document.getElementById('gameDetails');
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        const refreshBtn = document.getElementById('refreshBtn');
-        const backBtn = document.getElementById('backBtn');
-
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', async () => {
-            await loadGamesFromFirebase();
-            if (allGames.length === 0) {
-                await fetchAllGames();
-            }
-            renderGamesList();
-        });
-
-        // Load games from Firebase
-        async function loadGamesFromFirebase() {
-            try {
-                const snapshot = await get(child(ref(database), 'games'));
-                if (snapshot.exists()) {
-                    allGames = Object.values(snapshot.val());
-                    console.log('Loaded', allGames.length, 'games from Firebase');
-                }
-            } catch (error) {
-                console.error('Error loading games from Firebase:', error);
-            }
+    <title>SM64 Hack Roms Speedrun Mobile</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 15px;
         }
-
-        // Save games to Firebase
-        async function saveGamesToFirebase() {
-            try {
-                const gamesObj = {};
-                allGames.forEach(game => {
-                    gamesObj[game.id] = game;
-                });
-                await set(ref(database, 'games'), gamesObj);
-                console.log('Saved', allGames.length, 'games to Firebase');
-            } catch (error) {
-                console.error('Error saving games to Firebase:', error);
-            }
+        h1, h2 {
+            text-align: center;
+            color: #ffffff;
         }
-
-        // Fetch all games from SM64 ROM Hacks series
-        async function fetchAllGames() {
-            showLoading(true);
-            try {
-                // Get series info
-                const seriesResponse = await fetch(`${API_BASE}/series/sm64romhacks`);
-                const seriesData = await seriesResponse.json();
-                const seriesId = seriesData.data.id;
-
-                // Get all games from the series
-                const gamesResponse = await fetch(`${API_BASE}/series/${seriesId}/games`);
-                const gamesData = await gamesResponse.json();
-                
-                allGames = [];
-                
-                // Process each game
-                for (const game of gamesData.data) {
-                    const gameDetails = await fetchGameDetails(game.id);
-                    allGames.push(gameDetails);
-                    
-                    // Add delay to avoid rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-
-                // Save to Firebase
-                await saveGamesToFirebase();
-                
-            } catch (error) {
-                console.error('Error fetching games:', error);
-                showError('Erro ao carregar jogos. Tente novamente.');
-            } finally {
-                showLoading(false);
-            }
+        #gamesContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
         }
-
-        // Fetch detailed game information
-        async function fetchGameDetails(gameId) {
-            try {
-                // Get game info
-                const gameResponse = await fetch(`${API_BASE}/games/${gameId}`);
-                const gameData = await gameResponse.json();
-                const game = gameData.data;
-
-                // Get categories
-                const categoriesResponse = await fetch(`${API_BASE}/games/${gameId}/categories`);
-                const categoriesData = await categoriesResponse.json();
-                game.categories = categoriesData.data;
-
-                // Get variables
-                const variablesResponse = await fetch(`${API_BASE}/games/${gameId}/variables`);
-                const variablesData = await variablesResponse.json();
-                game.variables = variablesData.data;
-
-                // Get levels (for IL categories)
-                try {
-                    const levelsResponse = await fetch(`${API_BASE}/games/${gameId}/levels`);
-                    const levelsData = await levelsResponse.json();
-                    game.levels = levelsData.data;
-                } catch (error) {
-                    game.levels = [];
-                }
-
-                return game;
-            } catch (error) {
-                console.error('Error fetching game details:', error);
-                return null;
-            }
+        .game-card {
+            background-color: #1e1e1e;
+            border: 1px solid #2c2c2c;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-align: center;
         }
-
-        // Render games list
-        function renderGamesList() {
-            gamesList.innerHTML = '';
-            
-            // Sort games by release date (newest first)
-            const sortedGames = [...allGames].sort((a, b) => 
-                new Date(b.released || '2000') - new Date(a.released || '2000')
-            );
-
-            sortedGames.forEach(game => {
-                const gameCard = document.createElement('div');
-                gameCard.className = 'bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow';
-                gameCard.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" class="w-16 h-16 rounded object-cover">
-                        <div class="flex-1">
-                            <h3 class="font-semibold text-gray-800">${game.names.international}</h3>
-                            <p class="text-sm text-gray-600">${game.released || 'N/A'}</p>
-                            <div class="flex flex-wrap gap-1 mt-1">
-                                ${game.platforms.map(p => `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${getPlatformName(p)}</span>`).join('')}
-                            </div>
-                        </div>
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                `;
-                gameCard.onclick = () => showGameDetails(game);
-                gamesList.appendChild(gameCard);
-            });
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
-
-        // Show game details
-        function showGameDetails(game) {
-            currentGame = game;
-            gamesList.style.display = 'none';
-            gameDetails.style.display = 'block';
-            backBtn.style.display = 'block';
-
-            const detailsContent = document.getElementById('detailsContent');
-            detailsContent.innerHTML = `
-                <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" class="w-20 h-20 rounded object-cover">
-                        <div>
-                            <h2 class="text-xl font-bold text-gray-800">${game.names.international}</h2>
-                            <p class="text-sm text-gray-600">Lançado: ${game.released || 'N/A'}</p>
-                            <div class="flex flex-wrap gap-1 mt-1">
-                                ${game.platforms.map(p => `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${getPlatformName(p)}</span>`).join('')}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    ${renderCategories(game)}
-                </div>
-            `;
+        .game-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            object-fit: cover;
         }
-
-        // Render categories
-        function renderCategories(game) {
-            const fullGameCategories = game.categories.filter(c => c.type === 'per-game');
-            const levelCategories = game.categories.filter(c => c.type === 'per-level');
-            const fullGameVariables = game.variables.filter(v => v.scope.type === 'full-game');
-
-            let html = '';
-
-            // Full Game Categories
-            if (fullGameCategories.length > 0) {
-                html += '<div class="bg-white rounded-lg shadow-md p-4">';
-                html += '<h3 class="text-lg font-semibold text-gray-800 mb-3">Full Game</h3>';
-                
-                fullGameCategories.forEach(category => {
-                    html += `<div class="mb-3 p-3 bg-gray-50 rounded-lg">`;
-                    html += `<h4 class="font-medium text-gray-700">${category.name}</h4>`;
-                    
-                    // Add version variables
-                    const versionVars = fullGameVariables.filter(v => v.isSubcategory);
-                    if (versionVars.length > 0) {
-                        html += '<div class="mt-2 space-y-2">';
-                        versionVars.forEach(variable => {
-                            html += '<div class="text-sm text-gray-600">Versão:</div>';
-                            html += '<div class="flex flex-wrap gap-2">';
-                            Object.entries(variable.values.values).forEach(([key, value]) => {
-                                html += `
-                                    <button onclick="fetchLeaderboard('${game.id}', '${category.id}', null, '${variable.id}', '${key}')" 
-                                            class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 transition-colors">
-                                        ${value.label}
-                                    </button>
-                                `;
-                            });
-                            html += '</div>';
-                        });
-                        html += '</div>';
-                    }
-                    
-                    // Default leaderboard button
-                    html += `
-                        <button onclick="fetchLeaderboard('${game.id}', '${category.id}')" 
-                                class="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                            Ver Leaderboard
-                        </button>
-                    `;
-                    html += '</div>';
-                });
-                
-                html += '</div>';
-            }
-
-            // Individual Levels (Stage RTA)
-            if (levelCategories.length > 0 && game.levels.length > 0) {
-                html += '<div class="bg-white rounded-lg shadow-md p-4">';
-                html += '<h3 class="text-lg font-semibold text-gray-800 mb-3">Stage RTA</h3>';
-                
-                game.levels.forEach(level => {
-                    const levelVars = game.variables.filter(v => v.scope.level === level.id);
-                    
-                    html += `<div class="mb-3 p-3 bg-gray-50 rounded-lg">`;
-                    html += `<h4 class="font-medium text-gray-700">${level.name}</h4>`;
-                    
-                    if (levelVars.length > 0) {
-                        const variable = levelVars[0]; // Take first variable (usually the star selector)
-                        html += '<div class="mt-2 space-y-2">';
-                        html += '<div class="text-sm text-gray-600">Estrelas:</div>';
-                        html += '<div class="flex flex-wrap gap-2">';
-                        Object.entries(variable.values.values).forEach(([key, value]) => {
-                            html += `
-                                <button onclick="fetchLeaderboard('${game.id}', '${levelCategories[0].id}', '${level.id}', '${variable.id}', '${key}')" 
-                                        class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 transition-colors">
-                                    ${value.label}
-                                </button>
-                            `;
-                        });
-                        html += '</div>';
-                        html += '</div>';
-                    }
-                    
-                    html += '</div>';
-                });
-                
-                html += '</div>';
-            }
-
-            return html;
+        .game-title {
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+            min-height: 3em; /* Garante altura consistente */
         }
-
-        // Fetch leaderboard
-        async function fetchLeaderboard(gameId, categoryId, levelId = null, variableId = null, variableValue = null) {
-            showLoading(true);
-            try {
-                let url = `${API_BASE}/leaderboards/${gameId}/category/${categoryId}`;
-                const params = [];
-                
-                if (levelId) {
-                    params.push(`level=${levelId}`);
-                }
-                
-                if (variableId && variableValue) {
-                    params.push(`var-${variableId}=${variableValue}`);
-                }
-                
-                if (params.length > 0) {
-                    url += '?' + params.join('&');
-                }
-
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                displayLeaderboard(data.data);
-                
-            } catch (error) {
-                console.error('Error fetching leaderboard:', error);
-                showError('Erro ao carregar leaderboard. Tente novamente.');
-            } finally {
-                showLoading(false);
-            }
+        #detailView {
+            padding: 10px;
         }
-
-        // Display leaderboard
-        function displayLeaderboard(leaderboard) {
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
-            modal.innerHTML = `
-                <div class="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
-                    <div class="p-4 border-b">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold">Leaderboard</h3>
-                            <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="p-4">
-                        ${leaderboard.runs.length > 0 ? `
-                            <div class="space-y-2">
-                                ${leaderboard.runs.slice(0, 10).map((run, index) => `
-                                    <div class="flex items-center justify-between p-2 ${index === 0 ? 'bg-yellow-50' : 'bg-gray-50'} rounded">
-                                        <div class="flex items-center space-x-3">
-                                            <span class="font-semibold ${index === 0 ? 'text-yellow-600' : 'text-gray-600'}">#${index + 1}</span>
-                                            <span class="text-sm text-gray-700">${formatTime(run.run.times.primary)}</span>
-                                        </div>
-                                        <span class="text-sm text-gray-500">${new Date(run.run.date).toLocaleDateString()}</span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : '<p class="text-gray-500 text-center">Nenhuma run encontrada</p>'}
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
         }
-
-        // Utility functions
-        function getPlatformName(platformId) {
-            const platforms = {
-                'nzelreqp': 'N64',
-                'w89rwelk': 'Wii VC',
-                'v06dr394': 'Wii U VC'
-            };
-            return platforms[platformId] || platformId;
+        .custom-select, #backButton {
+            width: 100%;
+            padding: 12px;
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 5px;
+            font-size: 1em;
         }
-
-        function formatTime(timeString) {
-            const duration = timeString.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?/);
-            if (!duration) return timeString;
-            
-            const hours = parseInt(duration[1]) || 0;
-            const minutes = parseInt(duration[2]) || 0;
-            const seconds = parseFloat(duration[3]) || 0;
-            
-            if (hours > 0) {
-                return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(2).padStart(5, '0')}`;
-            }
-            return `${minutes}:${seconds.toFixed(2).padStart(5, '0')}`;
+        #backButton {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            text-align: center;
+            font-weight: bold;
         }
-
-        function showLoading(show) {
-            loadingSpinner.style.display = show ? 'block' : 'none';
-            loading = show;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
         }
-
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-            errorDiv.textContent = message;
-            document.body.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 3000);
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
         }
-
-        // Event listeners
-        refreshBtn.addEventListener('click', async () => {
-            if (!loading) {
-                await fetchAllGames();
-                renderGamesList();
-            }
-        });
-
-        backBtn.addEventListener('click', () => {
-            gameDetails.style.display = 'none';
-            gamesList.style.display = 'block';
-            backBtn.style.display = 'none';
-            currentGame = null;
-        });
-
-        // Make functions globally available
-        window.fetchLeaderboard = fetchLeaderboard;
-    </script>
+        th {
+            background-color: #2a2a2a;
+        }
+        td:first-child { font-weight: bold; }
+        .loader {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <!-- Header -->
-    <header class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="container mx-auto">
-            <h1 class="text-xl font-bold">SM64 ROM Hacks Speedrun</h1>
-            <p class="text-sm opacity-90">Leaderboards Mobile</p>
-        </div>
-    </header>
+<body>
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span class="text-gray-700">Carregando...</span>
-        </div>
+    <div id="mainView">
+        <h1>SM64 Hack Roms Speedruns</h1>
+        <div id="gamesContainer" class="loader">Carregando jogos...</div>
     </div>
 
-    <!-- Main Content -->
-    <main class="container mx-auto p-4">
-        <!-- Games List -->
-        <div id="gamesList" class="space-y-3">
-            <!-- Games will be populated here -->
+    <div id="detailView" style="display: none;">
+        <h2 id="gameName"></h2>
+        <div class="controls">
+            <button id="backButton">← Voltar para a Lista de Jogos</button>
+            <select id="categorySelect" class="custom-select"></select>
         </div>
+        <div id="leaderboardContainer"></div>
+    </div>
 
-        <!-- Game Details -->
-        <div id="gameDetails" style="display: none;">
-            <div id="detailsContent">
-                <!-- Game details will be populated here -->
-            </div>
-        </div>
-    </main>
+    <script type="module">
+      // Importa as funções que você precisa dos SDKs que você precisa
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+      import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2">
-        <div class="container mx-auto flex justify-around">
-            <button id="refreshBtn" class="flex flex-col items-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                <span class="text-xs mt-1">Atualizar</span>
-            </button>
-            
-            <button id="backBtn" style="display: none;" class="flex flex-col items-center p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                <span class="text-xs mt-1">Voltar</span>
-            </button>
-        </div>
-    </nav>
+      // Sua configuração do app da web do Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+        authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+        databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
+        projectId: "sm64-hack-roms-speedrun-mobile",
+        storageBucket: "sm64-hack-roms-speedrun-mobile.appspot.com",
+        messagingSenderId: "499101981060",
+        appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+      };
+
+      // Inicializa o Firebase
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      // Elementos da UI
+      const gamesContainer = document.getElementById('gamesContainer');
+      const mainView = document.getElementById('mainView');
+      const detailView = document.getElementById('detailView');
+      const gameName = document.getElementById('gameName');
+      const categorySelect = document.getElementById('categorySelect');
+      const leaderboardContainer = document.getElementById('leaderboardContainer');
+      const backButton = document.getElementById('backButton');
+
+      const API_BASE = 'https://www.speedrun.com/api/v1';
+
+      // Função para buscar dados da API com cache simples para nomes de jogadores
+      const playerCache = new Map();
+      async function fetchAPI(endpoint) {
+          const response = await fetch(`${API_BASE}${endpoint}`);
+          if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+          const data = await response.json();
+          return data.data;
+      }
+      
+      async function getPlayerName(playerData) {
+          if (playerData.rel === 'guest') {
+              return playerData.name;
+          }
+          if (playerData.rel === 'user') {
+              if (playerCache.has(playerData.id)) {
+                  return playerCache.get(playerData.id);
+              }
+              const player = await fetchAPI(`/users/${playerData.id}`);
+              const playerName = player.names.international;
+              playerCache.set(playerData.id, playerName);
+              return playerName;
+          }
+          return 'Jogador Anônimo';
+      }
+
+      // Carrega e exibe todos os jogos da série
+      async function loadGames() {
+          try {
+              const games = await fetchAPI('/series/sm64romhacks/games?max=200&orderby=released&direction=desc');
+              gamesContainer.innerHTML = ''; // Limpa o loader
+              for (const game of games) {
+                  const gameCard = document.createElement('div');
+                  gameCard.className = 'game-card';
+                  gameCard.innerHTML = `
+                      <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" loading="lazy">
+                      <div class="game-title">${game.names.international}</div>
+                  `;
+                  gameCard.onclick = () => showGameDetails(game.id, game.names.international);
+                  gamesContainer.appendChild(gameCard);
+              }
+          } catch (error) {
+              gamesContainer.innerHTML = 'Falha ao carregar jogos. Tente recarregar a página.';
+              console.error(error);
+          }
+      }
+
+      // Mostra a visão de detalhes para um jogo específico
+      async function showGameDetails(gameId, name) {
+          mainView.style.display = 'none';
+          detailView.style.display = 'block';
+          gameName.textContent = name;
+          leaderboardContainer.innerHTML = '<div class="loader">Carregando categorias...</div>';
+          categorySelect.innerHTML = '';
+
+          try {
+              const categories = await fetchAPI(`/games/${gameId}/categories`);
+              const perGameCategories = categories.filter(cat => cat.type === 'per-game');
+
+              if (perGameCategories.length > 0) {
+                  perGameCategories.forEach(category => {
+                      const option = new Option(category.name, category.id);
+                      categorySelect.add(option);
+                  });
+                  
+                  categorySelect.onchange = () => loadLeaderboard(gameId, categorySelect.value);
+                  loadLeaderboard(gameId, perGameCategories[0].id); // Carrega o placar da primeira categoria
+              } else {
+                 leaderboardContainer.innerHTML = "Nenhuma categoria encontrada para este jogo."
+              }
+
+          } catch (error) {
+              leaderboardContainer.innerHTML = 'Falha ao carregar categorias.';
+              console.error(error);
+          }
+      }
+
+      // Carrega o placar para uma categoria específica
+      async function loadLeaderboard(gameId, categoryId) {
+          leaderboardContainer.innerHTML = '<div class="loader">Carregando placar...</div>';
+          try {
+              const leaderboardData = await fetchAPI(`/leaderboards/${gameId}/category/${categoryId}?top=20`);
+              if (!leaderboardData || leaderboardData.runs.length === 0) {
+                  leaderboardContainer.innerHTML = 'Nenhum tempo registrado para esta categoria.';
+                  return;
+              }
+
+              let tableHTML = '<table><thead><tr><th>#</th><th>Jogador</th><th>Tempo</th></tr></thead><tbody>';
+              
+              const playerPromises = leaderboardData.runs.map(async (runData) => {
+                  const playerName = await getPlayerName(runData.run.players[0]);
+                  return `
+                      <tr>
+                          <td>${runData.place}</td>
+                          <td>${playerName}</td>
+                          <td>${formatTime(runData.run.times.primary_t)}</td>
+                      </tr>
+                  `;
+              });
+
+              const rows = await Promise.all(playerPromises);
+              tableHTML += rows.join('');
+              tableHTML += '</tbody></table>';
+              leaderboardContainer.innerHTML = tableHTML;
+
+          } catch (error) {
+              leaderboardContainer.innerHTML = 'Falha ao carregar o placar.';
+              console.error(error);
+          }
+      }
+      
+      // Formata segundos para um formato de tempo legível (ex: 1h 23m 45.678s)
+      function formatTime(totalSeconds) {
+          if (totalSeconds <= 0) return "0s";
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+
+          let timeString = '';
+          if (hours > 0) timeString += `${hours}h `;
+          if (minutes > 0) timeString += `${minutes}m `;
+          
+          // Formata segundos com milissegundos
+          timeString += `${seconds.toFixed(3).replace('.', 's ')}ms`;
+          
+          return timeString.replace('s 000ms', 's'); // Remove milissegundos se for zero
+      }
+
+      // Event Listener para o botão de voltar
+      backButton.onclick = () => {
+          detailView.style.display = 'none';
+          mainView.style.display = 'block';
+      };
+
+      // Carrega os jogos quando a página é aberta
+      loadGames();
+
+    </script>
 </body>
 </html>
