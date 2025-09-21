@@ -1,548 +1,470 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 ROM Hacks Speedruns</title>
-    <style>
-        :root {
-            --bg-color: #18181b;
-            --card-color: #27272a;
-            --card-light-color: #3f3f46;
-            --text-color: #e4e4e7;
-            --text-color-secondary: #a1a1aa;
-            --border-color: #3f3f46;
-            --primary-color: #ffffff; /* White for active text/borders */
-            --button-bg: #3f3f46;
-            --button-hover-bg: #52525b;
-            --boost-color-start: #ef4444;
-            --boost-color-end: #f472b6;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+    <title>SM64 ROM Hacks Speedrun Mobile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getDatabase, ref, set, get, child, onValue } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
-        /* --- Global Styles & Reset --- */
-        * {
-            box-sizing: border-box;
-        }
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+            projectId: "sm64-hack-roms-speedrun-mobile",
+            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
+            messagingSenderId: "499101981060",
+            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+        };
 
-        body {
-            font-family: var(--font-family);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            font-size: 16px;
-        }
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
+        // Speedrun.com API base URL
+        const API_BASE = 'https://www.speedrun.com/api/v1';
         
-        .view { display: none; }
-        .view.active { display: block; }
-        a { color: var(--text-color); text-decoration: none; }
-        h1, h2, h3, h4 { margin-top: 0; }
+        // Global variables
+        let allGames = [];
+        let currentGame = null;
+        let currentCategory = null;
+        let loading = false;
 
-        /* --- Navigation --- */
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            background-color: var(--card-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-        nav a { font-weight: 500; padding: 0.5rem; border-bottom: 3px solid transparent; transition: all 0.2s; }
-        nav a:hover { color: var(--primary-color); }
-        nav a.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        // DOM elements
+        const gamesList = document.getElementById('gamesList');
+        const gameDetails = document.getElementById('gameDetails');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const backBtn = document.getElementById('backBtn');
 
-        /* --- Game Header (Leaderboard View) --- */
-        .game-header {
-            display: flex;
-            gap: 1.5rem;
-            align-items: flex-start;
-            padding: 1.5rem;
-            background-color: var(--card-color);
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-        }
-        .game-header-art { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
-        .game-header-details { flex-grow: 1; }
-        .game-header-title { font-size: 1.75rem; font-weight: 700; margin: 0 0 0.25rem; }
-        .game-header-title .year { font-weight: 400; color: var(--text-color-secondary); }
-        .game-header-subtitle { color: var(--text-color-secondary); margin: 0 0 1rem; font-size: 1rem; }
-        .game-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-        .game-tags span {
-            background-color: var(--button-bg);
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        .game-actions { display: flex; gap: 0.5rem; }
-        .game-actions .action-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.6rem 1rem;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .game-actions .action-btn:hover { opacity: 0.85; }
-        .game-actions .btn-boost {
-            background-image: linear-gradient(to right, var(--boost-color-start), var(--boost-color-end));
-            color: white;
-        }
-        .game-actions .btn-follow, .game-actions .btn-more {
-            background-color: var(--button-bg);
-            color: var(--text-color);
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadGamesFromFirebase();
+            if (allGames.length === 0) {
+                await fetchAllGames();
+            }
+            renderGamesList();
+        });
+
+        // Load games from Firebase
+        async function loadGamesFromFirebase() {
+            try {
+                const snapshot = await get(child(ref(database), 'games'));
+                if (snapshot.exists()) {
+                    allGames = Object.values(snapshot.val());
+                    console.log('Loaded', allGames.length, 'games from Firebase');
+                }
+            } catch (error) {
+                console.error('Error loading games from Firebase:', error);
+            }
         }
 
-        /* --- Tabs --- */
-        .tabs {
-            display: flex;
-            gap: 1.5rem;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 1.5rem;
-        }
-        .tabs a {
-            padding: 0.75rem 0.25rem;
-            font-weight: 600;
-            color: var(--text-color-secondary);
-            border-bottom: 3px solid transparent;
-            position: relative;
-        }
-        .tabs a.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
-        .tabs a .count {
-            background-color: var(--button-bg);
-            color: var(--text-color);
-            font-size: 0.75rem;
-            padding: 0.1rem 0.4rem;
-            border-radius: 8px;
-            margin-left: 0.5rem;
+        // Save games to Firebase
+        async function saveGamesToFirebase() {
+            try {
+                const gamesObj = {};
+                allGames.forEach(game => {
+                    gamesObj[game.id] = game;
+                });
+                await set(ref(database, 'games'), gamesObj);
+                console.log('Saved', allGames.length, 'games to Firebase');
+            } catch (error) {
+                console.error('Error saving games to Firebase:', error);
+            }
         }
 
-        /* --- Leaderboard Controls --- */
-        #leaderboard-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+        // Fetch all games from SM64 ROM Hacks series
+        async function fetchAllGames() {
+            showLoading(true);
+            try {
+                // Get series info
+                const seriesResponse = await fetch(`${API_BASE}/series/sm64romhacks`);
+                const seriesData = await seriesResponse.json();
+                const seriesId = seriesData.data.id;
+
+                // Get all games from the series
+                const gamesResponse = await fetch(`${API_BASE}/series/${seriesId}/games`);
+                const gamesData = await gamesResponse.json();
+                
+                allGames = [];
+                
+                // Process each game
+                for (const game of gamesData.data) {
+                    const gameDetails = await fetchGameDetails(game.id);
+                    allGames.push(gameDetails);
+                    
+                    // Add delay to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                // Save to Firebase
+                await saveGamesToFirebase();
+                
+            } catch (error) {
+                console.error('Error fetching games:', error);
+                showError('Erro ao carregar jogos. Tente novamente.');
+            } finally {
+                showLoading(false);
+            }
         }
-        .control-group { display: flex; flex-direction: column; gap: 1rem; }
-        .custom-select, select {
-            background-color: var(--card-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.8rem 1rem;
-            font-size: 1rem;
-            color: var(--text-color);
-            width: 100%;
-            -webkit-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23a1a1aa' class='w-6 h-6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
+
+        // Fetch detailed game information
+        async function fetchGameDetails(gameId) {
+            try {
+                // Get game info
+                const gameResponse = await fetch(`${API_BASE}/games/${gameId}`);
+                const gameData = await gameResponse.json();
+                const game = gameData.data;
+
+                // Get categories
+                const categoriesResponse = await fetch(`${API_BASE}/games/${gameId}/categories`);
+                const categoriesData = await categoriesResponse.json();
+                game.categories = categoriesData.data;
+
+                // Get variables
+                const variablesResponse = await fetch(`${API_BASE}/games/${gameId}/variables`);
+                const variablesData = await variablesResponse.json();
+                game.variables = variablesData.data;
+
+                // Get levels (for IL categories)
+                try {
+                    const levelsResponse = await fetch(`${API_BASE}/games/${gameId}/levels`);
+                    const levelsData = await levelsResponse.json();
+                    game.levels = levelsData.data;
+                } catch (error) {
+                    game.levels = [];
+                }
+
+                return game;
+            } catch (error) {
+                console.error('Error fetching game details:', error);
+                return null;
+            }
         }
-        .category-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-        .category-buttons button {
-            padding: 0.6rem 1.2rem;
-            background-color: var(--card-light-color);
-            color: var(--text-color);
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .category-buttons button:hover { background-color: var(--button-hover-bg); }
-        .category-buttons button.active { background-color: var(--text-color); color: var(--bg-color); }
-        .control-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 0.75rem;
-        }
-        .control-actions button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.8rem;
-            background-color: var(--card-light-color);
-            color: var(--text-color);
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .control-actions button.primary { background-color: #313134; }
 
-
-        /* --- Leaderboard Table --- */
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1rem; text-align: left; }
-        thead { border-bottom: 1px solid var(--border-color); }
-        th { font-size: 0.8rem; color: var(--text-color-secondary); text-transform: uppercase; font-weight: 500; }
-        tbody tr { border-bottom: 1px solid var(--border-color); }
-        tbody tr:last-child { border-bottom: none; }
-        td { font-weight: 500; }
-        .player-cell { display: flex; align-items: center; gap: 0.75rem; }
-        .rank-icon { font-size: 1.2rem; }
-        .date-cell { color: var(--text-color-secondary); }
-
-        /* --- Other & Utility --- */
-        #loader { text-align: center; padding: 2rem; font-size: 1.2rem; display: none; }
-        #no-runs-message { text-align: center; padding: 2rem; color: var(--text-color-secondary); display: none; }
-        .login-card { background-color: var(--card-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem; }
-
-    </style>
-</head>
-<body>
-
-    <nav>
-        <div id="main-nav-links">
-            <a href="#home">Home</a>
-            <a href="#admin">Moderation</a>
-        </div>
-        <div id="auth-container"></div>
-    </nav>
-
-    <div class="container">
-        <div id="login-view" class="view">
-             <div class="login-card">
-                <h2>Moderator Access Login</h2>
-                <p>You must be logged in as an administrator to access this page.</p>
-                <input type="email" id="login-email" placeholder="Email" style="width: 100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;">
-                <input type="password" id="login-password" placeholder="Password" style="width: 100%; padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box; margin-bottom: 1rem;">
-                <button id="login-button" style="width: 100%; padding: 0.8rem; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer;">Sign In</button>
-                <p id="login-error" style="color: #ef4444; display:none;"></p>
-            </div>
-        </div>
-        <div id="home-view" class="view">
-            <h2 style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Games</h2>
-            <div id="games-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem;"></div>
-            <p id="no-games-message" style="display: none;">No games found. An administrator needs to sync the data.</p>
-        </div>
-        <div id="admin-view" class="view">
-            <h2>Moderation Panel</h2>
-            <div class="login-card">
-                <h3>Synchronization</h3>
-                <p>Fetch and add new SM64 Hack Roms, including categories, levels, and variables, directly from the official Speedrun.com series.</p>
-                <button id="sync-button">Sync with Speedrun.com</button>
-                <label style="display: block; margin-top: 1rem;"><input type="checkbox" id="force-update-checkbox"> Force update (deletes all existing data)</label>
-                <p id="sync-status" style="margin-top: 1rem;"></p>
-            </div>
-        </div>
-
-        <div id="leaderboard-view" class="view">
-            <!-- Game Header will be populated by JS -->
-            <div id="game-header-container"></div>
+        // Render games list
+        function renderGamesList() {
+            gamesList.innerHTML = '';
             
-            <!-- Tabs -->
-            <div class="tabs">
-                <a href="#" class="active">Leaderboards</a>
-                <a href="#">Levels <span id="level-count" class="count"></span></a>
-                <a href="#">News</a>
-                <a href="#">...</a>
-            </div>
+            // Sort games by release date (newest first)
+            const sortedGames = [...allGames].sort((a, b) => 
+                new Date(b.released || '2000') - new Date(a.released || '2000')
+            );
 
-            <!-- Controls -->
-            <div id="leaderboard-controls"></div>
+            sortedGames.forEach(game => {
+                const gameCard = document.createElement('div');
+                gameCard.className = 'bg-white rounded-lg shadow-md p-4 cursor-pointer hover:shadow-lg transition-shadow';
+                gameCard.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" class="w-16 h-16 rounded object-cover">
+                        <div class="flex-1">
+                            <h3 class="font-semibold text-gray-800">${game.names.international}</h3>
+                            <p class="text-sm text-gray-600">${game.released || 'N/A'}</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${game.platforms.map(p => `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${getPlatformName(p)}</span>`).join('')}
+                            </div>
+                        </div>
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                `;
+                gameCard.onclick = () => showGameDetails(game);
+                gamesList.appendChild(gameCard);
+            });
+        }
 
-            <!-- Leaderboard Table -->
-            <div id="loader">Loading Leaderboard...</div>
-            <table>
-                <thead><tr><th>#</th><th>Player</th><th>Time</th><th class="date-cell">Date</th></tr></thead>
-                <tbody id="leaderboard-table-body"></tbody>
-            </table>
-            <p id="no-runs-message">No runs found for this category.</p>
+        // Show game details
+        function showGameDetails(game) {
+            currentGame = game;
+            gamesList.style.display = 'none';
+            gameDetails.style.display = 'block';
+            backBtn.style.display = 'block';
+
+            const detailsContent = document.getElementById('detailsContent');
+            detailsContent.innerHTML = `
+                <div class="bg-white rounded-lg shadow-md p-4 mb-4">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" class="w-20 h-20 rounded object-cover">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">${game.names.international}</h2>
+                            <p class="text-sm text-gray-600">Lançado: ${game.released || 'N/A'}</p>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                ${game.platforms.map(p => `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${getPlatformName(p)}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    ${renderCategories(game)}
+                </div>
+            `;
+        }
+
+        // Render categories
+        function renderCategories(game) {
+            const fullGameCategories = game.categories.filter(c => c.type === 'per-game');
+            const levelCategories = game.categories.filter(c => c.type === 'per-level');
+            const fullGameVariables = game.variables.filter(v => v.scope.type === 'full-game');
+
+            let html = '';
+
+            // Full Game Categories
+            if (fullGameCategories.length > 0) {
+                html += '<div class="bg-white rounded-lg shadow-md p-4">';
+                html += '<h3 class="text-lg font-semibold text-gray-800 mb-3">Full Game</h3>';
+                
+                fullGameCategories.forEach(category => {
+                    html += `<div class="mb-3 p-3 bg-gray-50 rounded-lg">`;
+                    html += `<h4 class="font-medium text-gray-700">${category.name}</h4>`;
+                    
+                    // Add version variables
+                    const versionVars = fullGameVariables.filter(v => v.isSubcategory);
+                    if (versionVars.length > 0) {
+                        html += '<div class="mt-2 space-y-2">';
+                        versionVars.forEach(variable => {
+                            html += '<div class="text-sm text-gray-600">Versão:</div>';
+                            html += '<div class="flex flex-wrap gap-2">';
+                            Object.entries(variable.values.values).forEach(([key, value]) => {
+                                html += `
+                                    <button onclick="fetchLeaderboard('${game.id}', '${category.id}', null, '${variable.id}', '${key}')" 
+                                            class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 transition-colors">
+                                        ${value.label}
+                                    </button>
+                                `;
+                            });
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+                    
+                    // Default leaderboard button
+                    html += `
+                        <button onclick="fetchLeaderboard('${game.id}', '${category.id}')" 
+                                class="mt-2 w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                            Ver Leaderboard
+                        </button>
+                    `;
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+            }
+
+            // Individual Levels (Stage RTA)
+            if (levelCategories.length > 0 && game.levels.length > 0) {
+                html += '<div class="bg-white rounded-lg shadow-md p-4">';
+                html += '<h3 class="text-lg font-semibold text-gray-800 mb-3">Stage RTA</h3>';
+                
+                game.levels.forEach(level => {
+                    const levelVars = game.variables.filter(v => v.scope.level === level.id);
+                    
+                    html += `<div class="mb-3 p-3 bg-gray-50 rounded-lg">`;
+                    html += `<h4 class="font-medium text-gray-700">${level.name}</h4>`;
+                    
+                    if (levelVars.length > 0) {
+                        const variable = levelVars[0]; // Take first variable (usually the star selector)
+                        html += '<div class="mt-2 space-y-2">';
+                        html += '<div class="text-sm text-gray-600">Estrelas:</div>';
+                        html += '<div class="flex flex-wrap gap-2">';
+                        Object.entries(variable.values.values).forEach(([key, value]) => {
+                            html += `
+                                <button onclick="fetchLeaderboard('${game.id}', '${levelCategories[0].id}', '${level.id}', '${variable.id}', '${key}')" 
+                                        class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 transition-colors">
+                                    ${value.label}
+                                </button>
+                            `;
+                        });
+                        html += '</div>';
+                        html += '</div>';
+                    }
+                    
+                    html += '</div>';
+                });
+                
+                html += '</div>';
+            }
+
+            return html;
+        }
+
+        // Fetch leaderboard
+        async function fetchLeaderboard(gameId, categoryId, levelId = null, variableId = null, variableValue = null) {
+            showLoading(true);
+            try {
+                let url = `${API_BASE}/leaderboards/${gameId}/category/${categoryId}`;
+                const params = [];
+                
+                if (levelId) {
+                    params.push(`level=${levelId}`);
+                }
+                
+                if (variableId && variableValue) {
+                    params.push(`var-${variableId}=${variableValue}`);
+                }
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                displayLeaderboard(data.data);
+                
+            } catch (error) {
+                console.error('Error fetching leaderboard:', error);
+                showError('Erro ao carregar leaderboard. Tente novamente.');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display leaderboard
+        function displayLeaderboard(leaderboard) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg max-w-md w-full max-h-[80vh] overflow-y-auto">
+                    <div class="p-4 border-b">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold">Leaderboard</h3>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        ${leaderboard.runs.length > 0 ? `
+                            <div class="space-y-2">
+                                ${leaderboard.runs.slice(0, 10).map((run, index) => `
+                                    <div class="flex items-center justify-between p-2 ${index === 0 ? 'bg-yellow-50' : 'bg-gray-50'} rounded">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="font-semibold ${index === 0 ? 'text-yellow-600' : 'text-gray-600'}">#${index + 1}</span>
+                                            <span class="text-sm text-gray-700">${formatTime(run.run.times.primary)}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-500">${new Date(run.run.date).toLocaleDateString()}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="text-gray-500 text-center">Nenhuma run encontrada</p>'}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Utility functions
+        function getPlatformName(platformId) {
+            const platforms = {
+                'nzelreqp': 'N64',
+                'w89rwelk': 'Wii VC',
+                'v06dr394': 'Wii U VC'
+            };
+            return platforms[platformId] || platformId;
+        }
+
+        function formatTime(timeString) {
+            const duration = timeString.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?/);
+            if (!duration) return timeString;
+            
+            const hours = parseInt(duration[1]) || 0;
+            const minutes = parseInt(duration[2]) || 0;
+            const seconds = parseFloat(duration[3]) || 0;
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toFixed(2).padStart(5, '0')}`;
+            }
+            return `${minutes}:${seconds.toFixed(2).padStart(5, '0')}`;
+        }
+
+        function showLoading(show) {
+            loadingSpinner.style.display = show ? 'block' : 'none';
+            loading = show;
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 3000);
+        }
+
+        // Event listeners
+        refreshBtn.addEventListener('click', async () => {
+            if (!loading) {
+                await fetchAllGames();
+                renderGamesList();
+            }
+        });
+
+        backBtn.addEventListener('click', () => {
+            gameDetails.style.display = 'none';
+            gamesList.style.display = 'block';
+            backBtn.style.display = 'none';
+            currentGame = null;
+        });
+
+        // Make functions globally available
+        window.fetchLeaderboard = fetchLeaderboard;
+    </script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="container mx-auto">
+            <h1 class="text-xl font-bold">SM64 ROM Hacks Speedrun</h1>
+            <p class="text-sm opacity-90">Leaderboards Mobile</p>
+        </div>
+    </header>
+
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Carregando...</span>
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-        import { getDatabase, ref, get, set, remove } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
+    <!-- Main Content -->
+    <main class="container mx-auto p-4">
+        <!-- Games List -->
+        <div id="gamesList" class="space-y-3">
+            <!-- Games will be populated here -->
+        </div>
 
-        const firebaseConfig = {
-             apiKey: "AIzaSyDNG_9DyHMlJnXZzDp9TNk20ulfCNxMraU",
-            authDomain: "sm64-hacks-rom-speedrun-mobile.firebaseapp.com",
-            databaseURL: "https://sm64-hacks-rom-speedrun-mobile-default-rtdb.firebaseio.com",
-            projectId: "sm64-hacks-rom-speedrun-mobile",
-            storageBucket: "sm64-hacks-rom-speedrun-mobile.appspot.com",
-            messagingSenderId: "956519798910",
-            appId: "1:956519798910:web:722d40876cedd11ec3602f"
-        };
+        <!-- Game Details -->
+        <div id="gameDetails" style="display: none;">
+            <div id="detailsContent">
+                <!-- Game details will be populated here -->
+            </div>
+        </div>
+    </main>
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        
-        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
-        const SM64_HACKS_SERIES_ID = 'sm64romhacks';
-        let currentUser = null, userRole = null, gamesCache = null;
-        const playerCache = new Map();
-
-        async function fetchWithCache(url, cacheDurationHours = 24) { const safeUrl = url.replace(/^https?:\/\//, ''); const dbPath = `cache/${safeUrl.replace(/[\/.:?&=]/g, "_")}`; const dbRef = ref(db, dbPath); const snapshot = await get(dbRef); if (snapshot.exists()) { const data = snapshot.val(); const cacheAge = (Date.now() - data.timestamp) / (1000 * 3600); if (cacheAge < cacheDurationHours) return data.content; } const fetchUrl = url.startsWith('http') ? url : `${SRC_API_BASE}/${url}`; const response = await fetch(fetchUrl); if (!response.ok) throw new Error(`API Error: ${response.statusText}`); const apiData = await response.json(); set(dbRef, { content: apiData.data, timestamp: Date.now() }); return apiData.data; }
-        function formatTime(seconds) { if (!seconds) return '--'; const m = Math.floor(seconds / 60); const s = Math.floor(seconds % 60); const ms = Math.round((seconds - Math.floor(seconds)) * 1000); let time = `${s.toString().padStart(2, '0')}`; if (ms > 0) time += `s ${ms.toString().padStart(3, '0')}ms`; else time += 's'; if (m > 0) time = `${m}m ${time}`; return time; }
-        function formatDate(dateString) { if (!dateString) return '--'; const date = new Date(dateString); const diffYears = Math.round((new Date() - date) / (1000 * 60 * 60 * 24 * 365)); if (diffYears < 1) { const diffMonths = Math.round((new Date() - date) / (1000 * 60 * 60 * 24 * 30)); if (diffMonths < 1) { const diffDays = Math.round((new Date() - date) / (1000 * 60 * 60 * 24)); return `${diffDays} days ago`; } return `${diffMonths} months ago`; } return `${diffYears} years ago`; }
-        function getRankIcon(place) { if (place === 1) return '⭐'; if (place === 2) return '🥈'; if (place === 3) return '🥉'; return place; }
-        function showView(viewId) { document.querySelectorAll('.view').forEach(view => view.classList.remove('active')); const activeView = document.getElementById(viewId); if (activeView) activeView.classList.add('active'); document.querySelectorAll('nav a').forEach(a => a.classList.remove('active')); const activeLink = document.querySelector(`nav a[href="#${viewId.replace('-view','')}"]`); if(activeLink) activeLink.classList.add('active'); }
-        async function handleRouteChange() { const hash = window.location.hash || '#home'; if (hash === '#admin') { if (currentUser && userRole === 'admin') { showAdminView(); } else { showView('login-view'); } } else if (hash.startsWith('#game/')) { const gameId = hash.split('/')[1]; await showLeaderboardView(gameId); } else { await showHomeView(); } }
-        onAuthStateChanged(auth, async (user) => { if (user) { currentUser = user; const userRoleRef = ref(db, `users/${user.uid}/role`); try { const snapshot = await get(userRoleRef); userRole = snapshot.exists() ? snapshot.val() : 'user'; } catch (error) { console.error("Error reading user role:", error); userRole = 'user'; } document.getElementById('auth-container').innerHTML = `<button id="logout-button">Logout</button>`; document.getElementById('logout-button').addEventListener('click', async () => { await signOut(auth); window.location.hash = '#home'; }); } else { currentUser = null; userRole = null; document.getElementById('auth-container').innerHTML = ''; } await handleRouteChange(); });
-        document.getElementById('login-button').addEventListener('click', async () => { const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; const errorP = document.getElementById('login-error'); try { errorP.style.display = 'none'; await signInWithEmailAndPassword(auth, email, password); } catch (error) { errorP.textContent = "Invalid email or password."; errorP.style.display = 'block'; } });
-        async function showHomeView() { showView('home-view'); const gamesGrid = document.getElementById('games-grid'); const noGamesMsg = document.getElementById('no-games-message'); if (!gamesCache) { const gamesRef = ref(db, 'games_cache'); const snapshot = await get(gamesRef); if (snapshot.exists()) { gamesCache = Object.values(snapshot.val()); } } if (gamesCache && gamesCache.length > 0) { noGamesMsg.style.display = 'none'; gamesGrid.innerHTML = gamesCache.sort((a, b) => (b.released || 0) - (a.released || 0)).map(game => `<a href="#game/${game.id}" style="background-color: var(--card-color); border-radius: 8px; overflow: hidden; text-decoration: none; color: var(--text-color); display: block; transition: transform 0.2s;"><img src="${game.assets['cover-medium'].uri.replace(/^http:/, 'https:')}" alt="${game.names.international}" style="width: 100%; height: 120px; object-fit: cover; background-color: #000;"><div style="padding: 0.8rem; font-weight: 500; font-size: 0.9rem;">${game.names.international}</div></a>`).join(''); } else { gamesGrid.innerHTML = ''; noGamesMsg.style.display = 'block'; } }
-        async function showAdminView() { /* ... admin logic unchanged ... */ }
-        
-        async function showLeaderboardView(gameId) {
-            showView('leaderboard-view');
-            const gameHeaderContainer = document.getElementById('game-header-container');
-            const levelCountSpan = document.getElementById('level-count');
-            const controlsContainer = document.getElementById('leaderboard-controls');
-            const tableBody = document.getElementById('leaderboard-table-body');
-            const loader = document.getElementById('loader');
-            const noRunsMsg = document.getElementById('no-runs-message');
-
-            const resetUI = () => {
-                gameHeaderContainer.innerHTML = '<h2>Loading Game...</h2>';
-                levelCountSpan.textContent = '';
-                controlsContainer.innerHTML = '';
-                tableBody.innerHTML = '';
-                loader.style.display = 'none';
-                noRunsMsg.style.display = 'none';
-            };
-            resetUI();
-
-            const gameDataSnapshot = await get(ref(db, `games_cache/${gameId}`));
-            if (!gameDataSnapshot.exists()) {
-                gameHeaderContainer.innerHTML = '<h2>Game not found in cache. Please sync.</h2>';
-                return;
-            }
-            const game = gameDataSnapshot.val();
-
-            // Populate Game Header
-            gameHeaderContainer.innerHTML = `
-                <div class="game-header">
-                    <img class="game-header-art" src="${game.assets['cover-medium'].uri.replace(/^http:/, 'https:')}" alt="${game.names.international}">
-                    <div class="game-header-details">
-                        <h1 class="game-header-title">${game.names.international} <span class="year">(${game.released})</span></h1>
-                        <p class="game-header-subtitle">Super Mario 64 ROM Hacks Series</p>
-                        <div class="game-tags">
-                            <span>ROM Hack</span>
-                            ${game.platforms.data.map(p => `<span>${p.name}</span>`).join('')}
-                        </div>
-                        <div class="game-actions">
-                             <button class="action-btn btn-boost">🛹 Boost</button>
-                             <button class="action-btn btn-follow">⭐ Follow</button>
-                             <button class="action-btn btn-more">...</button>
-                        </div>
-                    </div>
-                </div>`;
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2">
+        <div class="container mx-auto flex justify-around">
+            <button id="refreshBtn" class="flex flex-col items-center p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span class="text-xs mt-1">Atualizar</span>
+            </button>
             
-            const allCategories = (game.categories && game.categories.data) ? game.categories.data : [];
-            const allVariables = (game.variables && game.variables.data) ? game.variables.data : [];
-            const levels = (game.levels && game.levels.data) ? game.levels.data : [];
-            levelCountSpan.textContent = levels.length;
-
-            // --- CORRECTED SECTION: Only one declaration for each helper function ---
-            const renderLeaderboard = async (url) => {
-                tableBody.innerHTML = '';
-                noRunsMsg.style.display = 'none';
-                loader.style.display = 'block';
-                try {
-                    const leaderboard = await fetchWithCache(url);
-                    if (!leaderboard.runs || leaderboard.runs.length === 0) {
-                        noRunsMsg.style.display = 'block';
-                        return;
-                    }
-                    const playerIds = [...new Set(leaderboard.runs.map(r => r.run.players[0].id).filter(id => id))];
-                    if (playerIds.length > 0) {
-                        await Promise.all(playerIds.map(id => {
-                            if (!playerCache.has(id)) {
-                                return fetchWithCache(`users/${id}`).then(p => playerCache.set(id, p.names.international));
-                            }
-                        }));
-                    }
-                    tableBody.innerHTML = leaderboard.runs.map((runData) => {
-                        const run = runData.run;
-                        const player = run.players[0];
-                        const playerName = player.id ? playerCache.get(player.id) : player.name;
-                        return `<tr>
-                                    <td><span class="rank-icon">${getRankIcon(runData.place)}</span></td>
-                                    <td class="player-cell">${playerName || 'Guest'}</td>
-                                    <td>${formatTime(run.times.primary_t)}</td>
-                                    <td class="date-cell">${formatDate(run.date)}</td>
-                                </tr>`;
-                    }).join('');
-                } catch (error) {
-                    console.error(error);
-                    tableBody.innerHTML = `<tr><td colspan="4">Failed to load leaderboard.</td></tr>`;
-                } finally {
-                    loader.style.display = 'none';
-                }
-            };
-            const buildDropdown = (options, placeholder) => {
-                const select = document.createElement('select');
-                select.innerHTML = `<option value="">${placeholder}</option>` + options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
-                return select;
-            };
-            const buildButtons = (options) => {
-                const container = document.createElement('div');
-                container.className = 'category-buttons';
-                container.innerHTML = options.map(opt => `<button data-value="${opt.value}">${opt.label}</button>`).join('');
-                return container;
-            };
-            
-            const createActionButtons = () => {
-                return `<div class="control-actions">
-                    <button>📊 Filters</button>
-                    <button>📖 Show rules</button>
-                    <button>🕒 History</button>
-                    <button class="primary">➕ Submit run</button>
-                </div>`;
-            };
-
-            const showFullGameControls = () => {
-                tableBody.innerHTML = '';
-                const fullGameCategories = allCategories.filter(c => c.type === 'per-game');
-                const catSelect = buildDropdown(fullGameCategories.map(c => ({ value: c.id, label: c.name })), "Full game");
-                
-                const controlGroup = document.createElement('div');
-                controlGroup.className = 'control-group';
-                controlGroup.appendChild(catSelect);
-                controlsContainer.appendChild(controlGroup);
-
-                catSelect.onchange = () => {
-                    const categoryId = catSelect.value;
-                    controlsContainer.querySelectorAll('.variable-group').forEach(el => el.remove());
-                    if (!categoryId) { tableBody.innerHTML = ''; return; }
-
-                    const applicableVariable = allVariables.find(v => v.category === categoryId && v['is-subcategory']);
-                    if (!applicableVariable) {
-                        renderLeaderboard(`leaderboards/${game.id}/category/${categoryId}`);
-                        return;
-                    }
-
-                    const varGroup = document.createElement('div');
-                    varGroup.className = 'control-group variable-group';
-                    const varOptions = Object.entries(applicableVariable.values.values).map(([valueId, valueData]) => ({ value: valueId, label: valueData.label }));
-                    const varButtons = buildButtons(varOptions);
-                    varGroup.appendChild(varButtons);
-                    
-                    const versionVar = allVariables.find(v => v.name.toLowerCase() === 'version');
-                    if(versionVar) {
-                        const versionOptions = Object.entries(versionVar.values.values).map(([valueId, valueData]) => ({ value: valueId, label: valueData.label }));
-                        const versionButtons = buildButtons(versionOptions);
-                        varGroup.appendChild(versionButtons);
-                    }
-
-                    controlsContainer.appendChild(varGroup);
-
-                    varButtons.querySelectorAll('button').forEach(btn => {
-                        btn.onclick = e => {
-                            varButtons.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                            e.target.classList.add('active');
-                            const varValue = e.target.dataset.value;
-                            const varFilter = `?var-${applicableVariable.id}=${varValue}`;
-                            renderLeaderboard(`leaderboards/${game.id}/category/${categoryId}${varFilter}`);
-                        };
-                    });
-                };
-            };
-            
-            const showPerLevelControls = () => {
-                tableBody.innerHTML = '';
-                const levelSelect = buildDropdown(levels.map(l => ({ value: l.id, label: l.name })), "Select Level...");
-                
-                const controlGroup = document.createElement('div');
-                controlGroup.className = 'control-group';
-                controlGroup.appendChild(levelSelect);
-                controlsContainer.appendChild(controlGroup);
-
-                levelSelect.onchange = async () => {
-                    const levelId = levelSelect.value;
-                    controlsContainer.querySelectorAll('.sub-category-group, .star-select-group').forEach(el => el.remove());
-                    if (!levelId) return;
-
-                    const levelCategories = await fetchWithCache(`levels/${levelId}/categories`);
-                    const categoryGroups = levelCategories.reduce((acc, cat) => {
-                        const name = cat.name.includes("Star") ? "Single Star" : cat.name.includes("RTA") ? "Stage RTA" : "Other";
-                        if (!acc[name]) acc[name] = [];
-                        acc[name].push(cat);
-                        return acc;
-                    }, {});
-
-                    const subCatGroup = document.createElement('div');
-                    subCatGroup.className = 'control-group sub-category-group';
-                    const subCatButtons = buildButtons(Object.keys(categoryGroups).map(name => ({ value: name, label: name })));
-                    subCatGroup.appendChild(subCatButtons);
-                    controlsContainer.appendChild(subCatGroup);
-
-                    subCatButtons.querySelectorAll('button').forEach(btn => {
-                        btn.onclick = e => {
-                            subCatButtons.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-                            e.target.classList.add('active');
-                            
-                            controlsContainer.querySelectorAll('.star-select-group').forEach(el => el.remove());
-
-                            const groupName = e.target.dataset.value;
-                            const stars = categoryGroups[groupName];
-                            
-                            const starSelectGroup = document.createElement('div');
-                            starSelectGroup.className = 'control-group star-select-group';
-                            const starSelect = buildDropdown(stars.map(s => ({ value: s.id, label: s.name })), `Select ${groupName}...`);
-                            starSelectGroup.appendChild(starSelect);
-                            controlsContainer.appendChild(starSelectGroup);
-
-                            starSelect.onchange = () => {
-                                if (starSelect.value) renderLeaderboard(`leaderboards/${game.id}/category/${starSelect.value}`);
-                            };
-                        };
-                    });
-                };
-            };
-
-
-            const fullGameCategories = allCategories.filter(c => c.type === 'per-game');
-            const levelCategoriesExist = allCategories.some(c => c.type === 'per-level');
-            
-            const typeOptions = [];
-            if (fullGameCategories.length > 0) typeOptions.push({ value: 'fullgame', label: 'Full game' });
-            if (levelCategoriesExist && levels.length > 0) typeOptions.push({ value: 'level', label: 'Levels' });
-
-            const typeSelect = buildDropdown(typeOptions, "Select Leaderboard Type...");
-            typeSelect.id = 'leaderboard-type-select';
-            
-            const topControlGroup = document.createElement('div');
-            topControlGroup.className = 'control-group';
-            topControlGroup.appendChild(typeSelect);
-            controlsContainer.appendChild(topControlGroup);
-
-            typeSelect.onchange = () => {
-                const children = Array.from(controlsContainer.children);
-                for(let i = 1; i < children.length; i++) {
-                    controlsContainer.removeChild(children[i]);
-                }
-
-                const type = typeSelect.value;
-                if (type === 'fullgame') showFullGameControls();
-                else if (type === 'level') showPerLevelControls();
-                else { tableBody.innerHTML = ''; }
-                
-                if (type) controlsContainer.insertAdjacentHTML('beforeend', createActionButtons());
-            };
-        }
-
-        window.addEventListener('hashchange', handleRouteChange);
-        document.addEventListener('DOMContentLoaded', handleRouteChange);
-    </script>
+            <button id="backBtn" style="display: none;" class="flex flex-col items-center p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                <span class="text-xs mt-1">Voltar</span>
+            </button>
+        </div>
+    </nav>
 </body>
 </html>
