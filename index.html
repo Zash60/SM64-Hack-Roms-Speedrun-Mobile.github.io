@@ -1,280 +1,607 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Hack Roms Speedrun Mobile</title>
+    <title>SM64 Hacks Speedrun</title>
     <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-color: #2a2a2a;
+            --text-color: #f0f0f0;
+            --primary-color: #e53d00;
+            --border-color: #444;
+            --accent-color: #ffd700;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 15px;
+            padding: 0;
         }
-        h1, h2 {
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* --- Estrutura Principal --- */
+        #app-container {
+            max-width: 800px;
+            margin: auto;
+            padding: 10px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: var(--card-color);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            color: var(--primary-color);
+        }
+
+        nav button {
+            background: none;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            margin-left: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+
+        nav button.active {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* --- Views --- */
+        .view {
+            padding-top: 20px;
+        }
+
+        /* --- Loader --- */
+        #loader {
             text-align: center;
-            color: #ffffff;
+            font-size: 1.2em;
+            padding: 40px;
         }
-        #gamesContainer {
+
+        /* --- Home View (Lista de Jogos) --- */
+        #games-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 15px;
         }
+
         .game-card {
-            background-color: #1e1e1e;
-            border: 1px solid #2c2c2c;
+            background-color: var(--card-color);
             border-radius: 8px;
-            padding: 10px;
+            overflow: hidden;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            text-align: center;
+            transition: transform 0.2s;
+            border: 1px solid var(--border-color);
         }
+
         .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transform: scale(1.05);
         }
+
         .game-card img {
             width: 100%;
-            height: auto;
-            border-radius: 4px;
+            height: 100px;
             object-fit: cover;
         }
-        .game-title {
-            font-size: 0.9em;
-            font-weight: bold;
-            margin-top: 10px;
-            min-height: 3em; /* Garante altura consistente */
-        }
-        #detailView {
-            padding: 10px;
-        }
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin: 20px 0;
-        }
-        .custom-select, #backButton {
+        
+        .game-card-placeholder {
             width: 100%;
-            padding: 12px;
-            background-color: #2c2c2c;
-            color: #e0e0e0;
-            border: 1px solid #444;
-            border-radius: 5px;
-            font-size: 1em;
+            height: 100px;
+            background-color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
         }
-        #backButton {
-            background-color: #007bff;
-            color: #fff;
-            cursor: pointer;
-            text-align: center;
+
+        .game-card-title {
+            padding: 10px;
             font-weight: bold;
+            font-size: 0.9em;
+            text-align: center;
         }
-        table {
+
+        /* --- Game & Leaderboard Views --- */
+        .breadcrumb {
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+        .breadcrumb a {
+            color: var(--text-color);
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover { text-decoration: underline; }
+
+        .list-container h2 {
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 5px;
+        }
+
+        .list-item {
+            background-color: var(--card-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: border-left 0.2s;
+        }
+
+        .list-item:hover {
+            border-left: 3px solid var(--primary-color);
+        }
+
+        #leaderboard-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        th, td {
+
+        #leaderboard-table th, #leaderboard-table td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border-color);
         }
-        th {
-            background-color: #2a2a2a;
+
+        #leaderboard-table th {
+            background-color: #333;
         }
-        td:first-child { font-weight: bold; }
-        .loader {
-            text-align: center;
+
+        #leaderboard-table tr:nth-child(even) {
+            background-color: var(--card-color);
+        }
+
+        .rank-1 { color: gold; }
+        .rank-2 { color: silver; }
+        .rank-3 { color: #cd7f32; }
+
+        /* --- Mod View & Forms --- */
+        .form-container {
+            background-color: var(--card-color);
             padding: 20px;
-            font-size: 1.2em;
+            border-radius: 8px;
         }
+        .form-container h2 { margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button.primary-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1em;
+        }
+        button.primary-btn:hover { background-color: #c43100; }
+        #logout-btn { background-color: #888; margin-top: 15px; }
+        #logout-btn:hover { background-color: #666; }
+
+        #submit-run-btn {
+            margin-top: 20px;
+            padding: 12px;
+        }
+
+        #error-message {
+            color: #ff4d4d;
+            margin-top: 10px;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="mainView">
-        <h1>SM64 Hack Roms Speedruns</h1>
-        <div id="gamesContainer" class="loader">Carregando jogos...</div>
+    <div id="app-container">
+        <header>
+            <h1>SM64 Hacks Mobile</h1>
+            <nav>
+                <button id="home-tab" class="active">Home</button>
+                <button id="mod-tab">Mod</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Loader -->
+            <div id="loader" class="">
+                <p>Carregando...</p>
+            </div>
+            
+            <!-- Home View: Mostra a lista de jogos -->
+            <div id="home-view" class="view">
+                <div id="games-grid"></div>
+            </div>
+
+            <!-- Game View: Mostra categorias e níveis de um jogo -->
+            <div id="game-view" class="view hidden">
+                <div class="breadcrumb" id="game-breadcrumb"></div>
+                <div id="game-details"></div>
+            </div>
+
+            <!-- Leaderboard View: Mostra o placar -->
+            <div id="leaderboard-view" class="view hidden">
+                <div class="breadcrumb" id="leaderboard-breadcrumb"></div>
+                <div class="list-container">
+                    <h2 id="leaderboard-title">Leaderboard</h2>
+                    <table id="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Tempo</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+                <button id="submit-run-btn" class="primary-btn hidden">Submit Run</button>
+                <div id="submit-run-form-container" class="form-container hidden" style="margin-top: 20px;">
+                    <h2>Enviar Tempo</h2>
+                    <form id="submit-run-form">
+                        <div class="form-group">
+                            <label for="run-time">Tempo (ex: 1m 23s 456ms)</label>
+                            <input type="text" id="run-time" required>
+                        </div>
+                        <button type="submit" class="primary-btn">Enviar</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Mod View: Login e painel do moderador -->
+            <div id="mod-view" class="view hidden">
+                <div id="login-container" class="form-container">
+                    <h2>Login de Moderador</h2>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Senha</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        <button type="submit" class="primary-btn">Entrar</button>
+                        <p id="login-error-message" class="error-message"></p>
+                    </form>
+                </div>
+
+                <div id="mod-panel" class="hidden">
+                    <h2>Painel do Moderador</h2>
+                    <p>Você está logado. Agora você pode enviar tempos nos leaderboards.</p>
+                    <button id="logout-btn" class="primary-btn">Sair</button>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <div id="detailView" style="display: none;">
-        <h2 id="gameName"></h2>
-        <div class="controls">
-            <button id="backButton">← Voltar para a Lista de Jogos</button>
-            <select id="categorySelect" class="custom-select"></select>
-        </div>
-        <div id="leaderboardContainer"></div>
-    </div>
-
+    <!-- Script com a lógica -->
     <script type="module">
-      // Importa as funções que você precisa dos SDKs que você precisa
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        // Importa as funções do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-      // Sua configuração do app da web do Firebase
-      const firebaseConfig = {
-        apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
-        authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
-        databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
-        projectId: "sm64-hack-roms-speedrun-mobile",
-        storageBucket: "sm64-hack-roms-speedrun-mobile.appspot.com",
-        messagingSenderId: "499101981060",
-        appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
-      };
+        // SUA CONFIGURAÇÃO DO FIREBASE (COLE AQUI)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+            databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
+            projectId: "sm64-hack-roms-speedrun-mobile",
+            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
+            messagingSenderId: "499101981060",
+            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+        };
 
-      // Inicializa o Firebase
-      const app = initializeApp(firebaseConfig);
-      const database = getDatabase(app);
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-      // Elementos da UI
-      const gamesContainer = document.getElementById('gamesContainer');
-      const mainView = document.getElementById('mainView');
-      const detailView = document.getElementById('detailView');
-      const gameName = document.getElementById('gameName');
-      const categorySelect = document.getElementById('categorySelect');
-      const leaderboardContainer = document.getElementById('leaderboardContainer');
-      const backButton = document.getElementById('backButton');
+        // --- Variáveis Globais e Elementos do DOM ---
+        const speedrunApiBase = "https://www.speedrun.com/api/v1";
+        const sm64HacksSeriesId = "sm64romhacks";
 
-      const API_BASE = 'https://www.speedrun.com/api/v1';
+        const loader = document.getElementById('loader');
+        const views = document.querySelectorAll('.view');
+        const homeTab = document.getElementById('home-tab');
+        const modTab = document.getElementById('mod-tab');
+        
+        let currentGame = null;
+        let currentLeaderboardInfo = null;
 
-      // Função para buscar dados da API com cache simples para nomes de jogadores
-      const playerCache = new Map();
-      async function fetchAPI(endpoint) {
-          const response = await fetch(`${API_BASE}${endpoint}`);
-          if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
-          const data = await response.json();
-          return data.data;
-      }
-      
-      async function getPlayerName(playerData) {
-          if (playerData.rel === 'guest') {
-              return playerData.name;
-          }
-          if (playerData.rel === 'user') {
-              if (playerCache.has(playerData.id)) {
-                  return playerCache.get(playerData.id);
-              }
-              const player = await fetchAPI(`/users/${playerData.id}`);
-              const playerName = player.names.international;
-              playerCache.set(playerData.id, playerName);
-              return playerName;
-          }
-          return 'Jogador Anônimo';
-      }
+        // --- Funções de Navegação e UI ---
+        function showLoader() { loader.classList.remove('hidden'); }
+        function hideLoader() { loader.classList.add('hidden'); }
 
-      // Carrega e exibe todos os jogos da série
-      async function loadGames() {
-          try {
-              const games = await fetchAPI('/series/sm64romhacks/games?max=200&orderby=released&direction=desc');
-              gamesContainer.innerHTML = ''; // Limpa o loader
-              for (const game of games) {
-                  const gameCard = document.createElement('div');
-                  gameCard.className = 'game-card';
-                  gameCard.innerHTML = `
-                      <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" loading="lazy">
-                      <div class="game-title">${game.names.international}</div>
-                  `;
-                  gameCard.onclick = () => showGameDetails(game.id, game.names.international);
-                  gamesContainer.appendChild(gameCard);
-              }
-          } catch (error) {
-              gamesContainer.innerHTML = 'Falha ao carregar jogos. Tente recarregar a página.';
-              console.error(error);
-          }
-      }
+        function switchView(viewId) {
+            views.forEach(view => view.classList.add('hidden'));
+            document.getElementById(viewId).classList.remove('hidden');
+            hideLoader();
+        }
 
-      // Mostra a visão de detalhes para um jogo específico
-      async function showGameDetails(gameId, name) {
-          mainView.style.display = 'none';
-          detailView.style.display = 'block';
-          gameName.textContent = name;
-          leaderboardContainer.innerHTML = '<div class="loader">Carregando categorias...</div>';
-          categorySelect.innerHTML = '';
+        function setActiveTab(tab) {
+            [homeTab, modTab].forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+        }
 
-          try {
-              const categories = await fetchAPI(`/games/${gameId}/categories`);
-              const perGameCategories = categories.filter(cat => cat.type === 'per-game');
+        // --- Funções da API Speedrun.com ---
+        async function apiFetch(endpoint) {
+            try {
+                const response = await fetch(`${speedrunApiBase}/${endpoint}`);
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const data = await response.json();
+                return data.data;
+            } catch (error) {
+                console.error("Erro ao buscar dados da API:", error);
+                alert("Não foi possível carregar os dados. Tente novamente mais tarde.");
+                return null;
+            }
+        }
 
-              if (perGameCategories.length > 0) {
-                  perGameCategories.forEach(category => {
-                      const option = new Option(category.name, category.id);
-                      categorySelect.add(option);
-                  });
-                  
-                  categorySelect.onchange = () => loadLeaderboard(gameId, categorySelect.value);
-                  loadLeaderboard(gameId, perGameCategories[0].id); // Carrega o placar da primeira categoria
-              } else {
-                 leaderboardContainer.innerHTML = "Nenhuma categoria encontrada para este jogo."
-              }
+        async function fetchGames() {
+            showLoader();
+            const games = await apiFetch(`series/${sm64HacksSeriesId}/games?orderby=released&direction=desc`);
+            if (!games) {
+                hideLoader();
+                return;
+            }
+            
+            const gamesGrid = document.getElementById('games-grid');
+            gamesGrid.innerHTML = '';
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card';
+                card.dataset.gameId = game.id;
+                
+                let imageHtml = `<div class="game-card-placeholder">?</div>`;
+                if(game.assets.cover_small && game.assets.cover_small.uri) {
+                    imageHtml = `<img src="${game.assets.cover_small.uri}" alt="${game.names.international}">`;
+                }
 
-          } catch (error) {
-              leaderboardContainer.innerHTML = 'Falha ao carregar categorias.';
-              console.error(error);
-          }
-      }
+                card.innerHTML = `
+                    ${imageHtml}
+                    <div class="game-card-title">${game.names.international}</div>
+                `;
+                card.addEventListener('click', () => fetchGameDetails(game.id, game.names.international));
+                gamesGrid.appendChild(card);
+            });
+            switchView('home-view');
+        }
 
-      // Carrega o placar para uma categoria específica
-      async function loadLeaderboard(gameId, categoryId) {
-          leaderboardContainer.innerHTML = '<div class="loader">Carregando placar...</div>';
-          try {
-              const leaderboardData = await fetchAPI(`/leaderboards/${gameId}/category/${categoryId}?top=20`);
-              if (!leaderboardData || leaderboardData.runs.length === 0) {
-                  leaderboardContainer.innerHTML = 'Nenhum tempo registrado para esta categoria.';
-                  return;
-              }
+        async function fetchGameDetails(gameId, gameName) {
+            showLoader();
+            currentGame = { id: gameId, name: gameName };
+            const [categories, levels] = await Promise.all([
+                apiFetch(`games/${gameId}/categories`),
+                apiFetch(`games/${gameId}/levels`)
+            ]);
+            
+            const gameDetailsContainer = document.getElementById('game-details');
+            gameDetailsContainer.innerHTML = '';
 
-              let tableHTML = '<table><thead><tr><th>#</th><th>Jogador</th><th>Tempo</th></tr></thead><tbody>';
-              
-              const playerPromises = leaderboardData.runs.map(async (runData) => {
-                  const playerName = await getPlayerName(runData.run.players[0]);
-                  return `
-                      <tr>
-                          <td>${runData.place}</td>
-                          <td>${playerName}</td>
-                          <td>${formatTime(runData.run.times.primary_t)}</td>
-                      </tr>
-                  `;
-              });
+            document.getElementById('game-breadcrumb').innerHTML = `<a id="breadcrumb-home">Home</a> > ${gameName}`;
+            document.getElementById('breadcrumb-home').onclick = () => fetchGames();
 
-              const rows = await Promise.all(playerPromises);
-              tableHTML += rows.join('');
-              tableHTML += '</tbody></table>';
-              leaderboardContainer.innerHTML = tableHTML;
+            // Categorias Full Game (per-game)
+            const fullGameCategories = categories.filter(cat => cat.type === 'per-game');
+            if (fullGameCategories.length > 0) {
+                const container = document.createElement('div');
+                container.className = 'list-container';
+                container.innerHTML = `<h2>Full Game</h2>`;
+                fullGameCategories.forEach(cat => {
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.textContent = cat.name;
+                    item.onclick = () => showLeaderboard(gameId, cat.id, null, cat.name);
+                    container.appendChild(item);
+                });
+                gameDetailsContainer.appendChild(container);
+            }
+            
+            // Categorias por Nível (per-level)
+            const perLevelCategories = categories.filter(cat => cat.type === 'per-level');
+            if (perLevelCategories.length > 0 && levels.length > 0) {
+                 for (const level of levels) {
+                    const container = document.createElement('div');
+                    container.className = 'list-container';
+                    container.innerHTML = `<h2>${level.name}</h2>`;
 
-          } catch (error) {
-              leaderboardContainer.innerHTML = 'Falha ao carregar o placar.';
-              console.error(error);
-          }
-      }
-      
-      // Formata segundos para um formato de tempo legível (ex: 1h 23m 45.678s)
-      function formatTime(totalSeconds) {
-          if (totalSeconds <= 0) return "0s";
-          const hours = Math.floor(totalSeconds / 3600);
-          const minutes = Math.floor((totalSeconds % 3600) / 60);
-          const seconds = totalSeconds % 60;
+                    // Lógica especial para "Single Star" e "Stage RTA"
+                    if(level.name.toLowerCase().includes("single star")){
+                         const variables = await apiFetch(`levels/${level.id}/variables`);
+                         if(variables && variables.length > 0){
+                            const stars = variables[0].values.values;
+                            for (const starKey in stars) {
+                                const star = stars[starKey];
+                                const item = document.createElement('div');
+                                item.className = 'list-item';
+                                item.textContent = star.label;
+                                // O id da subcategoria é a key (ex: "p12k3g1l")
+                                item.onclick = () => showLeaderboard(gameId, perLevelCategories[0].id, level.id, star.label, starKey);
+                                container.appendChild(item);
+                            }
+                         }
+                    } else { // Para Stage RTA e outros
+                        const item = document.createElement('div');
+                        item.className = 'list-item';
+                        item.textContent = "Stage RTA"; // Ou level.name se preferir
+                        item.onclick = () => showLeaderboard(gameId, perLevelCategories[0].id, level.id, "Stage RTA");
+                        container.appendChild(item);
+                    }
+                    gameDetailsContainer.appendChild(container);
+                }
+            }
 
-          let timeString = '';
-          if (hours > 0) timeString += `${hours}h `;
-          if (minutes > 0) timeString += `${minutes}m `;
-          
-          // Formata segundos com milissegundos
-          timeString += `${seconds.toFixed(3).replace('.', 's ')}ms`;
-          
-          return timeString.replace('s 000ms', 's'); // Remove milissegundos se for zero
-      }
+            switchView('game-view');
+        }
 
-      // Event Listener para o botão de voltar
-      backButton.onclick = () => {
-          detailView.style.display = 'none';
-          mainView.style.display = 'block';
-      };
+        // --- Funções do Firebase (Leaderboard) ---
+        let currentLeaderboardListener = null;
 
-      // Carrega os jogos quando a página é aberta
-      loadGames();
+        function showLeaderboard(gameId, categoryId, levelId, title, subcategoryId = null) {
+            showLoader();
+            const leaderboardTitle = document.getElementById('leaderboard-title');
+            leaderboardTitle.textContent = title;
 
+            document.getElementById('leaderboard-breadcrumb').innerHTML = `
+                <a id="breadcrumb-home-l">Home</a> > 
+                <a id="breadcrumb-game-l">${currentGame.name}</a> > 
+                ${title}
+            `;
+            document.getElementById('breadcrumb-home-l').onclick = () => fetchGames();
+            document.getElementById('breadcrumb-game-l').onclick = () => fetchGameDetails(currentGame.id, currentGame.name);
+
+
+            // Constrói o caminho no Realtime Database
+            let path = `leaderboards/${gameId}/${categoryId}`;
+            if (levelId) path += `/${levelId}`;
+            if (subcategoryId) path += `/${subcategoryId}`;
+            
+            currentLeaderboardInfo = { path: path };
+
+            const leaderboardRef = ref(db, path);
+            const leaderboardBody = document.getElementById('leaderboard-body');
+
+            // Cancela o listener anterior para evitar múltiplas atualizações
+            if (currentLeaderboardListener) currentLeaderboardListener();
+
+            currentLeaderboardListener = onValue(leaderboardRef, (snapshot) => {
+                leaderboardBody.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    const runs = Object.values(data).sort((a, b) => a.time.localeCompare(b.time));
+                    runs.forEach((run, index) => {
+                        const rank = index + 1;
+                        const row = document.createElement('tr');
+                        
+                        let rankClass = '';
+                        if (rank === 1) rankClass = 'rank-1';
+                        if (rank === 2) rankClass = 'rank-2';
+                        if (rank === 3) rankClass = 'rank-3';
+
+                        row.innerHTML = `
+                            <td class="${rankClass}">${rank}</td>
+                            <td>${run.time}</td>
+                            <td>${new Date(run.date).toLocaleDateString()}</td>
+                        `;
+                        leaderboardBody.appendChild(row);
+                    });
+                } else {
+                    leaderboardBody.innerHTML = '<tr><td colspan="3">Nenhum tempo enviado ainda.</td></tr>';
+                }
+                switchView('leaderboard-view');
+            });
+        }
+        
+        async function submitRun(time) {
+            if (!currentLeaderboardInfo || !currentLeaderboardInfo.path) {
+                alert("Erro: Nenhuma leaderboard selecionada.");
+                return;
+            }
+            
+            try {
+                const leaderboardRef = ref(db, currentLeaderboardInfo.path);
+                await push(leaderboardRef, {
+                    time: time,
+                    date: serverTimestamp() // Usa o timestamp do servidor para consistência
+                });
+                alert("Tempo enviado com sucesso!");
+                document.getElementById('submit-run-form').reset();
+                document.getElementById('submit-run-form-container').classList.add('hidden');
+            } catch (error) {
+                console.error("Erro ao enviar o tempo:", error);
+                alert("Falha ao enviar o tempo.");
+            }
+        }
+
+        // --- Funções de Autenticação do Firebase ---
+        onAuthStateChanged(auth, user => {
+            const modPanel = document.getElementById('mod-panel');
+            const loginContainer = document.getElementById('login-container');
+            const submitRunBtn = document.getElementById('submit-run-btn');
+
+            if (user) { // Usuário está logado
+                modPanel.classList.remove('hidden');
+                loginContainer.classList.add('hidden');
+                submitRunBtn.classList.remove('hidden');
+            } else { // Usuário não está logado
+                modPanel.classList.add('hidden');
+                loginContainer.classList.remove('hidden');
+                submitRunBtn.classList.add('hidden');
+                document.getElementById('submit-run-form-container').classList.add('hidden');
+            }
+        });
+
+        // --- Event Listeners ---
+        homeTab.addEventListener('click', () => {
+            setActiveTab(homeTab);
+            fetchGames();
+        });
+
+        modTab.addEventListener('click', () => {
+            setActiveTab(modTab);
+            switchView('mod-view');
+        });
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('login-error-message');
+            
+            errorMessage.textContent = '';
+            signInWithEmailAndPassword(auth, email, password)
+                .catch(error => {
+                    errorMessage.textContent = "Email ou senha inválidos.";
+                });
+        });
+        
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
+        document.getElementById('submit-run-btn').addEventListener('click', () => {
+            document.getElementById('submit-run-form-container').classList.toggle('hidden');
+        });
+
+        document.getElementById('submit-run-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const time = document.getElementById('run-time').value;
+            submitRun(time);
+        });
+
+        // --- Inicialização ---
+        fetchGames();
     </script>
 </body>
 </html>
