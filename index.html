@@ -17,7 +17,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
         }
@@ -40,6 +40,9 @@
             padding: 10px;
             background-color: var(--card-color);
             border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         header h1 {
@@ -90,26 +93,30 @@
             cursor: pointer;
             transition: transform 0.2s;
             border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
         }
 
         .game-card:hover {
             transform: scale(1.05);
+            border-color: var(--primary-color);
         }
 
-        .game-card img {
+        .game-card-image-container {
             width: 100%;
-            height: 100px;
-            object-fit: cover;
-        }
-        
-        .game-card-placeholder {
-            width: 100%;
-            height: 100px;
+            height: 120px;
             background-color: #444;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2em;
+            font-size: 2.5em;
+            color: #777;
+        }
+
+        .game-card-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .game-card-title {
@@ -117,6 +124,10 @@
             font-weight: bold;
             font-size: 0.9em;
             text-align: center;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* --- Game & Leaderboard Views --- */
@@ -135,7 +146,9 @@
         .list-container h2 {
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 5px;
+            margin-top: 25px;
         }
+        .list-container:first-child h2 { margin-top: 0; }
 
         .list-item {
             background-color: var(--card-color);
@@ -144,11 +157,12 @@
             border-radius: 5px;
             cursor: pointer;
             border-left: 3px solid transparent;
-            transition: border-left 0.2s;
+            transition: all 0.2s;
         }
 
         .list-item:hover {
             border-left: 3px solid var(--primary-color);
+            background-color: #333;
         }
 
         #leaderboard-table {
@@ -171,7 +185,7 @@
             background-color: var(--card-color);
         }
 
-        .rank-1 { color: gold; }
+        .rank-1 { color: gold; font-weight: bold; }
         .rank-2 { color: silver; }
         .rank-3 { color: #cd7f32; }
 
@@ -203,6 +217,7 @@
             cursor: pointer;
             width: 100%;
             font-size: 1em;
+            font-weight: bold;
         }
         button.primary-btn:hover { background-color: #c43100; }
         #logout-btn { background-color: #888; margin-top: 15px; }
@@ -217,7 +232,6 @@
             color: #ff4d4d;
             margin-top: 10px;
         }
-
     </style>
 </head>
 <body>
@@ -232,23 +246,19 @@
         </header>
 
         <main>
-            <!-- Loader -->
             <div id="loader" class="">
-                <p>Carregando...</p>
+                <p>Carregando jogos...</p>
             </div>
             
-            <!-- Home View: Mostra a lista de jogos -->
             <div id="home-view" class="view">
                 <div id="games-grid"></div>
             </div>
 
-            <!-- Game View: Mostra categorias e níveis de um jogo -->
             <div id="game-view" class="view hidden">
                 <div class="breadcrumb" id="game-breadcrumb"></div>
                 <div id="game-details"></div>
             </div>
 
-            <!-- Leaderboard View: Mostra o placar -->
             <div id="leaderboard-view" class="view hidden">
                 <div class="breadcrumb" id="leaderboard-breadcrumb"></div>
                 <div class="list-container">
@@ -277,7 +287,6 @@
                 </div>
             </div>
 
-            <!-- Mod View: Login e painel do moderador -->
             <div id="mod-view" class="view hidden">
                 <div id="login-container" class="form-container">
                     <h2>Login de Moderador</h2>
@@ -306,12 +315,10 @@
 
     <!-- Script com a lógica -->
     <script type="module">
-        // Importa as funções do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // SUA CONFIGURAÇÃO DO FIREBASE (COLE AQUI)
         const firebaseConfig = {
             apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
@@ -322,12 +329,10 @@
             appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
         };
 
-        // Inicializa o Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // --- Variáveis Globais e Elementos do DOM ---
         const speedrunApiBase = "https://www.speedrun.com/api/v1";
         const sm64HacksSeriesId = "sm64romhacks";
 
@@ -338,15 +343,27 @@
         
         let currentGame = null;
         let currentLeaderboardInfo = null;
+        let allGamesCache = []; // Cache para não buscar os jogos toda vez
 
-        // --- Funções de Navegação e UI ---
-        function showLoader() { loader.classList.remove('hidden'); }
+        // --- Funções de Utilidade ---
+        function showLoader(message = "Carregando...") { 
+            loader.querySelector('p').textContent = message;
+            loader.classList.remove('hidden'); 
+        }
         function hideLoader() { loader.classList.add('hidden'); }
+
+        // **NOVO**: Função para limpar o texto Markdown
+        function parseMarkdown(text) {
+            if (!text) return '';
+            // Converte "[texto](url)" para apenas "texto"
+            return text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        }
 
         function switchView(viewId) {
             views.forEach(view => view.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
             hideLoader();
+            window.scrollTo(0, 0); // Rola para o topo ao mudar de tela
         }
 
         function setActiveTab(tab) {
@@ -355,27 +372,46 @@
         }
 
         // --- Funções da API Speedrun.com ---
-        async function apiFetch(endpoint) {
+        async function apiFetch(url) { // Agora aceita a URL completa
             try {
-                const response = await fetch(`${speedrunApiBase}/${endpoint}`);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const data = await response.json();
-                return data.data;
+                return await response.json();
             } catch (error) {
                 console.error("Erro ao buscar dados da API:", error);
                 alert("Não foi possível carregar os dados. Tente novamente mais tarde.");
                 return null;
             }
         }
-
-        async function fetchGames() {
-            showLoader();
-            const games = await apiFetch(`series/${sm64HacksSeriesId}/games?orderby=released&direction=desc`);
-            if (!games) {
-                hideLoader();
-                return;
+        
+        // **ATUALIZADO**: Função para buscar TODOS os jogos com paginação
+        async function fetchAllGames() {
+            if (allGamesCache.length > 0) {
+                return allGamesCache;
             }
-            
+
+            showLoader('Carregando todos os 223+ hacks...');
+            let allGames = [];
+            let nextUrl = `${speedrunApiBase}/series/${sm64HacksSeriesId}/games?orderby=released&direction=asc&max=200`; // max=200 é o máximo por página
+
+            while (nextUrl) {
+                const response = await apiFetch(nextUrl);
+                if (response && response.data) {
+                    allGames.push(...response.data);
+                    const nextLink = response.pagination.links.find(link => link.rel === 'next');
+                    nextUrl = nextLink ? nextLink.uri : null;
+                } else {
+                    nextUrl = null; // Para o loop em caso de erro
+                }
+            }
+            allGamesCache = allGames; // Salva no cache
+            return allGames;
+        }
+
+        async function displayGames() {
+            const games = await fetchAllGames();
+            if (!games) { hideLoader(); return; }
+
             const gamesGrid = document.getElementById('games-grid');
             gamesGrid.innerHTML = '';
             games.forEach(game => {
@@ -383,13 +419,19 @@
                 card.className = 'game-card';
                 card.dataset.gameId = game.id;
                 
-                let imageHtml = `<div class="game-card-placeholder">?</div>`;
-                if(game.assets.cover_small && game.assets.cover_small.uri) {
-                    imageHtml = `<img src="${game.assets.cover_small.uri}" alt="${game.names.international}">`;
+                let imageUrl = '';
+                if (game.assets['cover-medium']?.uri) {
+                    imageUrl = game.assets['cover-medium'].uri;
+                } else if (game.assets['cover-small']?.uri) {
+                    imageUrl = game.assets['cover-small'].uri;
                 }
 
+                const imageHtml = imageUrl 
+                    ? `<img src="${imageUrl}" alt="${game.names.international}">`
+                    : `?`;
+
                 card.innerHTML = `
-                    ${imageHtml}
+                    <div class="game-card-image-container">${imageHtml}</div>
                     <div class="game-card-title">${game.names.international}</div>
                 `;
                 card.addEventListener('click', () => fetchGameDetails(game.id, game.names.international));
@@ -399,20 +441,22 @@
         }
 
         async function fetchGameDetails(gameId, gameName) {
-            showLoader();
+            showLoader(`Carregando ${gameName}...`);
             currentGame = { id: gameId, name: gameName };
-            const [categories, levels] = await Promise.all([
-                apiFetch(`games/${gameId}/categories`),
-                apiFetch(`games/${gameId}/levels`)
+            const [categoriesData, levelsData] = await Promise.all([
+                apiFetch(`${speedrunApiBase}/games/${gameId}/categories`),
+                apiFetch(`${speedrunApiBase}/games/${gameId}/levels`)
             ]);
+
+            const categories = categoriesData?.data || [];
+            const levels = levelsData?.data || [];
             
             const gameDetailsContainer = document.getElementById('game-details');
             gameDetailsContainer.innerHTML = '';
 
             document.getElementById('game-breadcrumb').innerHTML = `<a id="breadcrumb-home">Home</a> > ${gameName}`;
-            document.getElementById('breadcrumb-home').onclick = () => fetchGames();
+            document.getElementById('breadcrumb-home').onclick = () => switchView('home-view');
 
-            // Categorias Full Game (per-game)
             const fullGameCategories = categories.filter(cat => cat.type === 'per-game');
             if (fullGameCategories.length > 0) {
                 const container = document.createElement('div');
@@ -421,68 +465,70 @@
                 fullGameCategories.forEach(cat => {
                     const item = document.createElement('div');
                     item.className = 'list-item';
-                    item.textContent = cat.name;
+                    item.textContent = parseMarkdown(cat.name); // Limpa o nome
                     item.onclick = () => showLeaderboard(gameId, cat.id, null, cat.name);
                     container.appendChild(item);
                 });
                 gameDetailsContainer.appendChild(container);
             }
             
-            // Categorias por Nível (per-level)
             const perLevelCategories = categories.filter(cat => cat.type === 'per-level');
             if (perLevelCategories.length > 0 && levels.length > 0) {
                  for (const level of levels) {
                     const container = document.createElement('div');
                     container.className = 'list-container';
-                    container.innerHTML = `<h2>${level.name}</h2>`;
+                    container.innerHTML = `<h2>${parseMarkdown(level.name)}</h2>`; // Limpa o nome do nível
 
-                    // Lógica especial para "Single Star" e "Stage RTA"
-                    if(level.name.toLowerCase().includes("single star")){
-                         const variables = await apiFetch(`levels/${level.id}/variables`);
-                         if(variables && variables.length > 0){
+                    const singleStarCat = perLevelCategories.find(c => c.name.toLowerCase().includes('single star'));
+                    const stageRTACat = perLevelCategories.find(c => c.name.toLowerCase().includes('stage rta'));
+
+                    if(singleStarCat) {
+                        const variablesData = await apiFetch(`${speedrunApiBase}/levels/${level.id}/variables`);
+                        const variables = variablesData?.data || [];
+                        if(variables.length > 0 && variables[0].is_subcategory) {
                             const stars = variables[0].values.values;
                             for (const starKey in stars) {
                                 const star = stars[starKey];
                                 const item = document.createElement('div');
                                 item.className = 'list-item';
-                                item.textContent = star.label;
-                                // O id da subcategoria é a key (ex: "p12k3g1l")
-                                item.onclick = () => showLeaderboard(gameId, perLevelCategories[0].id, level.id, star.label, starKey);
+                                item.textContent = parseMarkdown(star.label); // Limpa o nome da estrela
+                                item.onclick = () => showLeaderboard(gameId, singleStarCat.id, level.id, star.label, starKey);
                                 container.appendChild(item);
                             }
-                         }
-                    } else { // Para Stage RTA e outros
+                        }
+                    } 
+                    if (stageRTACat) {
                         const item = document.createElement('div');
                         item.className = 'list-item';
-                        item.textContent = "Stage RTA"; // Ou level.name se preferir
-                        item.onclick = () => showLeaderboard(gameId, perLevelCategories[0].id, level.id, "Stage RTA");
+                        item.textContent = "Stage RTA";
+                        item.onclick = () => showLeaderboard(gameId, stageRTACat.id, level.id, "Stage RTA");
                         container.appendChild(item);
                     }
-                    gameDetailsContainer.appendChild(container);
+                    if (container.childElementCount > 1) { // Só adiciona se tiver itens
+                        gameDetailsContainer.appendChild(container);
+                    }
                 }
             }
-
             switchView('game-view');
         }
 
         // --- Funções do Firebase (Leaderboard) ---
         let currentLeaderboardListener = null;
 
-        function showLeaderboard(gameId, categoryId, levelId, title, subcategoryId = null) {
+        function showLeaderboard(gameId, categoryId, levelId, rawTitle, subcategoryId = null) {
             showLoader();
+            const cleanTitle = parseMarkdown(rawTitle); // Limpa o título
             const leaderboardTitle = document.getElementById('leaderboard-title');
-            leaderboardTitle.textContent = title;
+            leaderboardTitle.textContent = cleanTitle;
 
             document.getElementById('leaderboard-breadcrumb').innerHTML = `
                 <a id="breadcrumb-home-l">Home</a> > 
                 <a id="breadcrumb-game-l">${currentGame.name}</a> > 
-                ${title}
+                ${cleanTitle}
             `;
-            document.getElementById('breadcrumb-home-l').onclick = () => fetchGames();
+            document.getElementById('breadcrumb-home-l').onclick = () => displayGames();
             document.getElementById('breadcrumb-game-l').onclick = () => fetchGameDetails(currentGame.id, currentGame.name);
 
-
-            // Constrói o caminho no Realtime Database
             let path = `leaderboards/${gameId}/${categoryId}`;
             if (levelId) path += `/${levelId}`;
             if (subcategoryId) path += `/${subcategoryId}`;
@@ -491,8 +537,7 @@
 
             const leaderboardRef = ref(db, path);
             const leaderboardBody = document.getElementById('leaderboard-body');
-
-            // Cancela o listener anterior para evitar múltiplas atualizações
+            
             if (currentLeaderboardListener) currentLeaderboardListener();
 
             currentLeaderboardListener = onValue(leaderboardRef, (snapshot) => {
@@ -528,12 +573,11 @@
                 alert("Erro: Nenhuma leaderboard selecionada.");
                 return;
             }
-            
             try {
                 const leaderboardRef = ref(db, currentLeaderboardInfo.path);
                 await push(leaderboardRef, {
                     time: time,
-                    date: serverTimestamp() // Usa o timestamp do servidor para consistência
+                    date: serverTimestamp()
                 });
                 alert("Tempo enviado com sucesso!");
                 document.getElementById('submit-run-form').reset();
@@ -550,11 +594,11 @@
             const loginContainer = document.getElementById('login-container');
             const submitRunBtn = document.getElementById('submit-run-btn');
 
-            if (user) { // Usuário está logado
+            if (user) {
                 modPanel.classList.remove('hidden');
                 loginContainer.classList.add('hidden');
                 submitRunBtn.classList.remove('hidden');
-            } else { // Usuário não está logado
+            } else {
                 modPanel.classList.add('hidden');
                 loginContainer.classList.remove('hidden');
                 submitRunBtn.classList.add('hidden');
@@ -565,7 +609,7 @@
         // --- Event Listeners ---
         homeTab.addEventListener('click', () => {
             setActiveTab(homeTab);
-            fetchGames();
+            switchView('home-view');
         });
 
         modTab.addEventListener('click', () => {
@@ -581,14 +625,10 @@
             
             errorMessage.textContent = '';
             signInWithEmailAndPassword(auth, email, password)
-                .catch(error => {
-                    errorMessage.textContent = "Email ou senha inválidos.";
-                });
+                .catch(error => { errorMessage.textContent = "Email ou senha inválidos."; });
         });
         
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-        });
+        document.getElementById('logout-btn').addEventListener('click', () => { signOut(auth); });
 
         document.getElementById('submit-run-btn').addEventListener('click', () => {
             document.getElementById('submit-run-form-container').classList.toggle('hidden');
@@ -601,7 +641,7 @@
         });
 
         // --- Inicialização ---
-        fetchGames();
+        displayGames();
     </script>
 </body>
 </html>
