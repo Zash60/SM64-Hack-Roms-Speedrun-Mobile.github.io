@@ -746,12 +746,20 @@
 
 
         // --- Navigation & Event Listeners ---
+        // ****** THIS IS THE CORRECTED FUNCTION ******
         function switchView(viewName) {
             Object.values(DOMElements.views).forEach(v => v.classList.remove('active'));
             Object.values(DOMElements.nav).forEach(n => n.classList.remove('active'));
             
-            DOMElements.views[viewName].classList.add('active');
-            DOMElements.nav[viewName].classList.add('active');
+            // Activate the correct view (e.g., home, leaderboard)
+            if (DOMElements.views[viewName]) {
+                DOMElements.views[viewName].classList.add('active');
+            }
+
+            // ONLY activate a nav button if it exists for that view
+            if (DOMElements.nav[viewName]) {
+                DOMElements.nav[viewName].classList.add('active');
+            }
         }
 
         DOMElements.nav.home.addEventListener('click', () => switchView('home'));
