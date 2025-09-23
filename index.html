@@ -110,6 +110,7 @@
             border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 1rem;
+            box-sizing: border-box;
         }
         .category-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap;}
         .category-buttons button {
@@ -122,12 +123,11 @@
             color: var(--bg-color);
             font-weight: bold;
         }
-        /* Styles for Subcategories */
         .subcategory-group {
             margin-top: 1rem;
         }
         .subcategory-label {
-            margin: 0 0 0.5rem 0;
+            margin: 0 0 0.5rem 0.2rem;
             font-size: 0.9rem;
             color: var(--text-muted);
             text-transform: uppercase;
@@ -154,8 +154,18 @@
         #leaderboard-table th { color: var(--text-muted); }
         #leaderboard-table td:nth-child(1) { font-weight: bold; }
 
-        /* --- Mod Page --- */
-        #mod-page h2 { margin-bottom: 2rem; }
+        /* --- MOD PAGE UI IMPROVEMENT --- */
+        .mod-card {
+            background-color: var(--card-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        #mod-page h2 { 
+            margin-top: 0;
+            margin-bottom: 2rem; 
+            text-align: center;
+        }
         #login-form, #submit-run-form {
             display: flex;
             flex-direction: column;
@@ -163,7 +173,7 @@
         }
         #mod-content input {
             padding: 0.8rem;
-            background-color: var(--card-color);
+            background-color: var(--bg-color); /* Darker input background */
             color: var(--text-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -179,6 +189,7 @@
             font-size: 1rem;
             font-weight: bold;
             transition: background-color 0.2s ease;
+            margin-top: 0.5rem;
         }
         #mod-content button:disabled {
             background-color: var(--border-color);
@@ -246,25 +257,29 @@
 
             <!-- Mod Page: Login / Submit Run -->
             <div id="mod-page" class="page">
-                <div id="login-view">
-                    <h2>Mod Login</h2>
-                    <form id="login-form">
-                        <input type="email" id="login-email" name="email" placeholder="Email" required>
-                        <input type="password" id="login-password" name="password" placeholder="Password" required>
-                        <button type="submit">Login</button>
-                        <p id="login-error" style="color: #ef4444;"></p>
-                    </form>
-                </div>
-                <div id="logged-in-view">
-                    <h2>Submit Run</h2>
-                    <p>You are logged in as <b id="user-email"></b></p>
-                    <form id="submit-run-form">
-                        <p>Submitting for: <b id="submit-context"></b></p>
-                        <input type="text" id="submit-player" placeholder="Player Name" required>
-                        <input type="text" id="submit-time" placeholder="Time (e.g., 1m 23s 456ms)" required>
-                        <button type="submit">Submit</button>
-                    </form>
-                    <button id="logout-button">Logout</button>
+                <div id="mod-content">
+                    <!-- Login View -->
+                    <div id="login-view" class="mod-card">
+                        <h2>Mod Login</h2>
+                        <form id="login-form">
+                            <input type="email" id="login-email" name="email" placeholder="Email" required>
+                            <input type="password" id="login-password" name="password" placeholder="Password" required>
+                            <button type="submit">Login</button>
+                            <p id="login-error" style="color: #ef4444; text-align: center;"></p>
+                        </form>
+                    </div>
+                    <!-- Logged In View -->
+                    <div id="logged-in-view" class="mod-card">
+                        <h2>Submit Run</h2>
+                        <p style="text-align: center;">You are logged in as <b id="user-email"></b></p>
+                        <form id="submit-run-form">
+                            <p>Submitting for: <b id="submit-context"></b></p>
+                            <input type="text" id="submit-player" placeholder="Player Name" required>
+                            <input type="text" id="submit-time" placeholder="Time (e.g., 1m 23s 456ms)" required>
+                            <button type="submit">Submit</button>
+                        </form>
+                        <button id="logout-button">Logout</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -294,38 +309,10 @@
         let currentUser = null;
         const apiCache = {};
 
-        const pages = {
-            home: document.getElementById('home-page'),
-            leaderboard: document.getElementById('leaderboard-page'),
-            mod: document.getElementById('mod-page')
-        };
-        const buttons = {
-            home: document.getElementById('home-btn'),
-            mod: document.getElementById('mod-btn'),
-            back: document.getElementById('back-to-home-btn'),
-            goToSubmit: document.getElementById('go-to-submit-btn')
-        };
-        const leaderboardUI = {
-            title: document.getElementById('game-title'),
-            loader: document.getElementById('leaderboard-loader'),
-            tableBody: document.getElementById('leaderboard-body'),
-            typeSelector: document.getElementById('type-selector'),
-            fullGameCategories: document.getElementById('full-game-categories'),
-            levelCategoriesContainer: document.getElementById('level-categories-container'),
-            subcategoriesContainer: document.getElementById('subcategories-container'),
-            starSelectorContainer: document.getElementById('star-selector-container'),
-            starSelector: document.getElementById('star-selector')
-        };
-        const modUI = {
-            loginView: document.getElementById('login-view'),
-            loggedInView: document.getElementById('logged-in-view'),
-            loginForm: document.getElementById('login-form'),
-            submitRunForm: document.getElementById('submit-run-form'),
-            loginError: document.getElementById('login-error'),
-            userEmail: document.getElementById('user-email'),
-            logoutButton: document.getElementById('logout-button'),
-            submitContext: document.getElementById('submit-context')
-        };
+        const pages = { home: document.getElementById('home-page'), leaderboard: document.getElementById('leaderboard-page'), mod: document.getElementById('mod-page') };
+        const buttons = { home: document.getElementById('home-btn'), mod: document.getElementById('mod-btn'), back: document.getElementById('back-to-home-btn'), goToSubmit: document.getElementById('go-to-submit-btn') };
+        const leaderboardUI = { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), subcategoriesContainer: document.getElementById('subcategories-container'), starSelectorContainer: document.getElementById('star-selector-container'), starSelector: document.getElementById('star-selector') };
+        const modUI = { loginView: document.getElementById('login-view'), loggedInView: document.getElementById('logged-in-view'), loginForm: document.getElementById('login-form'), submitRunForm: document.getElementById('submit-run-form'), loginError: document.getElementById('login-error'), userEmail: document.getElementById('user-email'), logoutButton: document.getElementById('logout-button'), submitContext: document.getElementById('submit-context') };
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
 
@@ -347,13 +334,13 @@
             Object.values(pages).forEach(page => page.classList.remove('active'));
             pages[pageName].classList.add('active');
             document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-            if(pageName === 'home') document.getElementById('home-btn').classList.add('active');
-            if(pageName === 'mod') document.getElementById('mod-btn').classList.add('active');
+            if(pageName === 'home') buttons.home.classList.add('active');
+            if(pageName === 'mod') buttons.mod.classList.add('active');
         }
 
         async function loadGames() {
-            // UPDATED: Removed max=50 to load all hacks.
-            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=asc&max=250`;
+            // UPDATED: Changed direction to 'desc' to show newest hacks first
+            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=desc&max=250`;
             const gamesData = await fetchData(url);
             const gameList = document.getElementById('game-list');
             gameList.innerHTML = ''; 
@@ -386,10 +373,8 @@
             showPage('leaderboard');
             leaderboardUI.title.textContent = "Loading...";
             resetLeaderboardView();
-
             const url = `${SRC_API_BASE}/games/${gameId}?embed=categories,levels,variables`;
             const data = await fetchData(url);
-            
             if (data && data.data) {
                 currentGameData = data.data;
                 leaderboardUI.title.textContent = currentGameData.names.international;
@@ -408,8 +393,6 @@
             leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
             leaderboardUI.loader.style.display = 'block';
         }
-        
-        // --- All the leaderboard rendering functions are the same as before ---
 
         function populateTypeSelector() {
             leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
@@ -420,19 +403,14 @@
         
         function updateControls() {
             const isFullGame = leaderboardUI.typeSelector.value === 'full-game';
-
             leaderboardUI.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
             leaderboardUI.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
-
-            if (isFullGame) {
-                populateFullGameCategories();
-            } else {
-                populateLevelSelector();
-            }
+            if (isFullGame) populateFullGameCategories();
+            else populateLevelSelector();
         }
 
         function populateFullGameCategories() {
@@ -442,15 +420,13 @@
                 const btn = document.createElement('button');
                 btn.textContent = cat.name;
                 btn.dataset.categoryId = cat.id;
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', e => {
                     setActiveButton(leaderboardUI.fullGameCategories, e.target);
                     populateSubcategories(cat.id);
                 });
                 leaderboardUI.fullGameCategories.appendChild(btn);
             });
-            if(leaderboardUI.fullGameCategories.firstChild) {
-                 leaderboardUI.fullGameCategories.firstChild.click();
-            }
+            if(leaderboardUI.fullGameCategories.firstChild) leaderboardUI.fullGameCategories.firstChild.click();
         }
 
         function populateLevelSelector() {
@@ -458,17 +434,13 @@
             const levelSelect = document.createElement('select');
             levelSelect.id = "level-selector";
             levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
-            currentGameData.levels.data.forEach(level => {
-                levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`;
-            });
-            
-            levelSelect.addEventListener('change', (e) => populateLevelSubCategories(e.target.value));
+            currentGameData.levels.data.forEach(level => levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`);
+            levelSelect.addEventListener('change', e => populateLevelSubCategories(e.target.value));
             leaderboardUI.levelCategoriesContainer.appendChild(levelSelect);
         }
 
         function populateLevelSubCategories(levelId) {
             leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
-            
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
@@ -476,63 +448,41 @@
                 leaderboardUI.loader.textContent = "Please select a level.";
                 return;
             };
-
             const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
             const btnsContainer = document.createElement('div');
             btnsContainer.className = 'category-buttons';
-            
             levelCats.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.textContent = cat.name;
                 btn.dataset.categoryId = cat.id;
                 btn.dataset.levelId = levelId;
-                
-                btn.addEventListener('click', (e) => {
+                btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
-                    if (cat.name.toLowerCase().includes('single star')) {
-                        populateStarSelector(levelId, cat.id);
-                    } else {
+                    if (cat.name.toLowerCase().includes('single star')) populateStarSelector(levelId, cat.id);
+                    else {
                         leaderboardUI.starSelectorContainer.style.display = 'none';
                         populateSubcategories(cat.id, levelId);
                     }
                 });
                 btnsContainer.appendChild(btn);
             });
-            
             leaderboardUI.levelCategoriesContainer.appendChild(btnsContainer);
-
-             if(btnsContainer.firstChild) {
-                 btnsContainer.firstChild.click();
-            }
+            if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
         function populateStarSelector(levelId, categoryId) {
             leaderboardUI.starSelectorContainer.style.display = 'block';
             leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
-            
-            const starVariable = currentGameData.variables.data.find(v => 
-                !v['is-subcategory'] && v.scope.type === 'per-level' && 
-                v.scope.level === levelId && v.category === categoryId
-            );
-
+            const starVariable = currentGameData.variables.data.find(v => !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId && v.category === categoryId);
             if (starVariable && starVariable.values.values) {
-                Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
-                     leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
-                });
+                Object.entries(starVariable.values.values).forEach(([starId, starData]) => leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`);
             }
-
-            leaderboardUI.starSelector.onchange = () => {
-                populateSubcategories(categoryId, levelId);
-            };
+            leaderboardUI.starSelector.onchange = () => populateSubcategories(categoryId, levelId);
         }
 
         function populateSubcategories(categoryId, levelId = null) {
             leaderboardUI.subcategoriesContainer.innerHTML = '';
-            
-            const relevantVariables = currentGameData.variables.data.filter(v =>
-                v['is-subcategory'] && v.category === categoryId
-            );
-
+            const relevantVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
             relevantVariables.forEach(variable => {
                 const group = document.createElement('div');
                 group.className = 'subcategory-group';
@@ -541,15 +491,12 @@
                 label.textContent = variable.name;
                 const select = document.createElement('select');
                 select.dataset.variableId = variable.id;
-                Object.entries(variable.values.values).forEach(([valueId, valueData]) => {
-                    select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`;
-                });
+                Object.entries(variable.values.values).forEach(([valueId, valueData]) => select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`);
                 select.addEventListener('change', fetchAndRenderLeaderboard);
                 group.appendChild(label);
                 group.appendChild(select);
                 leaderboardUI.subcategoriesContainer.appendChild(group);
             });
-            
             fetchAndRenderLeaderboard();
         }
 
@@ -561,14 +508,11 @@
                 leaderboardUI.loader.textContent = 'Please complete your selection.';
                 return;
             }
-
             leaderboardUI.loader.style.display = 'block';
             leaderboardUI.loader.textContent = 'Loading leaderboard...';
             leaderboardUI.tableBody.innerHTML = '';
-
             const runsRef = ref(db, `runs/${leaderboardPath}`);
             const runsQuery = query(runsRef, orderByChild('time'));
-            
             try {
                 const snapshot = await get(runsQuery);
                 if (snapshot.exists()) {
@@ -581,7 +525,7 @@
                 }
             } catch (error) {
                 console.error("Error fetching leaderboard from Firebase:", error);
-                leaderboardUI.loader.textContent = `Error loading leaderboard: ${error.message}`;
+                leaderboardUI.loader.textContent = `Error: ${error.message}. Please check Firebase rules.`;
             }
         }
         
@@ -598,7 +542,6 @@
             const gameId = currentGameData.id;
             const type = leaderboardUI.typeSelector.value;
             let categoryId, levelId;
-
             if (type === 'full-game') {
                 const activeCat = leaderboardUI.fullGameCategories.querySelector('button.active');
                 if (!activeCat) return null;
@@ -610,18 +553,11 @@
                 levelId = selectedLevel;
                 categoryId = activeLevelCat.dataset.categoryId;
             }
-
-            let path = `${gameId}/`;
-            if (levelId) path += `level_${levelId}/`;
-            path += `${categoryId}`;
-
-            const subcatSelects = leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]');
-            subcatSelects.forEach(sel => path += `/${sel.value}`);
-
+            let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
+            leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
             if (leaderboardUI.starSelectorContainer.style.display === 'block' && leaderboardUI.starSelector.value) {
                 path += `/${leaderboardUI.starSelector.value}`;
             }
-
             return path.replace(/[.#$[\]/]/g, '_');
         }
 
@@ -638,17 +574,14 @@
                 }
             });
 
-            modUI.loginForm.addEventListener('submit', async (e) => {
+            modUI.loginForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 modUI.loginError.textContent = '';
                 const loginButton = modUI.loginForm.querySelector('button');
                 loginButton.disabled = true;
                 loginButton.textContent = 'Logging in...';
-
                 try {
-                    const email = modUI.loginForm.email.value;
-                    const password = modUI.loginForm.password.value;
-                    await signInWithEmailAndPassword(auth, email, password);
+                    await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value);
                 } catch (error) {
                     modUI.loginError.textContent = error.message;
                 } finally {
@@ -659,18 +592,12 @@
 
             modUI.logoutButton.addEventListener('click', () => signOut(auth));
             
-            modUI.submitRunForm.addEventListener('submit', async (e) => {
+            modUI.submitRunForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 if (!currentUser) { alert('You must be logged in.'); return; }
                 const path = getFirebasePath();
                 if (!path) { alert('A category is not fully selected.'); return; }
-
-                const runData = {
-                    player: document.getElementById('submit-player').value,
-                    time: document.getElementById('submit-time').value,
-                    submittedAt: new Date().toISOString()
-                };
-
+                const runData = { player: document.getElementById('submit-player').value, time: document.getElementById('submit-time').value, submittedAt: new Date().toISOString() };
                 try {
                     await set(push(ref(db, `runs/${path}`)), runData);
                     alert('Run submitted successfully!');
@@ -701,7 +628,6 @@
                 updateSubmitContext();
                 showPage('mod');
             });
-            
             leaderboardUI.typeSelector.addEventListener('change', updateControls);
             loadGames();
             setupModPage();
