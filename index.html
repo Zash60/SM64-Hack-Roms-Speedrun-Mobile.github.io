@@ -124,7 +124,7 @@
                         <select id="type-selector"></select>
                         <div id="full-game-categories" class="category-buttons"></div>
                         <div id="level-categories-container" style="display: none;"></div>
-                        <div id="variables-container"></div> <!-- Container Único para todas as variáveis -->
+                        <div id="variables-container"></div>
                     </div>
                 </div>
                 <div class="loader" id="leaderboard-loader">Select a category to view the leaderboard.</div>
@@ -161,12 +161,12 @@
         </main>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getDatabase, ref, push, set, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         
+        // PT-BR: Suas credenciais do Firebase. Mantenha-as seguras.
         const firebaseConfig = {
             apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
@@ -310,7 +310,9 @@
             levelSelect.addEventListener('change', e => {
                 ui.leaderboard.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
                 resetVariableViews();
-                populateLevelSubCategories(e.target.value);
+                if (e.target.value) {
+                    populateLevelSubCategories(e.target.value);
+                }
             });
             ui.leaderboard.levelCategoriesContainer.appendChild(levelSelect);
         }
@@ -320,6 +322,7 @@
             const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
             const btnsContainer = document.createElement('div');
             btnsContainer.className = 'category-buttons';
+            btnsContainer.style.marginTop = '0.8rem';
             levelCats.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.textContent = cat.name;
@@ -334,27 +337,32 @@
             if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
-        // --- INÍCIO DA FUNÇÃO UNIVERSAL REESCRITA ---
+        // PT-BR: --- INÍCIO DA FUNÇÃO CORRIGIDA ---
+        // Esta função agora é universal. Ela encontra e exibe TODAS as variáveis
+        // relevantes para a seleção atual, sejam elas subcategorias (como "120 Star")
+        // ou variáveis de nível (como as estrelas de uma fase).
         function displayVariablesForSelection({ levelId = null, categoryId = null }) {
             ui.leaderboard.variablesContainer.innerHTML = '';
 
-            // 1. Encontrar TODAS as variáveis relevantes (estrelas E subcategorias)
-            const allVariables = currentGameData.variables.data.filter(variable => {
-                // Subcategorias são relevantes se pertencerem à categoria atual
+            // 1. Encontra todas as variáveis relevantes.
+            const relevantVariables = currentGameData.variables.data.filter(variable => {
+                // Variável é uma subcategoria E pertence à categoria principal selecionada.
                 if (variable['is-subcategory'] && variable.category === categoryId) {
                     return true;
                 }
-                // Estrelas são relevantes se pertencerem ao nível atual
+                // Variável NÃO é uma subcategoria, tem escopo de "nível" E pertence ao nível selecionado.
+                // Isso é usado para as "estrelas" individuais.
                 if (!variable['is-subcategory'] && variable.scope.type === 'per-level' && variable.scope.level === levelId) {
                     return true;
                 }
                 return false;
             });
 
-            // 2. Criar um seletor para cada variável encontrada
-            allVariables.forEach(variable => {
+            // 2. Cria um seletor <select> para cada variável encontrada.
+            relevantVariables.forEach(variable => {
                 const group = document.createElement('div');
                 group.className = 'variable-group';
+                
                 const label = document.createElement('p');
                 label.className = 'variable-label';
                 label.textContent = variable.name;
@@ -362,35 +370,44 @@
                 const select = document.createElement('select');
                 select.dataset.variableId = variable.id;
                 
-                // Se for uma variável de estrela, adicione a opção "placeholder"
-                const placeholder = variable['is-subcategory'] ? '' : `<option value="">-- Select a Star --</option>`;
-                select.innerHTML = placeholder;
+                // PT-BR: Adiciona uma opção "placeholder" apenas se NÃO for uma subcategoria.
+                // Subcategorias geralmente têm um valor padrão e não precisam de um "selecione".
+                if (!variable['is-subcategory']) {
+                    select.innerHTML = `<option value="">-- Select ${variable.name} --</option>`;
+                }
                 
                 Object.entries(variable.values.values).forEach(([valueId, valueData]) => {
                     select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`;
                 });
 
+                // PT-BR: Sempre que um valor do seletor muda, tentamos carregar o leaderboard.
                 select.addEventListener('change', fetchAndRenderLeaderboard);
                 group.appendChild(label);
                 group.appendChild(select);
                 ui.leaderboard.variablesContainer.appendChild(group);
             });
             
+            // PT-BR: Carrega o leaderboard com os valores padrão (ou vazios) iniciais.
             fetchAndRenderLeaderboard();
         }
-        // --- FIM DA FUNÇÃO UNIVERSAL REESCRITA ---
+        // PT-BR: --- FIM DA FUNÇÃO CORRIGIDA ---
 
         async function fetchAndRenderLeaderboard() {
             const leaderboardPath = getFirebasePath();
+            
+            // PT-BR: Se o caminho não estiver completo (ex: uma estrela não foi selecionada),
+            // exibe uma mensagem e não continua.
             if (!leaderboardPath) {
                 ui.leaderboard.tableBody.innerHTML = '';
                 ui.leaderboard.loader.style.display = 'block';
                 ui.leaderboard.loader.textContent = 'Please complete your selection.';
                 return;
             }
+
             ui.leaderboard.loader.style.display = 'block';
             ui.leaderboard.loader.textContent = 'Loading leaderboard...';
             ui.leaderboard.tableBody.innerHTML = '';
+            
             const runsRef = ref(db, `runs/${leaderboardPath}`);
             const runsQuery = query(runsRef, orderByChild('time'));
             try {
@@ -414,16 +431,18 @@
             });
         }
 
+        // PT-BR: Esta função monta o caminho para o Firebase com base em TODAS as seleções.
         function getFirebasePath() {
             if (!currentGameData) return null;
             let categoryId, levelId;
+            
             if (ui.leaderboard.typeSelector.value === 'full-game') {
                 const activeCat = ui.leaderboard.fullGameCategories.querySelector('button.active');
                 if (!activeCat) return null;
                 categoryId = activeCat.dataset.categoryId;
             } else {
-                const activeLevelCat = ui.leaderboard.levelCategoriesContainer.querySelector('.category-buttons button.active');
                 levelId = document.getElementById('level-selector')?.value;
+                const activeLevelCat = ui.leaderboard.levelCategoriesContainer.querySelector('.category-buttons button.active');
                 if (!levelId || !activeLevelCat) return null;
                 categoryId = activeLevelCat.dataset.categoryId;
             }
@@ -432,10 +451,12 @@
             
             const variableSelectors = ui.leaderboard.variablesContainer.querySelectorAll('select');
             for(const sel of variableSelectors) {
-                if(!sel.value) return null; // Se qualquer seletor (especialmente de estrela) não for escolhido, para aqui.
-                path += `/${sel.value}`;
+                // PT-BR: Se qualquer seletor de variável estiver sem valor, o caminho é inválido.
+                if(!sel.value) return null; 
+                path += `/${sel.dataset.variableId}_${sel.value}`;
             }
 
+            // PT-BR: Substitui caracteres inválidos no Firebase por '_'.
             return path.replace(/[.#$[\]/]/g, '_');
         }
 
