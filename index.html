@@ -13,7 +13,6 @@
             --border-color: #3f3f46;
             --accent-color: #f59e0b;
         }
-
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -21,13 +20,10 @@
             margin: 0;
             padding: 1rem;
         }
-
         .container {
             max-width: 800px;
             margin: auto;
         }
-
-        /* --- Header --- */
         header {
             display: flex;
             justify-content: space-between;
@@ -35,176 +31,75 @@
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border-color);
         }
-        header h1 {
-            font-size: 1.5rem;
-            margin: 0;
-        }
+        header h1 { font-size: 1.5rem; margin: 0; }
         nav button {
-            background: none;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
+            background: none; border: 1px solid var(--border-color); color: var(--text-color);
+            padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 1rem;
         }
         nav button.active {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            border-color: var(--accent-color);
+            background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color);
         }
-
-        /* --- Page Views --- */
         .page { display: none; }
         .page.active { display: block; }
-
-        /* --- Home Page (Game List) --- */
         #game-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-            padding-top: 1rem;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem; padding-top: 1rem;
         }
         .game-card {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.2s ease;
+            background-color: var(--card-color); border-radius: 8px; overflow: hidden;
+            cursor: pointer; transition: transform 0.2s ease;
         }
         .game-card:hover { transform: translateY(-5px); }
-        .game-card img {
-            width: 100%;
-            height: 100px;
-            object-fit: cover;
-        }
-        .game-card-info {
-            padding: 0.8rem;
-        }
+        .game-card img { width: 100%; height: 100px; object-fit: cover; }
+        .game-card-info { padding: 0.8rem; }
         .game-card-info h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin: 0 0 0.5rem 0; font-size: 1rem; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
         }
-        .game-card-info p {
-            margin: 0;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* --- Leaderboard Page --- */
+        .game-card-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
         #leaderboard-header { padding: 1rem 0; }
         #leaderboard-header h2 { margin: 0 0 1rem 0; }
-        .controls-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 0.8rem;
-        }
+        .controls-grid { display: flex; flex-direction: column; gap: 0.8rem; }
         select, .category-buttons button, .submit-run-btn {
-            width: 100%;
-            padding: 0.8rem;
-            background-color: var(--card-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
-            box-sizing: border-box;
+            width: 100%; padding: 0.8rem; background-color: var(--card-color); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box;
         }
         .category-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap;}
-        .category-buttons button {
-            flex: 1;
-            cursor: pointer;
-            min-width: 80px;
-        }
-        .category-buttons button.active {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            font-weight: bold;
-        }
-        .subcategory-group {
-            margin-top: 1rem;
-        }
+        .category-buttons button { flex: 1; cursor: pointer; min-width: 80px; }
+        .category-buttons button.active { background-color: var(--accent-color); color: var(--bg-color); font-weight: bold; }
+        .subcategory-group { margin-top: 1rem; }
         .subcategory-label {
-            margin: 0 0 0.5rem 0.2rem;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
+            margin: 0 0 0.5rem 0.2rem; font-size: 0.9rem;
+            color: var(--text-muted); text-transform: uppercase;
         }
-
         .submit-run-btn {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            cursor: pointer;
-            margin-top: 1rem;
-            font-weight: bold;
+            background-color: var(--accent-color); color: var(--bg-color);
+            cursor: pointer; margin-top: 1rem; font-weight: bold;
         }
-
-        #leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
+        #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         #leaderboard-table th, #leaderboard-table td {
-            padding: 0.8rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
+            padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color);
         }
         #leaderboard-table th { color: var(--text-muted); }
-        #leaderboard-table td:nth-child(1) { font-weight: bold; }
-
-        /* --- MOD PAGE UI --- */
         .mod-card {
-            background-color: var(--card-color);
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-top: 1rem;
+            background-color: var(--card-color); padding: 1.5rem;
+            border-radius: 8px; margin-top: 1rem;
         }
-        #mod-page h2 { 
-            margin-top: 0;
-            margin-bottom: 2rem; 
-            text-align: center;
-        }
-        #login-form, #submit-run-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
+        #mod-page h2 { margin-top: 0; margin-bottom: 2rem; text-align: center; }
+        #login-form, #submit-run-form { display: flex; flex-direction: column; gap: 1rem; }
         #mod-content input {
-            padding: 0.8rem;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 1rem;
+            padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem;
         }
         #mod-content button {
-            padding: 0.8rem;
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
-            margin-top: 0.5rem;
+            padding: 0.8rem; background-color: var(--accent-color); color: var(--bg-color);
+            border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;
+            font-weight: bold; transition: background-color 0.2s ease; margin-top: 0.5rem;
         }
-        #mod-content button:disabled {
-            background-color: var(--border-color);
-            cursor: not-allowed;
-        }
+        #mod-content button:disabled { background-color: var(--border-color); cursor: not-allowed; }
         #logout-button { background-color: #ef4444; }
         #logged-in-view { display: none; }
-
-        /* --- Loader --- */
-        .loader {
-            text-align: center;
-            padding: 2rem;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-        }
+        .loader { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -439,7 +334,7 @@
                 btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
                     if (cat.name.toLowerCase().includes('single star')) {
-                         populateStarSelector(levelId); // Call with just levelId
+                         populateStarSelector(levelId);
                     } else {
                         leaderboardUI.starSelectorContainer.style.display = 'none';
                         populateSubcategories(cat.id, levelId);
@@ -451,12 +346,12 @@
             if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
+        // --- INÍCIO DA CORREÇÃO ---
         function populateStarSelector(levelId) {
             leaderboardUI.starSelectorContainer.style.display = 'block';
             leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
             
-            // CORREÇÃO CRÍTICA: A variável de estrelas é ligada apenas ao nível, não à categoria.
-            // Removemos a verificação "v.category === categoryId".
+            // CORREÇÃO: Encontre a ÚNICA variável de estrela que corresponde ao NÍVEL SELECIONADO.
             const starVariable = currentGameData.variables.data.find(v => 
                 !v['is-subcategory'] && 
                 v.scope.type === 'per-level' && 
@@ -464,15 +359,26 @@
             );
 
             if (starVariable && starVariable.values.values) {
+                // Adicione o título da lista de estrelas (ex: "C1 Stars") se ele existir.
+                const label = document.createElement('p');
+                label.className = 'subcategory-label';
+                label.textContent = starVariable.name;
+                // Insere o label ANTES do seletor, se ele ainda não estiver lá.
+                leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
+                leaderboardUI.starSelectorContainer.prepend(label);
+
                 Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
                     leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
                 });
+            } else {
+                // Limpa o label se nenhuma variável for encontrada.
+                leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
             }
             
-            // Quando uma estrela for selecionada, atualize o leaderboard
             leaderboardUI.starSelector.onchange = fetchAndRenderLeaderboard;
-            fetchAndRenderLeaderboard(); // Fetch initially for the placeholder
+            fetchAndRenderLeaderboard();
         }
+        // --- FIM DA CORREÇÃO ---
 
         function populateSubcategories(categoryId, levelId = null) {
             leaderboardUI.subcategoriesContainer.innerHTML = '';
@@ -519,7 +425,7 @@
                 }
             } catch (error) {
                 console.error("Error fetching leaderboard from Firebase:", error);
-                leaderboardUI.loader.textContent = `Error: ${error.message}. Please check Firebase rules.`;
+                leaderboardUI.loader.textContent = `Error: ${error.message}.`;
             }
         }
         
@@ -552,7 +458,6 @@
             if (leaderboardUI.starSelectorContainer.style.display === 'block' && leaderboardUI.starSelector.value) {
                 path += `/${leaderboardUI.starSelector.value}`;
             } else if (leaderboardUI.starSelectorContainer.style.display === 'block' && !leaderboardUI.starSelector.value) {
-                // Se o seletor de estrelas está visível mas nenhuma estrela foi selecionada, não podemos buscar um leaderboard
                 return null;
             }
             return path.replace(/[.#$[\]/]/g, '_');
