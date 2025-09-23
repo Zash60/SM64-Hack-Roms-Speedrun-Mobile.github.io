@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Hacks Speedrun</title>
+    <title>SM64 Hacks Speedrun Mobile</title>
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --card-color: #2a2a2a;
-            --text-color: #f0f0f0;
-            --primary-color: #e53d00;
-            --border-color: #444;
-            --accent-color: #ffd700;
+            --bg-color: #18181b;
+            --card-color: #27272a;
+            --text-color: #e4e4e7;
+            --text-muted: #a1a1aa;
+            --border-color: #3f3f46;
+            --accent-color: #f59e0b;
         }
 
         body {
@@ -19,306 +19,258 @@
             color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 1rem;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
-        /* --- Estrutura Principal --- */
-        #app-container {
+        .container {
             max-width: 800px;
             margin: auto;
-            padding: 10px;
         }
 
+        /* --- Header --- */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            background-color: var(--card-color);
-            border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
         }
-
         header h1 {
+            font-size: 1.5rem;
             margin: 0;
-            font-size: 1.5em;
-            color: var(--primary-color);
         }
-
         nav button {
             background: none;
-            border: 1px solid var(--text-color);
+            border: 1px solid var(--border-color);
             color: var(--text-color);
-            padding: 8px 12px;
-            margin-left: 10px;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: 5px;
-            transition: background-color 0.2s;
+            font-size: 1rem;
         }
-
         nav button.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border-color: var(--accent-color);
         }
 
-        /* --- Views --- */
-        .view {
-            padding-top: 20px;
-        }
+        /* --- Page Views --- */
+        .page { display: none; }
+        .page.active { display: block; }
 
-        /* --- Loader --- */
-        #loader {
-            text-align: center;
-            font-size: 1.2em;
-            padding: 40px;
-        }
-
-        /* --- Home View (Lista de Jogos) --- */
-        #games-grid {
+        /* --- Home Page (Game List) --- */
+        #game-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
+            gap: 1rem;
+            padding-top: 1rem;
         }
-
         .game-card {
             background-color: var(--card-color);
             border-radius: 8px;
             overflow: hidden;
             cursor: pointer;
-            transition: transform 0.2s;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
+            transition: transform 0.2s ease;
         }
-
-        .game-card:hover {
-            transform: scale(1.05);
-            border-color: var(--primary-color);
-        }
-
-        .game-card-image-container {
+        .game-card:hover { transform: translateY(-5px); }
+        .game-card img {
             width: 100%;
-            height: 120px;
-            background-color: #444;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5em;
-            color: #777;
-        }
-
-        .game-card-image-container img {
-            width: 100%;
-            height: 100%;
+            height: 100px;
             object-fit: cover;
         }
+        .game-card-info {
+            padding: 0.8rem;
+        }
+        .game-card-info h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1rem;
+        }
+        .game-card-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
 
-        .game-card-title {
-            padding: 10px;
-            font-weight: bold;
-            font-size: 0.9em;
-            text-align: center;
-            flex-grow: 1;
+        /* --- Leaderboard Page --- */
+        #leaderboard-header { padding: 1rem 0; }
+        #leaderboard-header h2 { margin: 0 0 1rem 0; }
+        .controls-grid {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            gap: 0.8rem;
         }
-
-        /* --- Game & Leaderboard Views --- */
-        .breadcrumb {
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            color: #aaa;
-        }
-        .breadcrumb a {
-            color: var(--text-color);
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .breadcrumb a:hover { text-decoration: underline; }
-
-        .list-container h2 {
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 5px;
-            margin-top: 25px;
-        }
-        .list-container:first-child h2 { margin-top: 0; }
-
-        .list-item {
+        select, .category-buttons button, .submit-run-btn {
+            width: 100%;
+            padding: 0.8rem;
             background-color: var(--card-color);
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 5px;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .category-buttons { display: flex; gap: 0.5rem; }
+        .category-buttons button {
+            flex: 1;
             cursor: pointer;
-            border-left: 3px solid transparent;
-            transition: all 0.2s;
+        }
+        .category-buttons button.active {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            font-weight: bold;
+        }
+        /* Styles for Subcategories */
+        .subcategory-group {
+            margin-top: 1rem;
+        }
+        .subcategory-label {
+            margin: 0 0 0.5rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
         }
 
-        .list-item:hover {
-            border-left: 3px solid var(--primary-color);
-            background-color: #333;
+        .submit-run-btn {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            cursor: pointer;
+            margin-top: 1rem;
+            font-weight: bold;
         }
 
         #leaderboard-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 1rem;
         }
-
         #leaderboard-table th, #leaderboard-table td {
-            padding: 12px;
+            padding: 0.8rem;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
         }
+        #leaderboard-table th { color: var(--text-muted); }
+        #leaderboard-table td:nth-child(1) { font-weight: bold; }
 
-        #leaderboard-table th {
-            background-color: #333;
+        /* --- Mod Page --- */
+        #mod-page h2 { margin-bottom: 2rem; }
+        #login-form, #submit-run-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
-
-        #leaderboard-table tr:nth-child(even) {
+        #mod-content input {
+            padding: 0.8rem;
             background-color: var(--card-color);
-        }
-
-        .rank-1 { color: gold; font-weight: bold; }
-        .rank-2 { color: silver; }
-        .rank-3 { color: #cd7f32; }
-
-        /* --- Mod View & Forms --- */
-        .form-container {
-            background-color: var(--card-color);
-            padding: 20px;
-            border-radius: 8px;
-        }
-        .form-container h2 { margin-top: 0; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; }
-        .form-group input {
-            width: 100%;
-            padding: 10px;
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
             color: var(--text-color);
-            border-radius: 5px;
-            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
         }
-
-        button.primary-btn {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 15px;
+        #mod-content button {
+            padding: 0.8rem;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            width: 100%;
-            font-size: 1em;
+            font-size: 1rem;
             font-weight: bold;
         }
-        button.primary-btn:hover { background-color: #c43100; }
-        #logout-btn { background-color: #888; margin-top: 15px; }
-        #logout-btn:hover { background-color: #666; }
+        #logout-button { background-color: #ef4444; }
+        #logged-in-view { display: none; }
 
-        #submit-run-btn {
-            margin-top: 20px;
-            padding: 12px;
+        /* --- Loader --- */
+        .loader {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--text-muted);
         }
 
-        #error-message {
-            color: #ff4d4d;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
+    <div class="container">
         <header>
-            <h1>SM64 Hacks Mobile</h1>
+            <h1>SM64 Hacks</h1>
             <nav>
-                <button id="home-tab" class="active">Home</button>
-                <button id="mod-tab">Mod</button>
+                <button id="home-btn" class="active">Home</button>
+                <button id="mod-btn">Mod</button>
             </nav>
         </header>
 
         <main>
-            <div id="loader" class="">
-                <p>Carregando jogos...</p>
-            </div>
-            
-            <div id="home-view" class="view">
-                <div id="games-grid"></div>
+            <!-- Home Page: List of Games -->
+            <div id="home-page" class="page active">
+                <div class="loader">Loading games...</div>
+                <div id="game-list"></div>
             </div>
 
-            <div id="game-view" class="view hidden">
-                <div class="breadcrumb" id="game-breadcrumb"></div>
-                <div id="game-details"></div>
-            </div>
-
-            <div id="leaderboard-view" class="view hidden">
-                <div class="breadcrumb" id="leaderboard-breadcrumb"></div>
-                <div class="list-container">
-                    <h2 id="leaderboard-title">Leaderboard</h2>
-                    <table id="leaderboard-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Tempo</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody id="leaderboard-body"></tbody>
-                    </table>
-                </div>
-                <button id="submit-run-btn" class="primary-btn hidden">Submit Run</button>
-                <div id="submit-run-form-container" class="form-container hidden" style="margin-top: 20px;">
-                    <h2>Enviar Tempo</h2>
-                    <form id="submit-run-form">
-                        <div class="form-group">
-                            <label for="run-time">Tempo (ex: 1m 23s 456ms)</label>
-                            <input type="text" id="run-time" required>
+            <!-- Leaderboard Page: Game Details and Leaderboard -->
+            <div id="leaderboard-page" class="page">
+                <button id="back-to-home-btn">&larr; Back to Games</button>
+                <div id="leaderboard-header">
+                    <h2 id="game-title"></h2>
+                    <div class="controls-grid">
+                        <select id="type-selector"></select>
+                        <div id="full-game-categories" class="category-buttons"></div>
+                        <div id="level-categories-container" style="display: none;"></div>
+                        <!-- Special container for stars -->
+                        <div id="star-selector-container" style="display: none;">
+                             <select id="star-selector"></select>
                         </div>
-                        <button type="submit" class="primary-btn">Enviar</button>
-                    </form>
+                         <!-- Container for subcategories with titles -->
+                        <div id="subcategories-container"></div>
+                    </div>
                 </div>
+                <div class="loader" id="leaderboard-loader">Select a category to view the leaderboard.</div>
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Player</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+                 <button class="submit-run-btn" id="go-to-submit-btn">Submit Run</button>
             </div>
 
-            <div id="mod-view" class="view hidden">
-                <div id="login-container" class="form-container">
-                    <h2>Login de Moderador</h2>
+            <!-- Mod Page: Login / Submit Run -->
+            <div id="mod-page" class="page">
+                <div id="login-view">
+                    <h2>Mod Login</h2>
                     <form id="login-form">
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Senha</label>
-                            <input type="password" id="password" required>
-                        </div>
-                        <button type="submit" class="primary-btn">Entrar</button>
-                        <p id="login-error-message" class="error-message"></p>
+                        <input type="email" id="login-email" placeholder="Email" required>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <button type="submit">Login</button>
+                        <p id="login-error" style="color: #ef4444;"></p>
                     </form>
                 </div>
-
-                <div id="mod-panel" class="hidden">
-                    <h2>Painel do Moderador</h2>
-                    <p>Você está logado. Agora você pode enviar tempos nos leaderboards.</p>
-                    <button id="logout-btn" class="primary-btn">Sair</button>
+                <div id="logged-in-view">
+                    <h2>Submit Run</h2>
+                    <p>You are logged in as <b id="user-email"></b></p>
+                    <form id="submit-run-form">
+                        <p>Submitting for: <b id="submit-context"></b></p>
+                        <input type="text" id="submit-player" placeholder="Player Name" required>
+                        <input type="text" id="submit-time" placeholder="Time (e.g., 1m 23s 456ms)" required>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <button id="logout-button">Logout</button>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Script com a lógica -->
+    <!-- Firebase SDKs -->
     <script type="module">
+        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
+        import { getDatabase, ref, push, set, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
@@ -329,319 +281,433 @@
             appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
         };
 
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        const speedrunApiBase = "https://www.speedrun.com/api/v1";
-        const sm64HacksSeriesId = "sm64romhacks";
+        // --- GLOBAL STATE & CACHE ---
+        let currentGameData = null;
+        let currentUser = null;
+        const apiCache = {}; // Simple cache to avoid re-fetching
 
-        const loader = document.getElementById('loader');
-        const views = document.querySelectorAll('.view');
-        const homeTab = document.getElementById('home-tab');
-        const modTab = document.getElementById('mod-tab');
-        
-        let currentGame = null;
-        let currentLeaderboardInfo = null;
-        let allGamesCache = []; // Cache para não buscar os jogos toda vez
+        // --- UI ELEMENTS ---
+        const pages = {
+            home: document.getElementById('home-page'),
+            leaderboard: document.getElementById('leaderboard-page'),
+            mod: document.getElementById('mod-page')
+        };
+        const buttons = {
+            home: document.getElementById('home-btn'),
+            mod: document.getElementById('mod-btn'),
+            back: document.getElementById('back-to-home-btn'),
+            goToSubmit: document.getElementById('go-to-submit-btn')
+        };
+        const leaderboardUI = {
+            title: document.getElementById('game-title'),
+            loader: document.getElementById('leaderboard-loader'),
+            tableBody: document.getElementById('leaderboard-body'),
+            typeSelector: document.getElementById('type-selector'),
+            fullGameCategories: document.getElementById('full-game-categories'),
+            levelCategoriesContainer: document.getElementById('level-categories-container'),
+            subcategoriesContainer: document.getElementById('subcategories-container'),
+            starSelectorContainer: document.getElementById('star-selector-container'),
+            starSelector: document.getElementById('star-selector')
+        };
+        const modUI = {
+            loginView: document.getElementById('login-view'),
+            loggedInView: document.getElementById('logged-in-view'),
+            loginForm: document.getElementById('login-form'),
+            submitRunForm: document.getElementById('submit-run-form'),
+            loginError: document.getElementById('login-error'),
+            userEmail: document.getElementById('user-email'),
+            logoutButton: document.getElementById('logout-button'),
+            submitContext: document.getElementById('submit-context')
+        };
 
-        // --- Funções de Utilidade ---
-        function showLoader(message = "Carregando...") { 
-            loader.querySelector('p').textContent = message;
-            loader.classList.remove('hidden'); 
-        }
-        function hideLoader() { loader.classList.add('hidden'); }
+        // --- API HELPERS ---
+        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
 
-        // **NOVO**: Função para limpar o texto Markdown
-        function parseMarkdown(text) {
-            if (!text) return '';
-            // Converte "[texto](url)" para apenas "texto"
-            return text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-        }
-
-        function switchView(viewId) {
-            views.forEach(view => view.classList.add('hidden'));
-            document.getElementById(viewId).classList.remove('hidden');
-            hideLoader();
-            window.scrollTo(0, 0); // Rola para o topo ao mudar de tela
-        }
-
-        function setActiveTab(tab) {
-            [homeTab, modTab].forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-        }
-
-        // --- Funções da API Speedrun.com ---
-        async function apiFetch(url) { // Agora aceita a URL completa
+        async function fetchData(url) {
+            if (apiCache[url]) return apiCache[url];
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                return await response.json();
+                const data = await response.json();
+                apiCache[url] = data;
+                return data;
             } catch (error) {
-                console.error("Erro ao buscar dados da API:", error);
-                alert("Não foi possível carregar os dados. Tente novamente mais tarde.");
+                console.error("Failed to fetch data:", error);
                 return null;
             }
         }
-        
-        // **ATUALIZADO**: Função para buscar TODOS os jogos com paginação
-        async function fetchAllGames() {
-            if (allGamesCache.length > 0) {
-                return allGamesCache;
-            }
 
-            showLoader('Carregando todos os 223+ hacks...');
-            let allGames = [];
-            let nextUrl = `${speedrunApiBase}/series/${sm64HacksSeriesId}/games?orderby=released&direction=asc&max=200`; // max=200 é o máximo por página
-
-            while (nextUrl) {
-                const response = await apiFetch(nextUrl);
-                if (response && response.data) {
-                    allGames.push(...response.data);
-                    const nextLink = response.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri : null;
-                } else {
-                    nextUrl = null; // Para o loop em caso de erro
-                }
-            }
-            allGamesCache = allGames; // Salva no cache
-            return allGames;
+        // --- NAVIGATION ---
+        function showPage(pageName) {
+            Object.values(pages).forEach(page => page.classList.remove('active'));
+            pages[pageName].classList.add('active');
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+            if(pageName === 'home') document.getElementById('home-btn').classList.add('active');
+            if(pageName === 'mod') document.getElementById('mod-btn').classList.add('active');
         }
 
-        async function displayGames() {
-            const games = await fetchAllGames();
-            if (!games) { hideLoader(); return; }
-
-            const gamesGrid = document.getElementById('games-grid');
-            gamesGrid.innerHTML = '';
-            games.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.dataset.gameId = game.id;
-                
-                let imageUrl = '';
-                if (game.assets['cover-medium']?.uri) {
-                    imageUrl = game.assets['cover-medium'].uri;
-                } else if (game.assets['cover-small']?.uri) {
-                    imageUrl = game.assets['cover-small'].uri;
-                }
-
-                const imageHtml = imageUrl 
-                    ? `<img src="${imageUrl}" alt="${game.names.international}">`
-                    : `?`;
-
-                card.innerHTML = `
-                    <div class="game-card-image-container">${imageHtml}</div>
-                    <div class="game-card-title">${game.names.international}</div>
-                `;
-                card.addEventListener('click', () => fetchGameDetails(game.id, game.names.international));
-                gamesGrid.appendChild(card);
-            });
-            switchView('home-view');
-        }
-
-        async function fetchGameDetails(gameId, gameName) {
-            showLoader(`Carregando ${gameName}...`);
-            currentGame = { id: gameId, name: gameName };
-            const [categoriesData, levelsData] = await Promise.all([
-                apiFetch(`${speedrunApiBase}/games/${gameId}/categories`),
-                apiFetch(`${speedrunApiBase}/games/${gameId}/levels`)
-            ]);
-
-            const categories = categoriesData?.data || [];
-            const levels = levelsData?.data || [];
+        // --- HOME PAGE LOGIC ---
+        async function loadGames() {
+            // CHANGE 1: Limited the number of games to 50 for faster loading
+            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=asc&max=50`;
+            const gamesData = await fetchData(url);
+            const gameList = document.getElementById('game-list');
+            gameList.innerHTML = ''; 
             
-            const gameDetailsContainer = document.getElementById('game-details');
-            gameDetailsContainer.innerHTML = '';
-
-            document.getElementById('game-breadcrumb').innerHTML = `<a id="breadcrumb-home">Home</a> > ${gameName}`;
-            document.getElementById('breadcrumb-home').onclick = () => switchView('home-view');
-
-            const fullGameCategories = categories.filter(cat => cat.type === 'per-game');
-            if (fullGameCategories.length > 0) {
-                const container = document.createElement('div');
-                container.className = 'list-container';
-                container.innerHTML = `<h2>Full Game</h2>`;
-                fullGameCategories.forEach(cat => {
-                    const item = document.createElement('div');
-                    item.className = 'list-item';
-                    item.textContent = parseMarkdown(cat.name); // Limpa o nome
-                    item.onclick = () => showLeaderboard(gameId, cat.id, null, cat.name);
-                    container.appendChild(item);
+            if (gamesData && gamesData.data) {
+                document.querySelector('#home-page .loader').style.display = 'none';
+                gamesData.data.forEach(game => {
+                    const releaseDate = new Date(game.released, 0, 1);
+                    const yearsAgo = new Date().getFullYear() - releaseDate.getFullYear();
+                    
+                    const card = document.createElement('div');
+                    card.className = 'game-card';
+                    card.dataset.id = game.id;
+                    card.innerHTML = `
+                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
+                        <div class="game-card-info">
+                            <h3>${game.names.international}</h3>
+                            <p>${yearsAgo > 0 ? `${yearsAgo} years ago` : 'This year'}</p>
+                        </div>
+                    `;
+                    card.addEventListener('click', () => showGamePage(game.id));
+                    gameList.appendChild(card);
                 });
-                gameDetailsContainer.appendChild(container);
             }
-            
-            const perLevelCategories = categories.filter(cat => cat.type === 'per-level');
-            if (perLevelCategories.length > 0 && levels.length > 0) {
-                 for (const level of levels) {
-                    const container = document.createElement('div');
-                    container.className = 'list-container';
-                    container.innerHTML = `<h2>${parseMarkdown(level.name)}</h2>`; // Limpa o nome do nível
-
-                    const singleStarCat = perLevelCategories.find(c => c.name.toLowerCase().includes('single star'));
-                    const stageRTACat = perLevelCategories.find(c => c.name.toLowerCase().includes('stage rta'));
-
-                    if(singleStarCat) {
-                        const variablesData = await apiFetch(`${speedrunApiBase}/levels/${level.id}/variables`);
-                        const variables = variablesData?.data || [];
-                        if(variables.length > 0 && variables[0].is_subcategory) {
-                            const stars = variables[0].values.values;
-                            for (const starKey in stars) {
-                                const star = stars[starKey];
-                                const item = document.createElement('div');
-                                item.className = 'list-item';
-                                item.textContent = parseMarkdown(star.label); // Limpa o nome da estrela
-                                item.onclick = () => showLeaderboard(gameId, singleStarCat.id, level.id, star.label, starKey);
-                                container.appendChild(item);
-                            }
-                        }
-                    } 
-                    if (stageRTACat) {
-                        const item = document.createElement('div');
-                        item.className = 'list-item';
-                        item.textContent = "Stage RTA";
-                        item.onclick = () => showLeaderboard(gameId, stageRTACat.id, level.id, "Stage RTA");
-                        container.appendChild(item);
-                    }
-                    if (container.childElementCount > 1) { // Só adiciona se tiver itens
-                        gameDetailsContainer.appendChild(container);
-                    }
-                }
-            }
-            switchView('game-view');
         }
 
-        // --- Funções do Firebase (Leaderboard) ---
-        let currentLeaderboardListener = null;
+        // --- LEADERBOARD PAGE LOGIC ---
+        async function showGamePage(gameId) {
+            showPage('leaderboard');
+            leaderboardUI.title.textContent = "Loading...";
+            resetLeaderboardView();
 
-        function showLeaderboard(gameId, categoryId, levelId, rawTitle, subcategoryId = null) {
-            showLoader();
-            const cleanTitle = parseMarkdown(rawTitle); // Limpa o título
-            const leaderboardTitle = document.getElementById('leaderboard-title');
-            leaderboardTitle.textContent = cleanTitle;
-
-            document.getElementById('leaderboard-breadcrumb').innerHTML = `
-                <a id="breadcrumb-home-l">Home</a> > 
-                <a id="breadcrumb-game-l">${currentGame.name}</a> > 
-                ${cleanTitle}
-            `;
-            document.getElementById('breadcrumb-home-l').onclick = () => displayGames();
-            document.getElementById('breadcrumb-game-l').onclick = () => fetchGameDetails(currentGame.id, currentGame.name);
-
-            let path = `leaderboards/${gameId}/${categoryId}`;
-            if (levelId) path += `/${levelId}`;
-            if (subcategoryId) path += `/${subcategoryId}`;
+            const url = `${SRC_API_BASE}/games/${gameId}?embed=categories,levels,variables`;
+            const data = await fetchData(url);
             
-            currentLeaderboardInfo = { path: path };
+            if (data && data.data) {
+                currentGameData = data.data;
+                leaderboardUI.title.textContent = currentGameData.names.international;
+                populateTypeSelector();
+                updateControls();
+            }
+        }
 
-            const leaderboardRef = ref(db, path);
-            const leaderboardBody = document.getElementById('leaderboard-body');
-            
-            if (currentLeaderboardListener) currentLeaderboardListener();
+        function resetLeaderboardView() {
+            leaderboardUI.typeSelector.innerHTML = '';
+            leaderboardUI.fullGameCategories.innerHTML = '';
+            leaderboardUI.levelCategoriesContainer.innerHTML = '';
+            leaderboardUI.subcategoriesContainer.innerHTML = '';
+            leaderboardUI.starSelectorContainer.style.display = 'none';
+            leaderboardUI.tableBody.innerHTML = '';
+            leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
+            leaderboardUI.loader.style.display = 'block';
+        }
 
-            currentLeaderboardListener = onValue(leaderboardRef, (snapshot) => {
-                leaderboardBody.innerHTML = '';
-                const data = snapshot.val();
-                if (data) {
-                    const runs = Object.values(data).sort((a, b) => a.time.localeCompare(b.time));
-                    runs.forEach((run, index) => {
-                        const rank = index + 1;
-                        const row = document.createElement('tr');
-                        
-                        let rankClass = '';
-                        if (rank === 1) rankClass = 'rank-1';
-                        if (rank === 2) rankClass = 'rank-2';
-                        if (rank === 3) rankClass = 'rank-3';
-
-                        row.innerHTML = `
-                            <td class="${rankClass}">${rank}</td>
-                            <td>${run.time}</td>
-                            <td>${new Date(run.date).toLocaleDateString()}</td>
-                        `;
-                        leaderboardBody.appendChild(row);
-                    });
-                } else {
-                    leaderboardBody.innerHTML = '<tr><td colspan="3">Nenhum tempo enviado ainda.</td></tr>';
-                }
-                switchView('leaderboard-view');
-            });
+        function populateTypeSelector() {
+            leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
+            if (currentGameData.levels.data.length > 0) {
+                leaderboardUI.typeSelector.innerHTML += `<option value="levels">Levels</option>`;
+            }
         }
         
-        async function submitRun(time) {
-            if (!currentLeaderboardInfo || !currentLeaderboardInfo.path) {
-                alert("Erro: Nenhuma leaderboard selecionada.");
+        function updateControls() {
+            const isFullGame = leaderboardUI.typeSelector.value === 'full-game';
+
+            leaderboardUI.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
+            leaderboardUI.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
+            leaderboardUI.starSelectorContainer.style.display = 'none';
+            leaderboardUI.subcategoriesContainer.innerHTML = '';
+            leaderboardUI.tableBody.innerHTML = '';
+            leaderboardUI.loader.style.display = 'block';
+
+            if (isFullGame) {
+                populateFullGameCategories();
+            } else {
+                populateLevelSelector();
+            }
+        }
+
+        function populateFullGameCategories() {
+            leaderboardUI.fullGameCategories.innerHTML = '';
+            const fullGameCats = currentGameData.categories.data.filter(c => c.type === 'per-game');
+            fullGameCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.dataset.categoryId = cat.id;
+                btn.addEventListener('click', (e) => {
+                    setActiveButton(leaderboardUI.fullGameCategories, e.target);
+                    populateSubcategories(cat.id);
+                });
+                leaderboardUI.fullGameCategories.appendChild(btn);
+            });
+            if(leaderboardUI.fullGameCategories.firstChild) {
+                 leaderboardUI.fullGameCategories.firstChild.click();
+            }
+        }
+
+        function populateLevelSelector() {
+            leaderboardUI.levelCategoriesContainer.innerHTML = '';
+            const levelSelect = document.createElement('select');
+            levelSelect.id = "level-selector";
+            levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
+            currentGameData.levels.data.forEach(level => {
+                levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`;
+            });
+            
+            levelSelect.addEventListener('change', (e) => populateLevelSubCategories(e.target.value));
+            leaderboardUI.levelCategoriesContainer.appendChild(levelSelect);
+        }
+
+        function populateLevelSubCategories(levelId) {
+            // This now acts as a container for the level-category buttons
+            const levelSubCatContainer = document.createElement('div');
+            leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
+            
+            leaderboardUI.starSelectorContainer.style.display = 'none';
+            leaderboardUI.tableBody.innerHTML = '';
+            leaderboardUI.loader.style.display = 'block';
+
+            if (!levelId) return;
+
+            const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
+            const btnsContainer = document.createElement('div');
+            btnsContainer.className = 'category-buttons';
+            
+            levelCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.dataset.categoryId = cat.id;
+                btn.dataset.levelId = levelId;
+                
+                btn.addEventListener('click', (e) => {
+                    setActiveButton(btnsContainer, e.target);
+                    if (cat.name.toLowerCase().includes('single star')) {
+                        populateStarSelector(levelId, cat.id);
+                    } else {
+                        leaderboardUI.starSelectorContainer.style.display = 'none';
+                        populateSubcategories(cat.id, levelId);
+                    }
+                });
+                btnsContainer.appendChild(btn);
+            });
+            
+            leaderboardUI.levelCategoriesContainer.appendChild(btnsContainer);
+
+             if(btnsContainer.firstChild) {
+                 btnsContainer.firstChild.click();
+            }
+        }
+
+        function populateStarSelector(levelId, categoryId) {
+            leaderboardUI.starSelectorContainer.style.display = 'block';
+            leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
+            
+            const starVariable = currentGameData.variables.data.find(v => 
+                v['is-subcategory'] === false && v.scope.type === 'per-level' && 
+                v.scope.level === levelId && v.category === categoryId
+            );
+
+            if (starVariable && starVariable.values.values) {
+                Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
+                     leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
+                });
+            }
+
+            leaderboardUI.starSelector.onchange = () => {
+                populateSubcategories(categoryId, levelId);
+            };
+        }
+
+        // CHANGE 2: Rewritten to display subcategories with titles
+        function populateSubcategories(categoryId, levelId = null) {
+            leaderboardUI.subcategoriesContainer.innerHTML = '';
+            
+            const relevantVariables = currentGameData.variables.data.filter(v =>
+                v['is-subcategory'] && v.category === categoryId
+            );
+
+            relevantVariables.forEach(variable => {
+                const group = document.createElement('div');
+                group.className = 'subcategory-group';
+
+                const label = document.createElement('p');
+                label.className = 'subcategory-label';
+                label.textContent = variable.name; // e.g., "Version"
+                
+                const select = document.createElement('select');
+                select.dataset.variableId = variable.id;
+
+                Object.entries(variable.values.values).forEach(([valueId, valueData]) => {
+                    select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`;
+                });
+                
+                select.addEventListener('change', fetchAndRenderLeaderboard);
+                
+                group.appendChild(label);
+                group.appendChild(select);
+                leaderboardUI.subcategoriesContainer.appendChild(group);
+            });
+            
+            fetchAndRenderLeaderboard();
+        }
+
+        async function fetchAndRenderLeaderboard() {
+            const leaderboardPath = getFirebasePath();
+            if (!leaderboardPath) {
+                leaderboardUI.tableBody.innerHTML = '';
+                leaderboardUI.loader.style.display = 'block';
+                leaderboardUI.loader.textContent = 'Please complete your selection.';
                 return;
             }
+
+            leaderboardUI.loader.style.display = 'block';
+            leaderboardUI.loader.textContent = 'Loading leaderboard...';
+            leaderboardUI.tableBody.innerHTML = '';
+
+            const runsRef = ref(db, `runs/${leaderboardPath}`);
+            const runsQuery = query(runsRef, orderByChild('time'));
+            
             try {
-                const leaderboardRef = ref(db, currentLeaderboardInfo.path);
-                await push(leaderboardRef, {
-                    time: time,
-                    date: serverTimestamp()
-                });
-                alert("Tempo enviado com sucesso!");
-                document.getElementById('submit-run-form').reset();
-                document.getElementById('submit-run-form-container').classList.add('hidden');
+                const snapshot = await get(runsQuery);
+                if (snapshot.exists()) {
+                    const runs = [];
+                    snapshot.forEach(childSnapshot => runs.push(childSnapshot.val()));
+                    renderLeaderboard(runs);
+                    leaderboardUI.loader.style.display = 'none';
+                } else {
+                    leaderboardUI.loader.textContent = 'No runs submitted for this category yet.';
+                }
             } catch (error) {
-                console.error("Erro ao enviar o tempo:", error);
-                alert("Falha ao enviar o tempo.");
+                console.error("Error fetching leaderboard from Firebase:", error);
+                leaderboardUI.loader.textContent = 'Error loading leaderboard.';
             }
         }
-
-        // --- Funções de Autenticação do Firebase ---
-        onAuthStateChanged(auth, user => {
-            const modPanel = document.getElementById('mod-panel');
-            const loginContainer = document.getElementById('login-container');
-            const submitRunBtn = document.getElementById('submit-run-btn');
-
-            if (user) {
-                modPanel.classList.remove('hidden');
-                loginContainer.classList.add('hidden');
-                submitRunBtn.classList.remove('hidden');
-            } else {
-                modPanel.classList.add('hidden');
-                loginContainer.classList.remove('hidden');
-                submitRunBtn.classList.add('hidden');
-                document.getElementById('submit-run-form-container').classList.add('hidden');
-            }
-        });
-
-        // --- Event Listeners ---
-        homeTab.addEventListener('click', () => {
-            setActiveTab(homeTab);
-            switchView('home-view');
-        });
-
-        modTab.addEventListener('click', () => {
-            setActiveTab(modTab);
-            switchView('mod-view');
-        });
-
-        document.getElementById('login-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessage = document.getElementById('login-error-message');
-            
-            errorMessage.textContent = '';
-            signInWithEmailAndPassword(auth, email, password)
-                .catch(error => { errorMessage.textContent = "Email ou senha inválidos."; });
-        });
         
-        document.getElementById('logout-btn').addEventListener('click', () => { signOut(auth); });
+        function renderLeaderboard(runs) {
+            leaderboardUI.tableBody.innerHTML = '';
+            runs.forEach((run, index) => {
+                const row = `<tr><td>${index + 1}</td><td>${run.player}</td><td>${run.time}</td></tr>`;
+                leaderboardUI.tableBody.innerHTML += row;
+            });
+        }
 
-        document.getElementById('submit-run-btn').addEventListener('click', () => {
-            document.getElementById('submit-run-form-container').classList.toggle('hidden');
-        });
+        function getFirebasePath() {
+            const gameId = currentGameData.id;
+            const type = leaderboardUI.typeSelector.value;
+            let categoryId, levelId;
 
-        document.getElementById('submit-run-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const time = document.getElementById('run-time').value;
-            submitRun(time);
-        });
+            if (type === 'full-game') {
+                const activeCat = leaderboardUI.fullGameCategories.querySelector('button.active');
+                if (!activeCat) return null;
+                categoryId = activeCat.dataset.categoryId;
+            } else {
+                const selectedLevel = document.getElementById('level-selector')?.value;
+                const activeLevelCat = leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons button.active');
+                if (!selectedLevel || !activeLevelCat) return null;
+                levelId = selectedLevel;
+                categoryId = activeLevelCat.dataset.categoryId;
+            }
 
-        // --- Inicialização ---
-        displayGames();
+            let path = `${gameId}/`;
+            if (levelId) path += `level_${levelId}/`;
+            path += `${categoryId}`;
+
+            const subcatSelects = leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]');
+            subcatSelects.forEach(sel => path += `/${sel.value}`);
+
+            if (leaderboardUI.starSelectorContainer.style.display === 'block' && leaderboardUI.starSelector.value) {
+                path += `/${leaderboardUI.starSelector.value}`;
+            }
+
+            return path.replace(/[.#$[\]/]/g, '_'); // Sanitize for Firebase key
+        }
+
+        // --- MOD PAGE LOGIC ---
+        function setupModPage() {
+            onAuthStateChanged(auth, user => {
+                currentUser = user;
+                if (user) {
+                    modUI.loginView.style.display = 'none';
+                    modUI.loggedInView.style.display = 'block';
+                    modUI.userEmail.textContent = user.email;
+                } else {
+                    modUI.loginView.style.display = 'block';
+                    modUI.loggedInView.style.display = 'none';
+                }
+            });
+
+            modUI.loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value);
+                    modUI.loginError.textContent = '';
+                } catch (error) {
+                    modUI.loginError.textContent = error.message;
+                }
+            });
+
+            modUI.logoutButton.addEventListener('click', () => signOut(auth));
+            
+            modUI.submitRunForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!currentUser) { alert('You must be logged in.'); return; }
+                const path = getFirebasePath();
+                if (!path) { alert('A category is not fully selected.'); return; }
+
+                const runData = {
+                    player: document.getElementById('submit-player').value,
+                    time: document.getElementById('submit-time').value,
+                    submittedAt: new Date().toISOString()
+                };
+
+                try {
+                    await set(push(ref(db, `runs/${path}`)), runData);
+                    alert('Run submitted successfully!');
+                    modUI.submitRunForm.reset();
+                    showPage('leaderboard');
+                    fetchAndRenderLeaderboard();
+                } catch (error) {
+                    alert('Error submitting run: ' + error.message);
+                }
+            });
+        }
+        
+        function updateSubmitContext() {
+            if (!currentGameData) return;
+            let context = currentGameData.names.international;
+            // Simplified context for brevity
+            modUI.submitContext.textContent = context;
+        }
+
+        // --- UTILITY ---
+        function setActiveButton(container, button) {
+            container.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            buttons.home.addEventListener('click', () => { showPage('home'); });
+            buttons.mod.addEventListener('click', () => showPage('mod'));
+            buttons.back.addEventListener('click', () => showPage('home'));
+            buttons.goToSubmit.addEventListener('click', () => {
+                updateSubmitContext();
+                showPage('mod');
+            });
+            
+            leaderboardUI.typeSelector.addEventListener('change', updateControls);
+
+            loadGames();
+            setupModPage();
+        }
+
+        init();
     </script>
 </body>
 </html>
