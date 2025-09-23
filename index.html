@@ -154,7 +154,7 @@
         #leaderboard-table th { color: var(--text-muted); }
         #leaderboard-table td:nth-child(1) { font-weight: bold; }
 
-        /* --- MOD PAGE UI IMPROVEMENT --- */
+        /* --- MOD PAGE UI --- */
         .mod-card {
             background-color: var(--card-color);
             padding: 1.5rem;
@@ -173,7 +173,7 @@
         }
         #mod-content input {
             padding: 0.8rem;
-            background-color: var(--bg-color); /* Darker input background */
+            background-color: var(--bg-color);
             color: var(--text-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -205,11 +205,9 @@
             font-size: 1.2rem;
             color: var(--text-muted);
         }
-
     </style>
 </head>
 <body>
-
     <div class="container">
         <header>
             <h1>SM64 Hacks</h1>
@@ -218,15 +216,11 @@
                 <button id="mod-btn">Mod</button>
             </nav>
         </header>
-
         <main>
-            <!-- Home Page: List of Games -->
             <div id="home-page" class="page active">
-                <div class="loader">Loading all SM64 hacks...</div>
+                <div id="home-loader" class="loader">Loading SM64 hacks...</div>
                 <div id="game-list"></div>
             </div>
-
-            <!-- Leaderboard Page: Game Details and Leaderboard -->
             <div id="leaderboard-page" class="page">
                 <button id="back-to-home-btn">&larr; Back to Games</button>
                 <div id="leaderboard-header">
@@ -243,22 +237,13 @@
                 </div>
                 <div class="loader" id="leaderboard-loader">Select a category to view the leaderboard.</div>
                 <table id="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <th>Time</th>
-                        </tr>
-                    </thead>
+                    <thead><tr><th>#</th><th>Player</th><th>Time</th></tr></thead>
                     <tbody id="leaderboard-body"></tbody>
                 </table>
                  <button class="submit-run-btn" id="go-to-submit-btn">Submit Run</button>
             </div>
-
-            <!-- Mod Page: Login / Submit Run -->
             <div id="mod-page" class="page">
                 <div id="mod-content">
-                    <!-- Login View -->
                     <div id="login-view" class="mod-card">
                         <h2>Mod Login</h2>
                         <form id="login-form">
@@ -268,7 +253,6 @@
                             <p id="login-error" style="color: #ef4444; text-align: center;"></p>
                         </form>
                     </div>
-                    <!-- Logged In View -->
                     <div id="logged-in-view" class="mod-card">
                         <h2>Submit Run</h2>
                         <p style="text-align: center;">You are logged in as <b id="user-email"></b></p>
@@ -316,18 +300,34 @@
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
 
-        async function fetchData(url) {
+        async function fetchPaginatedData(url) {
             if (apiCache[url]) return apiCache[url];
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const data = await response.json();
-                apiCache[url] = data;
-                return data;
-            } catch (error) {
-                console.error("Failed to fetch data:", error);
-                return null;
+
+            let allData = [];
+            let nextUrl = url;
+            let pageCount = 1;
+            const homeLoader = document.getElementById('home-loader');
+
+            while (nextUrl) {
+                try {
+                    homeLoader.textContent = `Loading page ${pageCount}...`;
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                    const pageData = await response.json();
+                    
+                    allData.push(...pageData.data);
+                    
+                    const nextLink = pageData.pagination.links.find(link => link.rel === 'next');
+                    nextUrl = nextLink ? nextLink.uri : null;
+                    pageCount++;
+                } catch (error) {
+                    console.error("Failed to fetch a page:", error);
+                    homeLoader.textContent = 'Failed to load games.';
+                    return null; 
+                }
             }
+            apiCache[url] = allData;
+            return allData;
         }
 
         function showPage(pageName) {
@@ -339,16 +339,16 @@
         }
 
         async function loadGames() {
-            // UPDATED: Changed direction to 'desc' to show newest hacks first
-            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=desc&max=250`;
-            const gamesData = await fetchData(url);
+            const initialUrl = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=desc&max=200`;
+            const gamesData = await fetchPaginatedData(initialUrl);
             const gameList = document.getElementById('game-list');
+            const homeLoader = document.getElementById('home-loader');
             gameList.innerHTML = ''; 
             
-            if (gamesData && gamesData.data) {
-                document.querySelector('#home-page .loader').style.display = 'none';
-                gamesData.data.forEach(game => {
-                    const releaseDate = new Date(game.released, 0, 1);
+            if (gamesData) {
+                homeLoader.style.display = 'none';
+                gamesData.forEach(game => {
+                    const releaseDate = game.released ? new Date(game.released, 0, 1) : new Date();
                     const yearsAgo = new Date().getFullYear() - releaseDate.getFullYear();
                     
                     const card = document.createElement('div');
@@ -365,7 +365,7 @@
                     gameList.appendChild(card);
                 });
             } else {
-                 document.querySelector('#home-page .loader').textContent = 'Failed to load games.';
+                 homeLoader.textContent = 'Failed to load games.';
             }
         }
 
@@ -374,9 +374,9 @@
             leaderboardUI.title.textContent = "Loading...";
             resetLeaderboardView();
             const url = `${SRC_API_BASE}/games/${gameId}?embed=categories,levels,variables`;
-            const data = await fetchData(url);
-            if (data && data.data) {
-                currentGameData = data.data;
+            const response = await fetch(url).then(res => res.json());
+            if (response && response.data) {
+                currentGameData = response.data;
                 leaderboardUI.title.textContent = currentGameData.names.international;
                 populateTypeSelector();
                 updateControls();
@@ -405,12 +405,16 @@
             const isFullGame = leaderboardUI.typeSelector.value === 'full-game';
             leaderboardUI.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
             leaderboardUI.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
+            resetSubcategoryViews();
+            if (isFullGame) populateFullGameCategories();
+            else populateLevelSelector();
+        }
+        
+        function resetSubcategoryViews() {
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
-            if (isFullGame) populateFullGameCategories();
-            else populateLevelSelector();
         }
 
         function populateFullGameCategories() {
@@ -441,9 +445,7 @@
 
         function populateLevelSubCategories(levelId) {
             leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
-            leaderboardUI.starSelectorContainer.style.display = 'none';
-            leaderboardUI.tableBody.innerHTML = '';
-            leaderboardUI.loader.style.display = 'block';
+            resetSubcategoryViews();
             if (!levelId) {
                 leaderboardUI.loader.textContent = "Please select a level.";
                 return;
@@ -573,7 +575,6 @@
                     modUI.loggedInView.style.display = 'none';
                 }
             });
-
             modUI.loginForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 modUI.loginError.textContent = '';
@@ -589,9 +590,7 @@
                     loginButton.textContent = 'Login';
                 }
             });
-
             modUI.logoutButton.addEventListener('click', () => signOut(auth));
-            
             modUI.submitRunForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 if (!currentUser) { alert('You must be logged in.'); return; }
