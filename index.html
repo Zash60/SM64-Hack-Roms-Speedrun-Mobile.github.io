@@ -124,9 +124,7 @@
                         <select id="type-selector"></select>
                         <div id="full-game-categories" class="category-buttons"></div>
                         <div id="level-categories-container" style="display: none;"></div>
-                        <div id="star-selector-container" style="display: none;">
-                             <select id="star-selector"></select>
-                        </div>
+                        <div id="star-selector-container"></div> <!-- Container limpo -->
                         <div id="subcategories-container"></div>
                     </div>
                 </div>
@@ -185,12 +183,11 @@
         const db = getDatabase(app);
 
         let currentGameData = null;
-        let currentUser = null;
         const apiCache = {};
 
         const pages = { home: document.getElementById('home-page'), leaderboard: document.getElementById('leaderboard-page'), mod: document.getElementById('mod-page') };
         const buttons = { home: document.getElementById('home-btn'), mod: document.getElementById('mod-btn'), back: document.getElementById('back-to-home-btn'), goToSubmit: document.getElementById('go-to-submit-btn') };
-        const leaderboardUI = { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), subcategoriesContainer: document.getElementById('subcategories-container'), starSelectorContainer: document.getElementById('star-selector-container'), starSelector: document.getElementById('star-selector') };
+        const leaderboardUI = { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), subcategoriesContainer: document.getElementById('subcategories-container'), starSelectorContainer: document.getElementById('star-selector-container') };
         const modUI = { loginView: document.getElementById('login-view'), loggedInView: document.getElementById('logged-in-view'), loginForm: document.getElementById('login-form'), submitRunForm: document.getElementById('submit-run-form'), loginError: document.getElementById('login-error'), userEmail: document.getElementById('user-email'), logoutButton: document.getElementById('logout-button'), submitContext: document.getElementById('submit-context') };
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
@@ -209,11 +206,7 @@
                     const nextLink = pageData.pagination.links.find(link => link.rel === 'next');
                     nextUrl = nextLink ? nextLink.uri.replace("http://", "https://") : null;
                     pageCount++;
-                } catch (error) {
-                    console.error("Failed to fetch a page:", error);
-                    homeLoader.textContent = `Failed to load games: ${error.message}`;
-                    return null; 
-                }
+                } catch (error) { homeLoader.textContent = `Failed to load games: ${error.message}`; return null; }
             }
             apiCache[url] = allData;
             return allData;
@@ -287,10 +280,11 @@
         
         function resetSubcategoryViews() {
             leaderboardUI.subcategoriesContainer.innerHTML = '';
+            leaderboardUI.starSelectorContainer.innerHTML = '';
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
-            leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
+            leaderboardUI.loader.textContent = 'Select a category.';
         }
 
         function populateFullGameCategories() {
@@ -302,7 +296,6 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', e => {
                     setActiveButton(leaderboardUI.fullGameCategories, e.target);
-                    // Chamada para a nova função universal, sem levelId
                     displayVariablesForSelection(null, cat.id);
                 });
                 leaderboardUI.fullGameCategories.appendChild(btn);
@@ -335,7 +328,6 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
-                    // Chamada para a nova função universal, com levelId
                     displayVariablesForSelection(levelId, cat.id);
                 });
                 btnsContainer.appendChild(btn);
@@ -346,30 +338,29 @@
 
         // --- INÍCIO DA CORREÇÃO UNIVERSAL ---
         function displayVariablesForSelection(levelId, categoryId) {
+            leaderboardUI.starSelectorContainer.innerHTML = '';
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
 
-            // Lógica das Estrelas (sempre ligada a um NÍVEL)
+            // Lógica das Estrelas (SÓ roda se um NÍVEL for selecionado)
             if (levelId) {
                 const starVariable = currentGameData.variables.data.find(v => 
                     !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId
                 );
                 if (starVariable) {
                     leaderboardUI.starSelectorContainer.style.display = 'block';
-                    leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
-                    const label = document.createElement('p');
-                    label.className = 'subcategory-label';
-                    label.textContent = starVariable.name;
-                    leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
-                    leaderboardUI.starSelectorContainer.prepend(label);
+                    const select = document.createElement('select');
+                    select.id = 'star-selector';
+                    select.innerHTML = `<option value="">-- ${starVariable.name} --</option>`;
                     Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
-                        leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
+                        select.innerHTML += `<option value="${starId}">${starData.label}</option>`;
                     });
-                    leaderboardUI.starSelector.onchange = fetchAndRenderLeaderboard;
+                    select.onchange = fetchAndRenderLeaderboard;
+                    leaderboardUI.starSelectorContainer.appendChild(select);
                 }
             }
 
-            // Lógica das Subcategorias (sempre ligada a uma CATEGORIA)
+            // Lógica das Subcategorias (SEMPRE roda, filtrada pela CATEGORIA)
             const subcategoryVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
             subcategoryVariables.forEach(variable => {
                 const group = document.createElement('div');
@@ -413,10 +404,7 @@
                 } else {
                     leaderboardUI.loader.textContent = 'No runs submitted for this category yet.';
                 }
-            } catch (error) {
-                console.error("Error fetching leaderboard from Firebase:", error);
-                leaderboardUI.loader.textContent = `Error: ${error.message}.`;
-            }
+            } catch (error) { leaderboardUI.loader.textContent = `Error: ${error.message}.`; }
         }
         
         function renderLeaderboard(runs) {
@@ -445,14 +433,16 @@
             }
             let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
             leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
-            if (leaderboardUI.starSelectorContainer.style.display === 'block') {
-                 if (!leaderboardUI.starSelector.value) return null;
-                 path += `/${leaderboardUI.starSelector.value}`;
+            const starSelector = document.getElementById('star-selector');
+            if (starSelector) {
+                 if (!starSelector.value) return null;
+                 path += `/${starSelector.value}`;
             }
             return path.replace(/[.#$[\]/]/g, '_');
         }
 
         function setupModPage() {
+            let currentUser = null;
             onAuthStateChanged(auth, user => {
                 currentUser = user;
                 modUI.loginView.style.display = user ? 'none' : 'block';
@@ -463,16 +453,10 @@
                 e.preventDefault();
                 modUI.loginError.textContent = '';
                 const loginButton = modUI.loginForm.querySelector('button');
-                loginButton.disabled = true;
-                loginButton.textContent = 'Logging in...';
-                try {
-                    await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value);
-                } catch (error) {
-                    modUI.loginError.textContent = error.message;
-                } finally {
-                    loginButton.disabled = false;
-                    loginButton.textContent = 'Login';
-                }
+                loginButton.disabled = true; loginButton.textContent = 'Logging in...';
+                try { await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value); } 
+                catch (error) { modUI.loginError.textContent = error.message; } 
+                finally { loginButton.disabled = false; loginButton.textContent = 'Login'; }
             });
             modUI.logoutButton.addEventListener('click', () => signOut(auth));
             modUI.submitRunForm.addEventListener('submit', async e => {
@@ -487,9 +471,7 @@
                     modUI.submitRunForm.reset();
                     showPage('leaderboard');
                     fetchAndRenderLeaderboard();
-                } catch (error) {
-                    alert('Error submitting run: ' + error.message);
-                }
+                } catch (error) { alert('Error submitting run: ' + error.message); }
             });
         }
         
