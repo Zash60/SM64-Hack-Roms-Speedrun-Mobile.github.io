@@ -1,1 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SM64 Hacks Speedrun Mobile</title>
+    <style>
+        :root {
+            --bg-color: #18181b;
+            --card-color: #27272a;
+            --text-color: #e4e4e7;
+            --text-muted: #a1a1aa;
+            --border-color: #3f3f46;
+            --accent-color: #f59e0b;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 1rem;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        header h1 { font-size: 1.5rem; margin: 0; }
+        nav button {
+            background: none; border: 1px solid var(--border-color); color: var(--text-color);
+            padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 1rem;
+        }
+        nav button.active {
+            background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color);
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+        #game-list {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem; padding-top: 1rem;
+        }
+        .game-card {
+            background-color: var(--card-color); border-radius: 8px; overflow: hidden;
+            cursor: pointer; transition: transform 0.2s ease;
+        }
+        .game-card:hover { transform: translateY(-5px); }
+        .game-card img { width: 100%; height: 100px; object-fit: cover; }
+        .game-card-info { padding: 0.8rem; }
+        .game-card-info h3 {
+            margin: 0 0 0.5rem 0; font-size: 1rem; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .game-card-info p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+        #leaderboard-header { padding: 1rem 0; }
+        #leaderboard-header h2 { margin: 0 0 1rem 0; }
+        .controls-grid { display: flex; flex-direction: column; gap: 0.8rem; }
+        select, .category-buttons button, .submit-run-btn {
+            width: 100%; padding: 0.8rem; background-color: var(--card-color); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; box-sizing: border-box;
+        }
+        .category-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap;}
+        .category-buttons button { flex: 1; cursor: pointer; min-width: 80px; }
+        .category-buttons button.active { background-color: var(--accent-color); color: var(--bg-color); font-weight: bold; }
+        .subcategory-group { margin-top: 1rem; }
+        .subcategory-label {
+            margin: 0 0 0.5rem 0.2rem; font-size: 0.9rem;
+            color: var(--text-muted); text-transform: uppercase;
+        }
+        .submit-run-btn {
+            background-color: var(--accent-color); color: var(--bg-color);
+            cursor: pointer; margin-top: 1rem; font-weight: bold;
+        }
+        #leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        #leaderboard-table th, #leaderboard-table td {
+            padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border-color);
+        }
+        #leaderboard-table th { color: var(--text-muted); }
+        .mod-card {
+            background-color: var(--card-color); padding: 1.5rem;
+            border-radius: 8px; margin-top: 1rem;
+        }
+        #mod-page h2 { margin-top: 0; margin-bottom: 2rem; text-align: center; }
+        #login-form, #submit-run-form { display: flex; flex-direction: column; gap: 1rem; }
+        #mod-content input {
+            padding: 0.8rem; background-color: var(--bg-color); color: var(--text-color);
+            border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem;
+        }
+        #mod-content button {
+            padding: 0.8rem; background-color: var(--accent-color); color: var(--bg-color);
+            border: none; border-radius: 6px; cursor: pointer; font-size: 1rem;
+            font-weight: bold; transition: background-color 0.2s ease; margin-top: 0.5rem;
+        }
+        #mod-content button:disabled { background-color: var(--border-color); cursor: not-allowed; }
+        #logout-button { background-color: #ef4444; }
+        #logged-in-view { display: none; }
+        .loader { text-align: center; padding: 2rem; font-size: 1.2rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>SM64 Hacks</h1>
+            <nav>
+                <button id="home-btn" class="active">Home</button>
+                <button id="mod-btn">Mod</button>
+            </nav>
+        </header>
+        <main>
+            <div id="home-page" class="page active">
+                <div id="home-loader" class="loader">Loading SM64 hacks...</div>
+                <div id="game-list"></div>
+            </div>
+            <div id="leaderboard-page" class="page">
+                <button id="back-to-home-btn">&larr; Back to Games</button>
+                <div id="leaderboard-header">
+                    <h2 id="game-title"></h2>
+                    <div class="controls-grid">
+                        <select id="type-selector"></select>
+                        <div id="full-game-categories" class="category-buttons"></div>
+                        <div id="level-categories-container" style="display: none;"></div>
+                        <div id="star-selector-container"></div>
+                        <div id="subcategories-container"></div>
+                    </div>
+                </div>
+                <div class="loader" id="leaderboard-loader">Select a category to view the leaderboard.</div>
+                <table id="leaderboard-table">
+                    <thead><tr><th>#</th><th>Player</th><th>Time</th></tr></thead>
+                    <tbody id="leaderboard-body"></tbody>
+                </table>
+                 <button class="submit-run-btn" id="go-to-submit-btn">Submit Run</button>
+            </div>
+            <div id="mod-page" class="page">
+                <div id="mod-content">
+                    <div id="login-view" class="mod-card">
+                        <h2>Mod Login</h2>
+                        <form id="login-form">
+                            <input type="email" id="login-email" name="email" placeholder="Email" required>
+                            <input type="password" id="login-password" name="password" placeholder="Password" required>
+                            <button type="submit">Login</button>
+                            <p id="login-error" style="color: #ef4444; text-align: center;"></p>
+                        </form>
+                    </div>
+                    <div id="logged-in-view" class="mod-card">
+                        <h2>Submit Run</h2>
+                        <p style="text-align: center;">You are logged in as <b id="user-email"></b></p>
+                        <form id="submit-run-form">
+                            <p>Submitting for: <b id="submit-context"></b></p>
+                            <input type="text" id="submit-player" placeholder="Player Name" required>
+                            <input type="text" id="submit-time" placeholder="Time (e.g., 1m 23s 456ms)" required>
+                            <button type="submit">Submit</button>
+                        </form>
+                        <button id="logout-button">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, push, set, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+            databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
+            projectId: "sm64-hack-roms-speedrun-mobile",
+            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
+            messagingSenderId: "499101981060",
+            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentGameData = null;
+        const apiCache = {};
+
+        const pages = { home: document.getElementById('home-page'), leaderboard: document.getElementById('leaderboard-page'), mod: document.getElementById('mod-page') };
+        const buttons = { home: document.getElementById('home-btn'), mod: document.getElementById('mod-btn'), back: document.getElementById('back-to-home-btn'), goToSubmit: document.getElementById('go-to-submit-btn') };
+        const leaderboardUI = { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), subcategoriesContainer: document.getElementById('subcategories-container'), starSelectorContainer: document.getElementById('star-selector-container') };
+        const modUI = { loginView: document.getElementById('login-view'), loggedInView: document.getElementById('logged-in-view'), loginForm: document.getElementById('login-form'), submitRunForm: document.getElementById('submit-run-form'), loginError: document.getElementById('login-error'), userEmail: document.getElementById('user-email'), logoutButton: document.getElementById('logout-button'), submitContext: document.getElementById('submit-context') };
+
+        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
+
+        async function fetchPaginatedData(url) {
+            if (apiCache[url]) return apiCache[url];
+            let allData = [], nextUrl = url, pageCount = 1;
+            const homeLoader = document.getElementById('home-loader');
+            while (nextUrl) {
+                try {
+                    homeLoader.textContent = `Loading page ${pageCount}...`;
+                    const response = await fetch(nextUrl);
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                    const pageData = await response.json();
+                    allData.push(...pageData.data);
+                    const nextLink = pageData.pagination.links.find(link => link.rel === 'next');
+                    nextUrl = nextLink ? nextLink.uri.replace("http://", "https://") : null;
+                    pageCount++;
+                } catch (error) { homeLoader.textContent = `Failed to load games: ${error.message}`; return null; }
+            }
+            apiCache[url] = allData;
+            return allData;
+        }
+
+        function showPage(pageName) {
+            Object.values(pages).forEach(page => page.classList.remove('active'));
+            pages[pageName].classList.add('active');
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+            if(pageName === 'home') buttons.home.classList.add('active');
+            if(pageName === 'mod') buttons.mod.classList.add('active');
+        }
+
+        async function loadGames() {
+            const initialUrl = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=desc&max=200`;
+            const gamesData = await fetchPaginatedData(initialUrl);
+            const gameList = document.getElementById('game-list');
+            const homeLoader = document.getElementById('home-loader');
+            gameList.innerHTML = ''; 
+            if (gamesData) {
+                homeLoader.style.display = 'none';
+                gamesData.forEach(game => {
+                    const releaseDate = game.released ? new Date(game.released, 0, 1) : new Date();
+                    const yearsAgo = new Date().getFullYear() - releaseDate.getFullYear();
+                    const card = document.createElement('div');
+                    card.className = 'game-card';
+                    card.dataset.id = game.id;
+                    card.innerHTML = `<img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}"><div class="game-card-info"><h3>${game.names.international}</h3><p>${yearsAgo > 0 ? `${yearsAgo} years ago` : 'This year'}</p></div>`;
+                    card.addEventListener('click', () => showGamePage(game.id));
+                    gameList.appendChild(card);
+                });
+            }
+        }
+
+        async function showGamePage(gameId) {
+            showPage('leaderboard');
+            leaderboardUI.title.textContent = "Loading...";
+            resetLeaderboardView();
+            const url = `${SRC_API_BASE}/games/${gameId}?embed=categories,levels,variables`;
+            const response = await fetch(url).then(res => res.json());
+            if (response && response.data) {
+                currentGameData = response.data;
+                leaderboardUI.title.textContent = currentGameData.names.international;
+                populateTypeSelector();
+                updateControls();
+            }
+        }
+
+        function resetLeaderboardView() {
+            leaderboardUI.typeSelector.innerHTML = '';
+            leaderboardUI.fullGameCategories.innerHTML = '';
+            leaderboardUI.levelCategoriesContainer.innerHTML = '';
+            resetSubcategoryViews();
+        }
+
+        function populateTypeSelector() {
+            leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
+            if (currentGameData.levels.data && currentGameData.levels.data.length > 0) {
+                leaderboardUI.typeSelector.innerHTML += `<option value="levels">Levels</option>`;
+            }
+        }
+        
+        function updateControls() {
+            const isFullGame = leaderboardUI.typeSelector.value === 'full-game';
+            leaderboardUI.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
+            leaderboardUI.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
+            resetSubcategoryViews();
+            if (isFullGame) populateFullGameCategories();
+            else populateLevelSelector();
+        }
+        
+        function resetSubcategoryViews() {
+            leaderboardUI.subcategoriesContainer.innerHTML = '';
+            leaderboardUI.starSelectorContainer.innerHTML = '';
+            leaderboardUI.tableBody.innerHTML = '';
+            leaderboardUI.loader.style.display = 'block';
+            leaderboardUI.loader.textContent = 'Select a category.';
+        }
+
+        function populateFullGameCategories() {
+            leaderboardUI.fullGameCategories.innerHTML = '';
+            const fullGameCats = currentGameData.categories.data.filter(c => c.type === 'per-game');
+            fullGameCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.dataset.categoryId = cat.id;
+                btn.addEventListener('click', () => {
+                    setActiveButton(leaderboardUI.fullGameCategories, btn);
+                    displayVariablesForSelection(null, cat.id);
+                });
+                leaderboardUI.fullGameCategories.appendChild(btn);
+            });
+            if(leaderboardUI.fullGameCategories.firstChild) leaderboardUI.fullGameCategories.firstChild.click();
+        }
+
+        function populateLevelSelector() {
+            leaderboardUI.levelCategoriesContainer.innerHTML = '';
+            const levelSelect = document.createElement('select');
+            levelSelect.id = "level-selector";
+            levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
+            currentGameData.levels.data.forEach(level => levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`);
+            levelSelect.addEventListener('change', e => {
+                leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
+                resetSubcategoryViews();
+                populateLevelSubCategories(e.target.value);
+            });
+            leaderboardUI.levelCategoriesContainer.appendChild(levelSelect);
+        }
+
+        function populateLevelSubCategories(levelId) {
+            if (!levelId) return;
+            const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
+            const btnsContainer = document.createElement('div');
+            btnsContainer.className = 'category-buttons';
+            levelCats.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.textContent = cat.name;
+                btn.dataset.categoryId = cat.id;
+                btn.addEventListener('click', () => {
+                    setActiveButton(btnsContainer, btn);
+                    displayVariablesForSelection(levelId, cat.id);
+                });
+                btnsContainer.appendChild(btn);
+            });
+            leaderboardUI.levelCategoriesContainer.appendChild(btnsContainer);
+            if(btnsContainer.firstChild) btnsContainer.firstChild.click();
+        }
+
+        // --- INÍCIO DA CORREÇÃO UNIVERSAL ---
+        function displayVariablesForSelection(levelId, categoryId) {
+            leaderboardUI.starSelectorContainer.innerHTML = '';
+            leaderboardUI.subcategoriesContainer.innerHTML = '';
+
+            // Lógica das Estrelas (SÓ roda se um NÍVEL for selecionado)
+            if (levelId) {
+                const starVariable = currentGameData.variables.data.find(v => 
+                    !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId
+                );
+                if (starVariable) {
+                    const group = document.createElement('div');
+                    group.className = 'subcategory-group';
+                    const label = document.createElement('p');
+                    label.className = 'subcategory-label';
+                    label.textContent = starVariable.name;
+                    const select = document.createElement('select');
+                    select.id = 'star-selector';
+                    select.innerHTML = `<option value="">-- Select a Star --</option>`;
+                    Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
+                        select.innerHTML += `<option value="${starId}">${starData.label}</option>`;
+                    });
+                    select.addEventListener('change', fetchAndRenderLeaderboard);
+                    group.appendChild(label);
+                    group.appendChild(select);
+                    leaderboardUI.starSelectorContainer.appendChild(group);
+                }
+            }
+
+            // Lógica das Subcategorias (SEMPRE roda, filtrada pela CATEGORIA)
+            const subcategoryVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
+            subcategoryVariables.forEach(variable => {
+                const group = document.createElement('div');
+                group.className = 'subcategory-group';
+                const label = document.createElement('p');
+                label.className = 'subcategory-label';
+                label.textContent = variable.name;
+                const select = document.createElement('select');
+                select.dataset.variableId = variable.id;
+                Object.entries(variable.values.values).forEach(([valueId, valueData]) => select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`);
+                select.addEventListener('change', fetchAndRenderLeaderboard);
+                group.appendChild(label);
+                group.appendChild(select);
+                leaderboardUI.subcategoriesContainer.appendChild(group);
+            });
+            
+            fetchAndRenderLeaderboard();
+        }
+        // --- FIM DA CORREÇÃO UNIVERSAL ---
+
+        async function fetchAndRenderLeaderboard() {
+            const leaderboardPath = getFirebasePath();
+            if (!leaderboardPath) {
+                leaderboardUI.tableBody.innerHTML = '';
+                leaderboardUI.loader.style.display = 'block';
+                leaderboardUI.loader.textContent = 'Please complete your selection.';
+                return;
+            }
+            leaderboardUI.loader.style.display = 'block';
+            leaderboardUI.loader.textContent = 'Loading leaderboard...';
+            leaderboardUI.tableBody.innerHTML = '';
+            const runsRef = ref(db, `runs/${leaderboardPath}`);
+            const runsQuery = query(runsRef, orderByChild('time'));
+            try {
+                const snapshot = await get(runsQuery);
+                if (snapshot.exists()) {
+                    const runs = [];
+                    snapshot.forEach(childSnapshot => runs.push(childSnapshot.val()));
+                    renderLeaderboard(runs);
+                    leaderboardUI.loader.style.display = 'none';
+                } else {
+                    leaderboardUI.loader.textContent = 'No runs submitted for this category yet.';
+                }
+            } catch (error) { leaderboardUI.loader.textContent = `Error: ${error.message}.`; }
+        }
+        
+        function renderLeaderboard(runs) {
+            leaderboardUI.tableBody.innerHTML = '';
+            runs.forEach((run, index) => {
+                const row = `<tr><td>${index + 1}</td><td>${run.player}</td><td>${run.time}</td></tr>`;
+                leaderboardUI.tableBody.innerHTML += row;
+            });
+        }
+
+        function getFirebasePath() {
+            if (!currentGameData) return null;
+            const gameId = currentGameData.id;
+            const type = leaderboardUI.typeSelector.value;
+            let categoryId, levelId;
+            if (type === 'full-game') {
+                const activeCat = leaderboardUI.fullGameCategories.querySelector('button.active');
+                if (!activeCat) return null;
+                categoryId = activeCat.dataset.categoryId;
+            } else {
+                const selectedLevel = document.getElementById('level-selector')?.value;
+                const activeLevelCat = leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons button.active');
+                if (!selectedLevel || !activeLevelCat) return null;
+                levelId = selectedLevel;
+                categoryId = activeLevelCat.dataset.categoryId;
+            }
+            let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
+            leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
+            const starSelector = document.getElementById('star-selector');
+            if (starSelector) {
+                 if (!starSelector.value) return null;
+                 path += `/${starSelector.value}`;
+            }
+            return path.replace(/[.#$[\]/]/g, '_');
+        }
+
+        function setupModPage() {
+            let currentUser = null;
+            onAuthStateChanged(auth, user => {
+                currentUser = user;
+                modUI.loginView.style.display = user ? 'none' : 'block';
+                modUI.loggedInView.style.display = user ? 'block' : 'none';
+                if(user) modUI.userEmail.textContent = user.email;
+            });
+            modUI.loginForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                modUI.loginError.textContent = '';
+                const loginButton = modUI.loginForm.querySelector('button');
+                loginButton.disabled = true; loginButton.textContent = 'Logging in...';
+                try { await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value); } 
+                catch (error) { modUI.loginError.textContent = error.message; } 
+                finally { loginButton.disabled = false; loginButton.textContent = 'Login'; }
+            });
+            modUI.logoutButton.addEventListener('click', () => signOut(auth));
+            modUI.submitRunForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                if (!currentUser) { alert('You must be logged in.'); return; }
+                const path = getFirebasePath();
+                if (!path) { alert('A category is not fully selected.'); return; }
+                const runData = { player: document.getElementById('submit-player').value, time: document.getElementById('submit-time').value, submittedAt: new Date().toISOString() };
+                try {
+                    await set(push(ref(db, `runs/${path}`)), runData);
+                    alert('Run submitted successfully!');
+                    modUI.submitRunForm.reset();
+                    showPage('leaderboard');
+                    fetchAndRenderLeaderboard();
+                } catch (error) { alert('Error submitting run: ' + error.message); }
+            });
+        }
+        
+        function updateSubmitContext() {
+            if (!currentGameData) return;
+            modUI.submitContext.textContent = currentGameData.names.international;
+        }
+
+        function setActiveButton(container, button) {
+            container.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+        }
+
+        function init() {
+            buttons.home.addEventListener('click', () => showPage('home'));
+            buttons.mod.addEventListener('click', () => showPage('mod'));
+            buttons.back.addEventListener('click', () => showPage('home'));
+            buttons.goToSubmit.addEventListener('click', () => {
+                updateSubmitContext();
+                showPage('mod');
+            });
+            leaderboardUI.typeSelector.addEventListener('change', updateControls);
+            loadGames();
+            setupModPage();
+        }
+
+        init();
+    </script>
+</body>
+</html>
