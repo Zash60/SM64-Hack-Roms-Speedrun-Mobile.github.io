@@ -281,7 +281,9 @@
                     </div>
 
                     <!-- Single Star dropdown (only visible for specific category) -->
+                    <!-- *** HTML ALTERADO AQUI *** -->
                     <div class="filter-group" id="single-star-container" style="display: none;">
+                        <label for="single-star-select">Star</label>
                         <select id="single-star-select"></select>
                     </div>
                     
@@ -500,9 +502,9 @@
             updateUI();
         }
 
-        function updateUI() {
+        async function updateUI() {
             renderCategories();
-            renderSubCategories();
+            await renderSubCategories(); // AWAIT to ensure starName is set before loading leaderboard
             updateLeaderboard();
         }
 
@@ -542,27 +544,39 @@
             });
         }
 
+        // ****** FUNÇÃO CORRIGIDA E MELHORADA ******
         async function renderSubCategories() {
-            const container = DOMElements.leaderboard.subcategoriesContainer;
-            container.innerHTML = '';
+            const subCatContainer = DOMElements.leaderboard.subcategoriesContainer;
+            subCatContainer.innerHTML = '';
             DOMElements.leaderboard.singleStarContainer.style.display = 'none';
 
             const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
             if (!category) return;
 
-            // Handle "Single Star" special case for levels
-            if (category.name.toLowerCase().includes('single star') && currentSelection.levelId !== 'full-game') {
+            // CASO 1: É uma categoria "Single Star" para um level específico
+            if (category.type === 'per-level' && category.name.toLowerCase().includes('single star')) {
                 DOMElements.leaderboard.singleStarContainer.style.display = 'block';
                 const stars = await fetchLevelStars(currentSelection.levelId);
                 const select = DOMElements.leaderboard.singleStarSelect;
                 select.innerHTML = '';
-                stars.forEach(star => select.add(new Option(star.name, star.name)));
-                currentSelection.starName = select.value;
-            } else {
-                 currentSelection.starName = null;
-            }
 
+                if (stars && stars.length > 0) {
+                    stars.forEach(star => select.add(new Option(star.name, star.name)));
+                    currentSelection.starName = select.value; // Define o valor inicial
+                } else {
+                    select.add(new Option('No stars found for this level'));
+                    currentSelection.starName = null;
+                }
+                // Como este é um caso especial, não procuramos por outras subcategorias
+                return; 
+            }
+            
+            // Para todos os outros casos, garantimos que starName seja nulo
+            currentSelection.starName = null;
+            
+            // CASO 2: É uma categoria de Full Game (ou outra de level) com variáveis
             const variables = category.variables.data.filter(v => !v['is-subcategory']);
+            
             variables.forEach(variable => {
                 const group = document.createElement('div');
                 group.className = 'filter-group';
@@ -595,7 +609,7 @@
                     pillsContainer.appendChild(pill);
                 }
                 group.appendChild(pillsContainer);
-                container.appendChild(group);
+                subCatContainer.appendChild(group);
             });
         }
         
@@ -746,17 +760,14 @@
 
 
         // --- Navigation & Event Listeners ---
-        // ****** THIS IS THE CORRECTED FUNCTION ******
         function switchView(viewName) {
             Object.values(DOMElements.views).forEach(v => v.classList.remove('active'));
             Object.values(DOMElements.nav).forEach(n => n.classList.remove('active'));
             
-            // Activate the correct view (e.g., home, leaderboard)
             if (DOMElements.views[viewName]) {
                 DOMElements.views[viewName].classList.add('active');
             }
 
-            // ONLY activate a nav button if it exists for that view
             if (DOMElements.nav[viewName]) {
                 DOMElements.nav[viewName].classList.add('active');
             }
@@ -779,14 +790,12 @@
 
         // Modal Logic
         function openSubmitModal() {
-            // Pre-fill date
             DOMElements.modal.runDate.valueAsDate = new Date();
             DOMElements.modal.container.style.display = 'block';
         }
 
         function closeSubmitModal() {
             DOMElements.modal.container.style.display = 'none';
-            // Clear fields
             DOMElements.modal.playerName.value = '';
             DOMElements.modal.runTime.value = '';
             DOMElements.modal.runDate.value = '';
