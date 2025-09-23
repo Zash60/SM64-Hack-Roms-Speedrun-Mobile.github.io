@@ -318,11 +318,18 @@
                     allData.push(...pageData.data);
                     
                     const nextLink = pageData.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri : null;
+                    
+                    // CRITICAL FIX: Force the next page URL to use HTTPS
+                    if (nextLink) {
+                        nextUrl = nextLink.uri.replace("http://", "https://");
+                    } else {
+                        nextUrl = null;
+                    }
+
                     pageCount++;
                 } catch (error) {
                     console.error("Failed to fetch a page:", error);
-                    homeLoader.textContent = 'Failed to load games.';
+                    homeLoader.textContent = `Failed to load games: ${error.message}`;
                     return null; 
                 }
             }
@@ -364,8 +371,6 @@
                     card.addEventListener('click', () => showGamePage(game.id));
                     gameList.appendChild(card);
                 });
-            } else {
-                 homeLoader.textContent = 'Failed to load games.';
             }
         }
 
@@ -396,7 +401,7 @@
 
         function populateTypeSelector() {
             leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
-            if (currentGameData.levels.data.length > 0) {
+            if (currentGameData.levels.data && currentGameData.levels.data.length > 0) {
                 leaderboardUI.typeSelector.innerHTML += `<option value="levels">Levels</option>`;
             }
         }
