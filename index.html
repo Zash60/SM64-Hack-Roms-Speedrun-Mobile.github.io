@@ -84,6 +84,9 @@
         .game-card-info h3 {
             margin: 0 0 0.5rem 0;
             font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .game-card-info p {
             margin: 0;
@@ -108,10 +111,11 @@
             border-radius: 6px;
             font-size: 1rem;
         }
-        .category-buttons { display: flex; gap: 0.5rem; }
+        .category-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap;}
         .category-buttons button {
             flex: 1;
             cursor: pointer;
+            min-width: 80px;
         }
         .category-buttons button.active {
             background-color: var(--accent-color);
@@ -174,6 +178,11 @@
             cursor: pointer;
             font-size: 1rem;
             font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+        #mod-content button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
         }
         #logout-button { background-color: #ef4444; }
         #logged-in-view { display: none; }
@@ -202,7 +211,7 @@
         <main>
             <!-- Home Page: List of Games -->
             <div id="home-page" class="page active">
-                <div class="loader">Loading games...</div>
+                <div class="loader">Loading all SM64 hacks...</div>
                 <div id="game-list"></div>
             </div>
 
@@ -215,11 +224,9 @@
                         <select id="type-selector"></select>
                         <div id="full-game-categories" class="category-buttons"></div>
                         <div id="level-categories-container" style="display: none;"></div>
-                        <!-- Special container for stars -->
                         <div id="star-selector-container" style="display: none;">
                              <select id="star-selector"></select>
                         </div>
-                         <!-- Container for subcategories with titles -->
                         <div id="subcategories-container"></div>
                     </div>
                 </div>
@@ -242,8 +249,8 @@
                 <div id="login-view">
                     <h2>Mod Login</h2>
                     <form id="login-form">
-                        <input type="email" id="login-email" placeholder="Email" required>
-                        <input type="password" id="login-password" placeholder="Password" required>
+                        <input type="email" id="login-email" name="email" placeholder="Email" required>
+                        <input type="password" id="login-password" name="password" placeholder="Password" required>
                         <button type="submit">Login</button>
                         <p id="login-error" style="color: #ef4444;"></p>
                     </form>
@@ -265,12 +272,10 @@
 
     <!-- Firebase SDKs -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getDatabase, ref, push, set, get, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         
-        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
@@ -281,17 +286,14 @@
             appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        // --- GLOBAL STATE & CACHE ---
         let currentGameData = null;
         let currentUser = null;
-        const apiCache = {}; // Simple cache to avoid re-fetching
+        const apiCache = {};
 
-        // --- UI ELEMENTS ---
         const pages = {
             home: document.getElementById('home-page'),
             leaderboard: document.getElementById('leaderboard-page'),
@@ -325,7 +327,6 @@
             submitContext: document.getElementById('submit-context')
         };
 
-        // --- API HELPERS ---
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
 
         async function fetchData(url) {
@@ -342,7 +343,6 @@
             }
         }
 
-        // --- NAVIGATION ---
         function showPage(pageName) {
             Object.values(pages).forEach(page => page.classList.remove('active'));
             pages[pageName].classList.add('active');
@@ -351,10 +351,9 @@
             if(pageName === 'mod') document.getElementById('mod-btn').classList.add('active');
         }
 
-        // --- HOME PAGE LOGIC ---
         async function loadGames() {
-            // CHANGE 1: Limited the number of games to 50 for faster loading
-            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=asc&max=50`;
+            // UPDATED: Removed max=50 to load all hacks.
+            const url = `${SRC_API_BASE}/series/sm64romhacks/games?orderby=released&direction=asc&max=250`;
             const gamesData = await fetchData(url);
             const gameList = document.getElementById('game-list');
             gameList.innerHTML = ''; 
@@ -378,10 +377,11 @@
                     card.addEventListener('click', () => showGamePage(game.id));
                     gameList.appendChild(card);
                 });
+            } else {
+                 document.querySelector('#home-page .loader').textContent = 'Failed to load games.';
             }
         }
 
-        // --- LEADERBOARD PAGE LOGIC ---
         async function showGamePage(gameId) {
             showPage('leaderboard');
             leaderboardUI.title.textContent = "Loading...";
@@ -408,6 +408,8 @@
             leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
             leaderboardUI.loader.style.display = 'block';
         }
+        
+        // --- All the leaderboard rendering functions are the same as before ---
 
         function populateTypeSelector() {
             leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
@@ -465,15 +467,15 @@
         }
 
         function populateLevelSubCategories(levelId) {
-            // This now acts as a container for the level-category buttons
-            const levelSubCatContainer = document.createElement('div');
             leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
             
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
-
-            if (!levelId) return;
+            if (!levelId) {
+                leaderboardUI.loader.textContent = "Please select a level.";
+                return;
+            };
 
             const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
             const btnsContainer = document.createElement('div');
@@ -509,7 +511,7 @@
             leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
             
             const starVariable = currentGameData.variables.data.find(v => 
-                v['is-subcategory'] === false && v.scope.type === 'per-level' && 
+                !v['is-subcategory'] && v.scope.type === 'per-level' && 
                 v.scope.level === levelId && v.category === categoryId
             );
 
@@ -524,7 +526,6 @@
             };
         }
 
-        // CHANGE 2: Rewritten to display subcategories with titles
         function populateSubcategories(categoryId, levelId = null) {
             leaderboardUI.subcategoriesContainer.innerHTML = '';
             
@@ -535,20 +536,15 @@
             relevantVariables.forEach(variable => {
                 const group = document.createElement('div');
                 group.className = 'subcategory-group';
-
                 const label = document.createElement('p');
                 label.className = 'subcategory-label';
-                label.textContent = variable.name; // e.g., "Version"
-                
+                label.textContent = variable.name;
                 const select = document.createElement('select');
                 select.dataset.variableId = variable.id;
-
                 Object.entries(variable.values.values).forEach(([valueId, valueData]) => {
                     select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`;
                 });
-                
                 select.addEventListener('change', fetchAndRenderLeaderboard);
-                
                 group.appendChild(label);
                 group.appendChild(select);
                 leaderboardUI.subcategoriesContainer.appendChild(group);
@@ -585,7 +581,7 @@
                 }
             } catch (error) {
                 console.error("Error fetching leaderboard from Firebase:", error);
-                leaderboardUI.loader.textContent = 'Error loading leaderboard.';
+                leaderboardUI.loader.textContent = `Error loading leaderboard: ${error.message}`;
             }
         }
         
@@ -598,6 +594,7 @@
         }
 
         function getFirebasePath() {
+            if (!currentGameData) return null;
             const gameId = currentGameData.id;
             const type = leaderboardUI.typeSelector.value;
             let categoryId, levelId;
@@ -625,10 +622,9 @@
                 path += `/${leaderboardUI.starSelector.value}`;
             }
 
-            return path.replace(/[.#$[\]/]/g, '_'); // Sanitize for Firebase key
+            return path.replace(/[.#$[\]/]/g, '_');
         }
 
-        // --- MOD PAGE LOGIC ---
         function setupModPage() {
             onAuthStateChanged(auth, user => {
                 currentUser = user;
@@ -644,11 +640,20 @@
 
             modUI.loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                modUI.loginError.textContent = '';
+                const loginButton = modUI.loginForm.querySelector('button');
+                loginButton.disabled = true;
+                loginButton.textContent = 'Logging in...';
+
                 try {
-                    await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value);
-                    modUI.loginError.textContent = '';
+                    const email = modUI.loginForm.email.value;
+                    const password = modUI.loginForm.password.value;
+                    await signInWithEmailAndPassword(auth, email, password);
                 } catch (error) {
                     modUI.loginError.textContent = error.message;
+                } finally {
+                    loginButton.disabled = false;
+                    loginButton.textContent = 'Login';
                 }
             });
 
@@ -680,20 +685,16 @@
         
         function updateSubmitContext() {
             if (!currentGameData) return;
-            let context = currentGameData.names.international;
-            // Simplified context for brevity
-            modUI.submitContext.textContent = context;
+            modUI.submitContext.textContent = currentGameData.names.international;
         }
 
-        // --- UTILITY ---
         function setActiveButton(container, button) {
             container.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
         }
 
-        // --- INITIALIZATION ---
         function init() {
-            buttons.home.addEventListener('click', () => { showPage('home'); });
+            buttons.home.addEventListener('click', () => showPage('home'));
             buttons.mod.addEventListener('click', () => showPage('mod'));
             buttons.back.addEventListener('click', () => showPage('home'));
             buttons.goToSubmit.addEventListener('click', () => {
@@ -702,7 +703,6 @@
             });
             
             leaderboardUI.typeSelector.addEventListener('change', updateControls);
-
             loadGames();
             setupModPage();
         }
