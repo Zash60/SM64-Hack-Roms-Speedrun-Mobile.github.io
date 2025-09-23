@@ -302,7 +302,8 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', e => {
                     setActiveButton(leaderboardUI.fullGameCategories, e.target);
-                    populateLevelVariables(null, cat.id);
+                    // Chamada para a nova função universal, sem levelId
+                    displayVariablesForSelection(null, cat.id);
                 });
                 leaderboardUI.fullGameCategories.appendChild(btn);
             });
@@ -316,7 +317,6 @@
             levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
             currentGameData.levels.data.forEach(level => levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`);
             levelSelect.addEventListener('change', e => {
-                // Ao mudar o nível, limpamos as categorias de nível para forçar uma nova seleção
                 leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
                 resetSubcategoryViews();
                 populateLevelSubCategories(e.target.value);
@@ -325,8 +325,6 @@
         }
 
         function populateLevelSubCategories(levelId) {
-            leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
-            resetSubcategoryViews();
             if (!levelId) return;
             const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
             const btnsContainer = document.createElement('div');
@@ -337,7 +335,8 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
-                    populateLevelVariables(levelId, cat.id);
+                    // Chamada para a nova função universal, com levelId
+                    displayVariablesForSelection(levelId, cat.id);
                 });
                 btnsContainer.appendChild(btn);
             });
@@ -346,12 +345,11 @@
         }
 
         // --- INÍCIO DA CORREÇÃO UNIVERSAL ---
-        function populateLevelVariables(levelId, categoryId) {
-            // 1. Limpa as variáveis anteriores
+        function displayVariablesForSelection(levelId, categoryId) {
             leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
 
-            // 2. Procura por variáveis de Estrelas (associadas ao NÍVEL)
+            // Lógica das Estrelas (sempre ligada a um NÍVEL)
             if (levelId) {
                 const starVariable = currentGameData.variables.data.find(v => 
                     !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId
@@ -371,7 +369,7 @@
                 }
             }
 
-            // 3. Procura por Subcategorias (associadas à CATEGORIA)
+            // Lógica das Subcategorias (sempre ligada a uma CATEGORIA)
             const subcategoryVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
             subcategoryVariables.forEach(variable => {
                 const group = document.createElement('div');
@@ -388,7 +386,6 @@
                 leaderboardUI.subcategoriesContainer.appendChild(group);
             });
             
-            // 4. Busca o leaderboard com as seleções atuais
             fetchAndRenderLeaderboard();
         }
         // --- FIM DA CORREÇÃO UNIVERSAL ---
@@ -449,7 +446,7 @@
             let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
             leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
             if (leaderboardUI.starSelectorContainer.style.display === 'block') {
-                 if (!leaderboardUI.starSelector.value) return null; // Seletor visível, mas sem seleção
+                 if (!leaderboardUI.starSelector.value) return null;
                  path += `/${leaderboardUI.starSelector.value}`;
             }
             return path.replace(/[.#$[\]/]/g, '_');
