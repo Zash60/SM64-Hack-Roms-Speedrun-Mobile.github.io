@@ -302,30 +302,17 @@
 
         async function fetchPaginatedData(url) {
             if (apiCache[url]) return apiCache[url];
-
-            let allData = [];
-            let nextUrl = url;
-            let pageCount = 1;
+            let allData = [], nextUrl = url, pageCount = 1;
             const homeLoader = document.getElementById('home-loader');
-
             while (nextUrl) {
                 try {
                     homeLoader.textContent = `Loading page ${pageCount}...`;
                     const response = await fetch(nextUrl);
                     if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
                     const pageData = await response.json();
-                    
                     allData.push(...pageData.data);
-                    
                     const nextLink = pageData.pagination.links.find(link => link.rel === 'next');
-                    
-                    // CRITICAL FIX: Force the next page URL to use HTTPS
-                    if (nextLink) {
-                        nextUrl = nextLink.uri.replace("http://", "https://");
-                    } else {
-                        nextUrl = null;
-                    }
-
+                    nextUrl = nextLink ? nextLink.uri.replace("http://", "https://") : null;
                     pageCount++;
                 } catch (error) {
                     console.error("Failed to fetch a page:", error);
@@ -351,23 +338,15 @@
             const gameList = document.getElementById('game-list');
             const homeLoader = document.getElementById('home-loader');
             gameList.innerHTML = ''; 
-            
             if (gamesData) {
                 homeLoader.style.display = 'none';
                 gamesData.forEach(game => {
                     const releaseDate = game.released ? new Date(game.released, 0, 1) : new Date();
                     const yearsAgo = new Date().getFullYear() - releaseDate.getFullYear();
-                    
                     const card = document.createElement('div');
                     card.className = 'game-card';
                     card.dataset.id = game.id;
-                    card.innerHTML = `
-                        <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
-                        <div class="game-card-info">
-                            <h3>${game.names.international}</h3>
-                            <p>${yearsAgo > 0 ? `${yearsAgo} years ago` : 'This year'}</p>
-                        </div>
-                    `;
+                    card.innerHTML = `<img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}"><div class="game-card-info"><h3>${game.names.international}</h3><p>${yearsAgo > 0 ? `${yearsAgo} years ago` : 'This year'}</p></div>`;
                     card.addEventListener('click', () => showGamePage(game.id));
                     gameList.appendChild(card);
                 });
@@ -392,11 +371,7 @@
             leaderboardUI.typeSelector.innerHTML = '';
             leaderboardUI.fullGameCategories.innerHTML = '';
             leaderboardUI.levelCategoriesContainer.innerHTML = '';
-            leaderboardUI.subcategoriesContainer.innerHTML = '';
-            leaderboardUI.starSelectorContainer.style.display = 'none';
-            leaderboardUI.tableBody.innerHTML = '';
-            leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
-            leaderboardUI.loader.style.display = 'block';
+            resetSubcategoryViews();
         }
 
         function populateTypeSelector() {
@@ -416,10 +391,11 @@
         }
         
         function resetSubcategoryViews() {
-            leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
+            leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.tableBody.innerHTML = '';
             leaderboardUI.loader.style.display = 'block';
+            leaderboardUI.loader.textContent = 'Select a category to view the leaderboard.';
         }
 
         function populateFullGameCategories() {
@@ -451,10 +427,7 @@
         function populateLevelSubCategories(levelId) {
             leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
             resetSubcategoryViews();
-            if (!levelId) {
-                leaderboardUI.loader.textContent = "Please select a level.";
-                return;
-            };
+            if (!levelId) return;
             const levelCats = currentGameData.categories.data.filter(c => c.type === 'per-level');
             const btnsContainer = document.createElement('div');
             btnsContainer.className = 'category-buttons';
@@ -465,8 +438,9 @@
                 btn.dataset.levelId = levelId;
                 btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
-                    if (cat.name.toLowerCase().includes('single star')) populateStarSelector(levelId, cat.id);
-                    else {
+                    if (cat.name.toLowerCase().includes('single star')) {
+                         populateStarSelector(levelId); // Call with just levelId
+                    } else {
                         leaderboardUI.starSelectorContainer.style.display = 'none';
                         populateSubcategories(cat.id, levelId);
                     }
@@ -477,14 +451,27 @@
             if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
-        function populateStarSelector(levelId, categoryId) {
+        function populateStarSelector(levelId) {
             leaderboardUI.starSelectorContainer.style.display = 'block';
             leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
-            const starVariable = currentGameData.variables.data.find(v => !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId && v.category === categoryId);
+            
+            // CORREÇÃO CRÍTICA: A variável de estrelas é ligada apenas ao nível, não à categoria.
+            // Removemos a verificação "v.category === categoryId".
+            const starVariable = currentGameData.variables.data.find(v => 
+                !v['is-subcategory'] && 
+                v.scope.type === 'per-level' && 
+                v.scope.level === levelId
+            );
+
             if (starVariable && starVariable.values.values) {
-                Object.entries(starVariable.values.values).forEach(([starId, starData]) => leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`);
+                Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
+                    leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
+                });
             }
-            leaderboardUI.starSelector.onchange = () => populateSubcategories(categoryId, levelId);
+            
+            // Quando uma estrela for selecionada, atualize o leaderboard
+            leaderboardUI.starSelector.onchange = fetchAndRenderLeaderboard;
+            fetchAndRenderLeaderboard(); // Fetch initially for the placeholder
         }
 
         function populateSubcategories(categoryId, levelId = null) {
@@ -564,6 +551,9 @@
             leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
             if (leaderboardUI.starSelectorContainer.style.display === 'block' && leaderboardUI.starSelector.value) {
                 path += `/${leaderboardUI.starSelector.value}`;
+            } else if (leaderboardUI.starSelectorContainer.style.display === 'block' && !leaderboardUI.starSelector.value) {
+                // Se o seletor de estrelas está visível mas nenhuma estrela foi selecionada, não podemos buscar um leaderboard
+                return null;
             }
             return path.replace(/[.#$[\]/]/g, '_');
         }
@@ -571,14 +561,9 @@
         function setupModPage() {
             onAuthStateChanged(auth, user => {
                 currentUser = user;
-                if (user) {
-                    modUI.loginView.style.display = 'none';
-                    modUI.loggedInView.style.display = 'block';
-                    modUI.userEmail.textContent = user.email;
-                } else {
-                    modUI.loginView.style.display = 'block';
-                    modUI.loggedInView.style.display = 'none';
-                }
+                modUI.loginView.style.display = user ? 'none' : 'block';
+                modUI.loggedInView.style.display = user ? 'block' : 'none';
+                if(user) modUI.userEmail.textContent = user.email;
             });
             modUI.loginForm.addEventListener('submit', async e => {
                 e.preventDefault();
