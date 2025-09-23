@@ -228,7 +228,6 @@
             }
         }
 
-        // *** NOVA FUNÇÃO PARA BUSCAR VARIÁVEIS DO LEVEL ***
         async function fetchLevelVariables(levelId) {
             try {
                 const data = await fetchApi(`${SRC_API_BASE}/levels/${levelId}/variables`);
@@ -287,18 +286,17 @@
             });
         }
 
-        // *** FUNÇÃO COMPLETAMENTE REESCRITA E CORRIGIDA ***
         async function renderSubCategoriesAndVariables() {
             const subCatContainer = DOMElements.leaderboard.subcategoriesContainer;
             const starContainer = DOMElements.leaderboard.singleStarContainer;
             subCatContainer.innerHTML = '';
             starContainer.style.display = 'none';
             currentSelection.starName = null;
+            currentSelection.subCategoryValues = {};
 
             const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
             if (!category) return;
 
-            // 1. Renderizar variáveis padrão (ex: "Version" para Full Game)
             const standardVariables = category.variables.data.filter(v => !v['is-subcategory']);
             if (standardVariables.length > 0) {
                 standardVariables.forEach(variable => {
@@ -308,9 +306,7 @@
                     const pillsContainer = document.createElement('div');
                     pillsContainer.className = 'pills-container';
 
-                    if (!currentSelection.subCategoryValues[variable.id]) {
-                        currentSelection.subCategoryValues[variable.id] = variable.values.default;
-                    }
+                    currentSelection.subCategoryValues[variable.id] = variable.values.default;
                     
                     for (const [valueId, valueData] of Object.entries(variable.values.values)) {
                         const pill = document.createElement('div');
@@ -324,7 +320,6 @@
                 });
             }
 
-            // 2. Se for um level, verificar se há uma variável de subcategoria (as estrelas)
             if (currentSelection.levelId !== 'full-game') {
                 const levelVars = await fetchLevelVariables(currentSelection.levelId);
                 const starVariable = levelVars.find(v => v.category === category.id && v['is-subcategory']);
@@ -334,8 +329,9 @@
                     const select = DOMElements.leaderboard.singleStarSelect;
                     select.innerHTML = '';
                     
-                    const starLabels = Object.values(starVariable.values.choices);
-                    starLabels.forEach(label => select.add(new Option(label, label)));
+                    for (const [key, label] of Object.entries(starVariable.values.choices)) {
+                        select.add(new Option(label, label));
+                    }
 
                     if (select.options.length > 0) {
                        currentSelection.starName = select.value;
@@ -454,7 +450,15 @@
             return totalMs;
         }
 
-        function escapeHtml(unsafe) { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"g, "&quot;").replace(/'/g, "&#039;"); }
+        // *** FUNÇÃO CORRIGIDA ***
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
 
         function init() { fetchGames(); setupAuth(); }
         init();
