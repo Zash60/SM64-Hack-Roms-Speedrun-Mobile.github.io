@@ -302,7 +302,7 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', e => {
                     setActiveButton(leaderboardUI.fullGameCategories, e.target);
-                    populateSubcategories(cat.id);
+                    populateLevelVariables(null, cat.id);
                 });
                 leaderboardUI.fullGameCategories.appendChild(btn);
             });
@@ -315,7 +315,12 @@
             levelSelect.id = "level-selector";
             levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
             currentGameData.levels.data.forEach(level => levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`);
-            levelSelect.addEventListener('change', e => populateLevelSubCategories(e.target.value));
+            levelSelect.addEventListener('change', e => {
+                // Ao mudar o nível, limpamos as categorias de nível para forçar uma nova seleção
+                leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
+                resetSubcategoryViews();
+                populateLevelSubCategories(e.target.value);
+            });
             leaderboardUI.levelCategoriesContainer.appendChild(levelSelect);
         }
 
@@ -330,15 +335,9 @@
                 const btn = document.createElement('button');
                 btn.textContent = cat.name;
                 btn.dataset.categoryId = cat.id;
-                btn.dataset.levelId = levelId;
                 btn.addEventListener('click', e => {
                     setActiveButton(btnsContainer, e.target);
-                    if (cat.name.toLowerCase().includes('single star')) {
-                         populateStarSelector(levelId);
-                    } else {
-                        leaderboardUI.starSelectorContainer.style.display = 'none';
-                        populateSubcategories(cat.id, levelId);
-                    }
+                    populateLevelVariables(levelId, cat.id);
                 });
                 btnsContainer.appendChild(btn);
             });
@@ -346,44 +345,35 @@
             if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
-        // --- INÍCIO DA CORREÇÃO ---
-        function populateStarSelector(levelId) {
-            leaderboardUI.starSelectorContainer.style.display = 'block';
-            leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
-            
-            // CORREÇÃO: Encontre a ÚNICA variável de estrela que corresponde ao NÍVEL SELECIONADO.
-            const starVariable = currentGameData.variables.data.find(v => 
-                !v['is-subcategory'] && 
-                v.scope.type === 'per-level' && 
-                v.scope.level === levelId
-            );
-
-            if (starVariable && starVariable.values.values) {
-                // Adicione o título da lista de estrelas (ex: "C1 Stars") se ele existir.
-                const label = document.createElement('p');
-                label.className = 'subcategory-label';
-                label.textContent = starVariable.name;
-                // Insere o label ANTES do seletor, se ele ainda não estiver lá.
-                leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
-                leaderboardUI.starSelectorContainer.prepend(label);
-
-                Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
-                    leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
-                });
-            } else {
-                // Limpa o label se nenhuma variável for encontrada.
-                leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
-            }
-            
-            leaderboardUI.starSelector.onchange = fetchAndRenderLeaderboard;
-            fetchAndRenderLeaderboard();
-        }
-        // --- FIM DA CORREÇÃO ---
-
-        function populateSubcategories(categoryId, levelId = null) {
+        // --- INÍCIO DA CORREÇÃO UNIVERSAL ---
+        function populateLevelVariables(levelId, categoryId) {
+            // 1. Limpa as variáveis anteriores
+            leaderboardUI.starSelectorContainer.style.display = 'none';
             leaderboardUI.subcategoriesContainer.innerHTML = '';
-            const relevantVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
-            relevantVariables.forEach(variable => {
+
+            // 2. Procura por variáveis de Estrelas (associadas ao NÍVEL)
+            if (levelId) {
+                const starVariable = currentGameData.variables.data.find(v => 
+                    !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId
+                );
+                if (starVariable) {
+                    leaderboardUI.starSelectorContainer.style.display = 'block';
+                    leaderboardUI.starSelector.innerHTML = `<option value="">-- Select a Star --</option>`;
+                    const label = document.createElement('p');
+                    label.className = 'subcategory-label';
+                    label.textContent = starVariable.name;
+                    leaderboardUI.starSelectorContainer.querySelector('.subcategory-label')?.remove();
+                    leaderboardUI.starSelectorContainer.prepend(label);
+                    Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
+                        leaderboardUI.starSelector.innerHTML += `<option value="${starId}">${starData.label}</option>`;
+                    });
+                    leaderboardUI.starSelector.onchange = fetchAndRenderLeaderboard;
+                }
+            }
+
+            // 3. Procura por Subcategorias (associadas à CATEGORIA)
+            const subcategoryVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
+            subcategoryVariables.forEach(variable => {
                 const group = document.createElement('div');
                 group.className = 'subcategory-group';
                 const label = document.createElement('p');
@@ -397,8 +387,11 @@
                 group.appendChild(select);
                 leaderboardUI.subcategoriesContainer.appendChild(group);
             });
+            
+            // 4. Busca o leaderboard com as seleções atuais
             fetchAndRenderLeaderboard();
         }
+        // --- FIM DA CORREÇÃO UNIVERSAL ---
 
         async function fetchAndRenderLeaderboard() {
             const leaderboardPath = getFirebasePath();
@@ -455,10 +448,9 @@
             }
             let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
             leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
-            if (leaderboardUI.starSelectorContainer.style.display === 'block' && leaderboardUI.starSelector.value) {
-                path += `/${leaderboardUI.starSelector.value}`;
-            } else if (leaderboardUI.starSelectorContainer.style.display === 'block' && !leaderboardUI.starSelector.value) {
-                return null;
+            if (leaderboardUI.starSelectorContainer.style.display === 'block') {
+                 if (!leaderboardUI.starSelector.value) return null; // Seletor visível, mas sem seleção
+                 path += `/${leaderboardUI.starSelector.value}`;
             }
             return path.replace(/[.#$[\]/]/g, '_');
         }
