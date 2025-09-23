@@ -67,8 +67,8 @@
         .category-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap;}
         .category-buttons button { flex: 1; cursor: pointer; min-width: 80px; }
         .category-buttons button.active { background-color: var(--accent-color); color: var(--bg-color); font-weight: bold; }
-        .subcategory-group { margin-top: 1rem; }
-        .subcategory-label {
+        .variable-group { margin-top: 1rem; }
+        .variable-label {
             margin: 0 0 0.5rem 0.2rem; font-size: 0.9rem;
             color: var(--text-muted); text-transform: uppercase;
         }
@@ -124,8 +124,7 @@
                         <select id="type-selector"></select>
                         <div id="full-game-categories" class="category-buttons"></div>
                         <div id="level-categories-container" style="display: none;"></div>
-                        <div id="star-selector-container"></div>
-                        <div id="subcategories-container"></div>
+                        <div id="variables-container"></div> <!-- Container Único para todas as variáveis -->
                     </div>
                 </div>
                 <div class="loader" id="leaderboard-loader">Select a category to view the leaderboard.</div>
@@ -184,11 +183,13 @@
 
         let currentGameData = null;
         const apiCache = {};
-
-        const pages = { home: document.getElementById('home-page'), leaderboard: document.getElementById('leaderboard-page'), mod: document.getElementById('mod-page') };
-        const buttons = { home: document.getElementById('home-btn'), mod: document.getElementById('mod-btn'), back: document.getElementById('back-to-home-btn'), goToSubmit: document.getElementById('go-to-submit-btn') };
-        const leaderboardUI = { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), subcategoriesContainer: document.getElementById('subcategories-container'), starSelectorContainer: document.getElementById('star-selector-container') };
-        const modUI = { loginView: document.getElementById('login-view'), loggedInView: document.getElementById('logged-in-view'), loginForm: document.getElementById('login-form'), submitRunForm: document.getElementById('submit-run-form'), loginError: document.getElementById('login-error'), userEmail: document.getElementById('user-email'), logoutButton: document.getElementById('logout-button'), submitContext: document.getElementById('submit-context') };
+        
+        const ui = {
+            pages: { home: document.getElementById('home-page'), leaderboard: document.getElementById('leaderboard-page'), mod: document.getElementById('mod-page') },
+            buttons: { home: document.getElementById('home-btn'), mod: document.getElementById('mod-btn'), back: document.getElementById('back-to-home-btn'), goToSubmit: document.getElementById('go-to-submit-btn') },
+            leaderboard: { title: document.getElementById('game-title'), loader: document.getElementById('leaderboard-loader'), tableBody: document.getElementById('leaderboard-body'), typeSelector: document.getElementById('type-selector'), fullGameCategories: document.getElementById('full-game-categories'), levelCategoriesContainer: document.getElementById('level-categories-container'), variablesContainer: document.getElementById('variables-container') },
+            mod: { loginView: document.getElementById('login-view'), loggedInView: document.getElementById('logged-in-view'), loginForm: document.getElementById('login-form'), submitRunForm: document.getElementById('submit-run-form'), loginError: document.getElementById('login-error'), userEmail: document.getElementById('user-email'), logoutButton: document.getElementById('logout-button'), submitContext: document.getElementById('submit-context') }
+        };
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
 
@@ -213,11 +214,10 @@
         }
 
         function showPage(pageName) {
-            Object.values(pages).forEach(page => page.classList.remove('active'));
-            pages[pageName].classList.add('active');
+            Object.values(ui.pages).forEach(page => page.classList.remove('active'));
+            ui.pages[pageName].classList.add('active');
             document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-            if(pageName === 'home') buttons.home.classList.add('active');
-            if(pageName === 'mod') buttons.mod.classList.add('active');
+            if(ui.buttons[pageName]) ui.buttons[pageName].classList.add('active');
         }
 
         async function loadGames() {
@@ -243,77 +243,76 @@
 
         async function showGamePage(gameId) {
             showPage('leaderboard');
-            leaderboardUI.title.textContent = "Loading...";
+            ui.leaderboard.title.textContent = "Loading...";
             resetLeaderboardView();
             const url = `${SRC_API_BASE}/games/${gameId}?embed=categories,levels,variables`;
             const response = await fetch(url).then(res => res.json());
             if (response && response.data) {
                 currentGameData = response.data;
-                leaderboardUI.title.textContent = currentGameData.names.international;
+                ui.leaderboard.title.textContent = currentGameData.names.international;
                 populateTypeSelector();
                 updateControls();
             }
         }
 
         function resetLeaderboardView() {
-            leaderboardUI.typeSelector.innerHTML = '';
-            leaderboardUI.fullGameCategories.innerHTML = '';
-            leaderboardUI.levelCategoriesContainer.innerHTML = '';
-            resetSubcategoryViews();
+            ui.leaderboard.typeSelector.innerHTML = '';
+            ui.leaderboard.fullGameCategories.innerHTML = '';
+            ui.leaderboard.levelCategoriesContainer.innerHTML = '';
+            resetVariableViews();
         }
 
         function populateTypeSelector() {
-            leaderboardUI.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
+            ui.leaderboard.typeSelector.innerHTML = `<option value="full-game">Full Game</option>`;
             if (currentGameData.levels.data && currentGameData.levels.data.length > 0) {
-                leaderboardUI.typeSelector.innerHTML += `<option value="levels">Levels</option>`;
+                ui.leaderboard.typeSelector.innerHTML += `<option value="levels">Levels</option>`;
             }
         }
         
         function updateControls() {
-            const isFullGame = leaderboardUI.typeSelector.value === 'full-game';
-            leaderboardUI.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
-            leaderboardUI.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
-            resetSubcategoryViews();
+            const isFullGame = ui.leaderboard.typeSelector.value === 'full-game';
+            ui.leaderboard.fullGameCategories.style.display = isFullGame ? 'flex' : 'none';
+            ui.leaderboard.levelCategoriesContainer.style.display = isFullGame ? 'none' : 'block';
+            resetVariableViews();
             if (isFullGame) populateFullGameCategories();
             else populateLevelSelector();
         }
         
-        function resetSubcategoryViews() {
-            leaderboardUI.subcategoriesContainer.innerHTML = '';
-            leaderboardUI.starSelectorContainer.innerHTML = '';
-            leaderboardUI.tableBody.innerHTML = '';
-            leaderboardUI.loader.style.display = 'block';
-            leaderboardUI.loader.textContent = 'Select a category.';
+        function resetVariableViews() {
+            ui.leaderboard.variablesContainer.innerHTML = '';
+            ui.leaderboard.tableBody.innerHTML = '';
+            ui.leaderboard.loader.style.display = 'block';
+            ui.leaderboard.loader.textContent = 'Select a category.';
         }
 
         function populateFullGameCategories() {
-            leaderboardUI.fullGameCategories.innerHTML = '';
+            ui.leaderboard.fullGameCategories.innerHTML = '';
             const fullGameCats = currentGameData.categories.data.filter(c => c.type === 'per-game');
             fullGameCats.forEach(cat => {
                 const btn = document.createElement('button');
                 btn.textContent = cat.name;
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', () => {
-                    setActiveButton(leaderboardUI.fullGameCategories, btn);
-                    displayVariablesForSelection(null, cat.id);
+                    setActiveButton(ui.leaderboard.fullGameCategories, btn);
+                    displayVariablesForSelection({ categoryId: cat.id });
                 });
-                leaderboardUI.fullGameCategories.appendChild(btn);
+                ui.leaderboard.fullGameCategories.appendChild(btn);
             });
-            if(leaderboardUI.fullGameCategories.firstChild) leaderboardUI.fullGameCategories.firstChild.click();
+            if(ui.leaderboard.fullGameCategories.firstChild) ui.leaderboard.fullGameCategories.firstChild.click();
         }
 
         function populateLevelSelector() {
-            leaderboardUI.levelCategoriesContainer.innerHTML = '';
+            ui.leaderboard.levelCategoriesContainer.innerHTML = '';
             const levelSelect = document.createElement('select');
             levelSelect.id = "level-selector";
             levelSelect.innerHTML = `<option value="">-- Select a Level --</option>`;
             currentGameData.levels.data.forEach(level => levelSelect.innerHTML += `<option value="${level.id}">${level.name}</option>`);
             levelSelect.addEventListener('change', e => {
-                leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
-                resetSubcategoryViews();
+                ui.leaderboard.levelCategoriesContainer.querySelector('.category-buttons')?.remove();
+                resetVariableViews();
                 populateLevelSubCategories(e.target.value);
             });
-            leaderboardUI.levelCategoriesContainer.appendChild(levelSelect);
+            ui.leaderboard.levelCategoriesContainer.appendChild(levelSelect);
         }
 
         function populateLevelSubCategories(levelId) {
@@ -327,75 +326,71 @@
                 btn.dataset.categoryId = cat.id;
                 btn.addEventListener('click', () => {
                     setActiveButton(btnsContainer, btn);
-                    displayVariablesForSelection(levelId, cat.id);
+                    displayVariablesForSelection({ levelId, categoryId: cat.id });
                 });
                 btnsContainer.appendChild(btn);
             });
-            leaderboardUI.levelCategoriesContainer.appendChild(btnsContainer);
+            ui.leaderboard.levelCategoriesContainer.appendChild(btnsContainer);
             if(btnsContainer.firstChild) btnsContainer.firstChild.click();
         }
 
-        // --- INÍCIO DA CORREÇÃO UNIVERSAL ---
-        function displayVariablesForSelection(levelId, categoryId) {
-            leaderboardUI.starSelectorContainer.innerHTML = '';
-            leaderboardUI.subcategoriesContainer.innerHTML = '';
+        // --- INÍCIO DA FUNÇÃO UNIVERSAL REESCRITA ---
+        function displayVariablesForSelection({ levelId = null, categoryId = null }) {
+            ui.leaderboard.variablesContainer.innerHTML = '';
 
-            // Lógica das Estrelas (SÓ roda se um NÍVEL for selecionado)
-            if (levelId) {
-                const starVariable = currentGameData.variables.data.find(v => 
-                    !v['is-subcategory'] && v.scope.type === 'per-level' && v.scope.level === levelId
-                );
-                if (starVariable) {
-                    const group = document.createElement('div');
-                    group.className = 'subcategory-group';
-                    const label = document.createElement('p');
-                    label.className = 'subcategory-label';
-                    label.textContent = starVariable.name;
-                    const select = document.createElement('select');
-                    select.id = 'star-selector';
-                    select.innerHTML = `<option value="">-- Select a Star --</option>`;
-                    Object.entries(starVariable.values.values).forEach(([starId, starData]) => {
-                        select.innerHTML += `<option value="${starId}">${starData.label}</option>`;
-                    });
-                    select.addEventListener('change', fetchAndRenderLeaderboard);
-                    group.appendChild(label);
-                    group.appendChild(select);
-                    leaderboardUI.starSelectorContainer.appendChild(group);
+            // 1. Encontrar TODAS as variáveis relevantes (estrelas E subcategorias)
+            const allVariables = currentGameData.variables.data.filter(variable => {
+                // Subcategorias são relevantes se pertencerem à categoria atual
+                if (variable['is-subcategory'] && variable.category === categoryId) {
+                    return true;
                 }
-            }
+                // Estrelas são relevantes se pertencerem ao nível atual
+                if (!variable['is-subcategory'] && variable.scope.type === 'per-level' && variable.scope.level === levelId) {
+                    return true;
+                }
+                return false;
+            });
 
-            // Lógica das Subcategorias (SEMPRE roda, filtrada pela CATEGORIA)
-            const subcategoryVariables = currentGameData.variables.data.filter(v => v['is-subcategory'] && v.category === categoryId);
-            subcategoryVariables.forEach(variable => {
+            // 2. Criar um seletor para cada variável encontrada
+            allVariables.forEach(variable => {
                 const group = document.createElement('div');
-                group.className = 'subcategory-group';
+                group.className = 'variable-group';
                 const label = document.createElement('p');
-                label.className = 'subcategory-label';
+                label.className = 'variable-label';
                 label.textContent = variable.name;
+                
                 const select = document.createElement('select');
                 select.dataset.variableId = variable.id;
-                Object.entries(variable.values.values).forEach(([valueId, valueData]) => select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`);
+                
+                // Se for uma variável de estrela, adicione a opção "placeholder"
+                const placeholder = variable['is-subcategory'] ? '' : `<option value="">-- Select a Star --</option>`;
+                select.innerHTML = placeholder;
+                
+                Object.entries(variable.values.values).forEach(([valueId, valueData]) => {
+                    select.innerHTML += `<option value="${valueId}">${valueData.label}</option>`;
+                });
+
                 select.addEventListener('change', fetchAndRenderLeaderboard);
                 group.appendChild(label);
                 group.appendChild(select);
-                leaderboardUI.subcategoriesContainer.appendChild(group);
+                ui.leaderboard.variablesContainer.appendChild(group);
             });
             
             fetchAndRenderLeaderboard();
         }
-        // --- FIM DA CORREÇÃO UNIVERSAL ---
+        // --- FIM DA FUNÇÃO UNIVERSAL REESCRITA ---
 
         async function fetchAndRenderLeaderboard() {
             const leaderboardPath = getFirebasePath();
             if (!leaderboardPath) {
-                leaderboardUI.tableBody.innerHTML = '';
-                leaderboardUI.loader.style.display = 'block';
-                leaderboardUI.loader.textContent = 'Please complete your selection.';
+                ui.leaderboard.tableBody.innerHTML = '';
+                ui.leaderboard.loader.style.display = 'block';
+                ui.leaderboard.loader.textContent = 'Please complete your selection.';
                 return;
             }
-            leaderboardUI.loader.style.display = 'block';
-            leaderboardUI.loader.textContent = 'Loading leaderboard...';
-            leaderboardUI.tableBody.innerHTML = '';
+            ui.leaderboard.loader.style.display = 'block';
+            ui.leaderboard.loader.textContent = 'Loading leaderboard...';
+            ui.leaderboard.tableBody.innerHTML = '';
             const runsRef = ref(db, `runs/${leaderboardPath}`);
             const runsQuery = query(runsRef, orderByChild('time'));
             try {
@@ -404,44 +399,43 @@
                     const runs = [];
                     snapshot.forEach(childSnapshot => runs.push(childSnapshot.val()));
                     renderLeaderboard(runs);
-                    leaderboardUI.loader.style.display = 'none';
+                    ui.leaderboard.loader.style.display = 'none';
                 } else {
-                    leaderboardUI.loader.textContent = 'No runs submitted for this category yet.';
+                    ui.leaderboard.loader.textContent = 'No runs submitted for this category yet.';
                 }
-            } catch (error) { leaderboardUI.loader.textContent = `Error: ${error.message}.`; }
+            } catch (error) { ui.leaderboard.loader.textContent = `Error: ${error.message}.`; }
         }
         
         function renderLeaderboard(runs) {
-            leaderboardUI.tableBody.innerHTML = '';
+            ui.leaderboard.tableBody.innerHTML = '';
             runs.forEach((run, index) => {
                 const row = `<tr><td>${index + 1}</td><td>${run.player}</td><td>${run.time}</td></tr>`;
-                leaderboardUI.tableBody.innerHTML += row;
+                ui.leaderboard.tableBody.innerHTML += row;
             });
         }
 
         function getFirebasePath() {
             if (!currentGameData) return null;
-            const gameId = currentGameData.id;
-            const type = leaderboardUI.typeSelector.value;
             let categoryId, levelId;
-            if (type === 'full-game') {
-                const activeCat = leaderboardUI.fullGameCategories.querySelector('button.active');
+            if (ui.leaderboard.typeSelector.value === 'full-game') {
+                const activeCat = ui.leaderboard.fullGameCategories.querySelector('button.active');
                 if (!activeCat) return null;
                 categoryId = activeCat.dataset.categoryId;
             } else {
-                const selectedLevel = document.getElementById('level-selector')?.value;
-                const activeLevelCat = leaderboardUI.levelCategoriesContainer.querySelector('.category-buttons button.active');
-                if (!selectedLevel || !activeLevelCat) return null;
-                levelId = selectedLevel;
+                const activeLevelCat = ui.leaderboard.levelCategoriesContainer.querySelector('.category-buttons button.active');
+                levelId = document.getElementById('level-selector')?.value;
+                if (!levelId || !activeLevelCat) return null;
                 categoryId = activeLevelCat.dataset.categoryId;
             }
-            let path = `${gameId}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
-            leaderboardUI.subcategoriesContainer.querySelectorAll('select[data-variable-id]').forEach(sel => path += `/${sel.value}`);
-            const starSelector = document.getElementById('star-selector');
-            if (starSelector) {
-                 if (!starSelector.value) return null;
-                 path += `/${starSelector.value}`;
+            
+            let path = `${currentGameData.id}/${levelId ? `level_${levelId}/` : ''}${categoryId}`;
+            
+            const variableSelectors = ui.leaderboard.variablesContainer.querySelectorAll('select');
+            for(const sel of variableSelectors) {
+                if(!sel.value) return null; // Se qualquer seletor (especialmente de estrela) não for escolhido, para aqui.
+                path += `/${sel.value}`;
             }
+
             return path.replace(/[.#$[\]/]/g, '_');
         }
 
@@ -449,21 +443,21 @@
             let currentUser = null;
             onAuthStateChanged(auth, user => {
                 currentUser = user;
-                modUI.loginView.style.display = user ? 'none' : 'block';
-                modUI.loggedInView.style.display = user ? 'block' : 'none';
-                if(user) modUI.userEmail.textContent = user.email;
+                ui.mod.loginView.style.display = user ? 'none' : 'block';
+                ui.mod.loggedInView.style.display = user ? 'block' : 'none';
+                if(user) ui.mod.userEmail.textContent = user.email;
             });
-            modUI.loginForm.addEventListener('submit', async e => {
+            ui.mod.loginForm.addEventListener('submit', async e => {
                 e.preventDefault();
-                modUI.loginError.textContent = '';
-                const loginButton = modUI.loginForm.querySelector('button');
+                ui.mod.loginError.textContent = '';
+                const loginButton = ui.mod.loginForm.querySelector('button');
                 loginButton.disabled = true; loginButton.textContent = 'Logging in...';
-                try { await signInWithEmailAndPassword(auth, modUI.loginForm.email.value, modUI.loginForm.password.value); } 
-                catch (error) { modUI.loginError.textContent = error.message; } 
+                try { await signInWithEmailAndPassword(auth, ui.mod.loginForm.email.value, ui.mod.loginForm.password.value); } 
+                catch (error) { ui.mod.loginError.textContent = error.message; } 
                 finally { loginButton.disabled = false; loginButton.textContent = 'Login'; }
             });
-            modUI.logoutButton.addEventListener('click', () => signOut(auth));
-            modUI.submitRunForm.addEventListener('submit', async e => {
+            ui.mod.logoutButton.addEventListener('click', () => signOut(auth));
+            ui.mod.submitRunForm.addEventListener('submit', async e => {
                 e.preventDefault();
                 if (!currentUser) { alert('You must be logged in.'); return; }
                 const path = getFirebasePath();
@@ -472,7 +466,7 @@
                 try {
                     await set(push(ref(db, `runs/${path}`)), runData);
                     alert('Run submitted successfully!');
-                    modUI.submitRunForm.reset();
+                    ui.mod.submitRunForm.reset();
                     showPage('leaderboard');
                     fetchAndRenderLeaderboard();
                 } catch (error) { alert('Error submitting run: ' + error.message); }
@@ -481,7 +475,7 @@
         
         function updateSubmitContext() {
             if (!currentGameData) return;
-            modUI.submitContext.textContent = currentGameData.names.international;
+            ui.mod.submitContext.textContent = currentGameData.names.international;
         }
 
         function setActiveButton(container, button) {
@@ -490,14 +484,14 @@
         }
 
         function init() {
-            buttons.home.addEventListener('click', () => showPage('home'));
-            buttons.mod.addEventListener('click', () => showPage('mod'));
-            buttons.back.addEventListener('click', () => showPage('home'));
-            buttons.goToSubmit.addEventListener('click', () => {
+            ui.buttons.home.addEventListener('click', () => showPage('home'));
+            ui.buttons.mod.addEventListener('click', () => showPage('mod'));
+            ui.buttons.back.addEventListener('click', () => showPage('home'));
+            ui.buttons.goToSubmit.addEventListener('click', () => {
                 updateSubmitContext();
                 showPage('mod');
             });
-            leaderboardUI.typeSelector.addEventListener('change', updateControls);
+            ui.leaderboard.typeSelector.addEventListener('change', updateControls);
             loadGames();
             setupModPage();
         }
