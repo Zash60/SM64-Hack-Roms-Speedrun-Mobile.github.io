@@ -244,34 +244,26 @@
         };
         
         const cache = {
-            get: (key) => {
-                const item = localStorage.getItem(key);
-                if (!item) return null;
-                const { timestamp, data } = JSON.parse(item);
-                if (Date.now() - timestamp > 24 * 60 * 60 * 1000) { localStorage.removeItem(key); return null; }
-                return data;
-            },
+            get: (key) => { const item = localStorage.getItem(key); if (!item) return null; const { timestamp, data } = JSON.parse(item); if (Date.now() - timestamp > 24 * 60 * 60 * 1000) { localStorage.removeItem(key); return null; } return data; },
             set: (key, data) => { localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data })); }
         };
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
         async function fetchApi(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); return await r.json(); } catch (e) { console.error(`API Error: ${e}`); throw e; } }
         
-        // *** FIX: Fetches all pages of games ***
         async function fetchGames() {
             try {
                 let allFetchedGames = [];
                 let nextUrl = `${SRC_API_BASE}/series/sm64romhacks/games?max=200&embed=assets`;
-                
                 while (nextUrl) {
                     const data = await fetchApi(nextUrl);
                     allFetchedGames.push(...data.data);
                     const nextLink = data.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri : null;
+                    // *** FIX: Force HTTPS on subsequent page requests ***
+                    nextUrl = nextLink ? nextLink.uri.replace('http://', 'https://') : null;
                 }
-                
                 allGames = allFetchedGames;
-                sortAndRenderGames('az'); // Initial sort
+                sortAndRenderGames('az');
             } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; }
         }
 
@@ -307,7 +299,6 @@
         
         function sortAndRenderGames(sortType) {
              const sortedGames = [...allGames].sort((a, b) => {
-                // *** FIX: Use 'created' for reliable date sorting ***
                 if (sortType === 'newest') return new Date(b.created) - new Date(a.created);
                 if (sortType === 'oldest') return new Date(a.created) - new Date(b.created);
                 if (sortType === 'az') return a.names.international.localeCompare(b.names.international);
@@ -321,7 +312,6 @@
             games.forEach(game => {
                 const card = document.createElement('div'); card.className = 'game-card';
                 card.dataset.gameId = game.id; card.dataset.gameName = game.names.international.toLowerCase();
-                // Ensure assets and cover-small exist before trying to access uri
                 const imgSrc = game.assets['cover-small'] ? game.assets['cover-small'].uri : 'https://www.speedrun.com/images/1st.png';
                 card.innerHTML = `<a href="#/leaderboard/game/${game.id}"><img src="${imgSrc}" alt="${game.names.international}" loading="lazy"><div class="game-card-title">${game.names.international}</div></a>`;
                 list.appendChild(card);
