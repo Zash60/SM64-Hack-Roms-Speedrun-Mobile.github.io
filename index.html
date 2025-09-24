@@ -551,7 +551,7 @@
             } else {
                 date = new Date(dateString);
             }
-            if (isNaN(date)) return '';
+            if (isNaN(date.getTime())) return '';
 
             const now = new Date();
             const seconds = Math.round((now - date) / 1000);
