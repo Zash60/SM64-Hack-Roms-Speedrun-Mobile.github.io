@@ -16,14 +16,7 @@
             --success-color: #03dac6;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
         #app-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
         .view { display: none; }
         .view.active { display: block; }
@@ -33,7 +26,11 @@
         nav button { background: none; border: none; color: var(--text-muted-color); font-size: 1rem; cursor: pointer; padding: 8px 12px; }
         nav button.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
 
-        #game-search-container { margin-bottom: 1rem; }
+        .home-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .home-controls label { font-size: 0.9rem; color: var(--text-muted-color); }
+        .home-controls select { margin-left: 0.5rem; }
+
+        #game-search-container { flex-grow: 1; }
         #game-search { width: 100%; box-sizing: border-box; }
 
         #game-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
@@ -45,7 +42,7 @@
 
         .leaderboard-header { text-align: center; margin-bottom: 1.5rem; }
         .leaderboard-header h2 { margin: 0 0 5px 0; }
-        .leaderboard-header button#back-to-games { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .leaderboard-header button { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
 
         .filters-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
         .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
@@ -57,20 +54,27 @@
 
         #subcategories-container .filter-group { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
         #subcategories-container .filter-group label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: var(--text-muted-color); margin-bottom: 0.75rem; }
+        
+        #leaderboard-table-wrapper { position: relative; }
+        #leaderboard-table-wrapper.loading #leaderboard-table-container { opacity: 0.3; }
+        #leaderboard-table-wrapper.loading #leaderboard-loader { display: flex; }
+        #leaderboard-loader { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #leaderboard-table-container { width: 100%; overflow-x: auto; }
+        #leaderboard-table-container { width: 100%; overflow-x: auto; transition: opacity 0.3s; }
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .leaderboard-table th, .leaderboard-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
         .leaderboard-table th { font-size: 0.8rem; color: var(--text-muted-color); text-transform: uppercase; }
         .leaderboard-table td:nth-child(1) { font-weight: bold; }
-        /* A REGRA DA FONTE PARA A COLUNA DE TEMPO FOI REMOVIDA DAQUI */
         .leaderboard-table .video-link { text-decoration: none; color: var(--primary-color); font-size: 1.2em; }
         .leaderboard-table .mod-actions button { background: none; border: 1px solid; border-radius: 4px; color: var(--text-muted-color); cursor: pointer; margin: 0 2px; padding: 3px 6px; }
         .leaderboard-table .mod-actions .edit { border-color: var(--primary-color); color: var(--primary-color); }
         .leaderboard-table .mod-actions .delete { border-color: var(--danger-color); color: var(--danger-color); }
 
-        .controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
-        .submit-run-btn { background-color: var(--primary-color); color: var(--bg-color); border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; gap: 10px; }
+        .submit-run-btn, .rules-btn { background-color: var(--primary-color); color: var(--bg-color); border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; }
+        .rules-btn { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
 
         select, input { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; font-size: 1rem; }
 
@@ -80,6 +84,7 @@
         .modal-content .form-group { margin-bottom: 1rem; }
         .modal-content label { display: block; margin-bottom: 5px; }
         .modal-content input { width: calc(100% - 22px); }
+        .modal-content .rules-display { white-space: pre-wrap; background-color: var(--bg-color); padding: 1rem; border-radius: 5px; max-height: 50vh; overflow-y: auto; }
         .modal-controls { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
         .modal-controls button { padding: 10px 15px; border-radius: 5px; cursor: pointer; border: none; }
         .modal-controls #modal-cancel { background-color: #555; color: white; }
@@ -113,8 +118,19 @@
 
         <main>
             <div id="home-view" class="view">
-                <div id="game-search-container">
-                    <input type="text" id="game-search" placeholder="Search for a game...">
+                <div class="home-controls">
+                    <div id="game-search-container">
+                        <input type="text" id="game-search" placeholder="Search for a game...">
+                    </div>
+                    <div>
+                        <label for="game-sort">Sort by:</label>
+                        <select id="game-sort">
+                            <option value="default">Default</option>
+                            <option value="newest">Newest Released</option>
+                            <option value="oldest">Oldest Released</option>
+                            <option value="az">Alphabetical (A-Z)</option>
+                        </select>
+                    </div>
                 </div>
                 <h2>Games in Series</h2>
                 <div id="game-list" class="loader">Loading games...</div>
@@ -123,7 +139,7 @@
             <div id="leaderboard-view" class="view">
                 <div class="leaderboard-header">
                     <h2 id="leaderboard-game-title"></h2>
-                    <a href="#/home"><button id="back-to-games">← Back to Games</button></a>
+                    <a href="#/home"><button>← Back to Games</button></a>
                 </div>
 
                 <div class="filters-container">
@@ -136,8 +152,14 @@
                     </div>
                 </div>
 
-                <div class="controls"><button class="submit-run-btn" id="open-submit-modal-btn">Submit Run</button></div>
-                <div id="leaderboard-table-container"></div>
+                <div class="controls">
+                    <button class="rules-btn" id="show-rules-btn">Show Rules</button>
+                    <button class="submit-run-btn" id="open-submit-modal-btn">Submit Run</button>
+                </div>
+                <div id="leaderboard-table-wrapper">
+                    <div id="leaderboard-loader"><div class="spinner"></div></div>
+                    <div id="leaderboard-table-container"></div>
+                </div>
             </div>
 
             <div id="mod-view" class="view">
@@ -163,10 +185,15 @@
     <div id="submit-run-modal" class="modal">
         <div class="modal-content">
             <h3 id="modal-title">Submit New Run</h3>
-            <div class="form-group"> <label for="player-name">Player Name</label> <input type="text" id="player-name" required> </div>
-            <div class="form-group"> <label for="run-time">Time (e.g., 1h 23m 45s 678ms)</label> <input type="text" id="run-time" required> </div>
-            <div class="form-group"> <label for="video-url">Video URL (YouTube, Twitch, etc.)</label> <input type="url" id="video-url" required> </div>
-            <div class="form-group"> <label for="run-date">Date</label> <input type="date" id="run-date" required> </div>
+            <div id="run-form">
+                <div class="form-group"> <label for="player-name">Player Name</label> <input type="text" id="player-name" required> </div>
+                <div class="form-group"> <label for="run-time">Time (e.g., 1h 23m 45s 678ms)</label> <input type="text" id="run-time" required> </div>
+                <div class="form-group"> <label for="video-url">Video URL (YouTube, Twitch, etc.)</label> <input type="url" id="video-url" required> </div>
+                <div class="form-group"> <label for="run-date">Date</label> <input type="date" id="run-date" required> </div>
+            </div>
+            <div id="rules-display-container" style="display:none;">
+                <div class="rules-display"></div>
+            </div>
             <div class="modal-controls"> <button id="modal-cancel">Cancel</button> <button id="modal-submit">Submit</button> </div>
         </div>
     </div>
@@ -198,11 +225,12 @@
         const DOMElements = {
             views: { home: document.getElementById('home-view'), leaderboard: document.getElementById('leaderboard-view'), mod: document.getElementById('mod-view') },
             nav: { home: document.getElementById('nav-home'), mod: document.getElementById('nav-mod') },
-            home: { gameList: document.getElementById('game-list'), gameSearch: document.getElementById('game-search') },
+            home: { gameList: document.getElementById('game-list'), gameSearch: document.getElementById('game-search'), gameSort: document.getElementById('game-sort') },
             leaderboard: {
                 title: document.getElementById('leaderboard-game-title'), levelSelect: document.getElementById('level-select'), categoryPills: document.getElementById('category-pills'),
                 singleStarContainer: document.getElementById('single-star-container'), singleStarSelect: document.getElementById('single-star-select'),
-                subcategoriesContainer: document.getElementById('subcategories-container'), tableContainer: document.getElementById('leaderboard-table-container'), openModalBtn: document.getElementById('open-submit-modal-btn')
+                subcategoriesContainer: document.getElementById('subcategories-container'), tableWrapper: document.getElementById('leaderboard-table-wrapper'), tableContainer: document.getElementById('leaderboard-table-container'),
+                openModalBtn: document.getElementById('open-submit-modal-btn'), showRulesBtn: document.getElementById('show-rules-btn')
             },
             mod: {
                 loginForm: document.getElementById('mod-login-form'), modContent: document.getElementById('mod-content'), loginBtn: document.getElementById('login-btn'),
@@ -212,14 +240,46 @@
             modal: {
                 container: document.getElementById('submit-run-modal'), title: document.getElementById('modal-title'), submitBtn: document.getElementById('modal-submit'),
                 cancelBtn: document.getElementById('modal-cancel'), playerName: document.getElementById('player-name'), runTime: document.getElementById('run-time'),
-                videoUrl: document.getElementById('video-url'), runDate: document.getElementById('run-date')
+                videoUrl: document.getElementById('video-url'), runDate: document.getElementById('run-date'), runForm: document.getElementById('run-form'),
+                rulesDisplayContainer: document.getElementById('rules-display-container'), rulesDisplay: document.querySelector('.rules-display')
+            }
+        };
+        
+        const cache = {
+            get: (key) => {
+                const item = localStorage.getItem(key);
+                if (!item) return null;
+                const { timestamp, data } = JSON.parse(item);
+                if (Date.now() - timestamp > 24 * 60 * 60 * 1000) { // 24 hour cache
+                    localStorage.removeItem(key);
+                    return null;
+                }
+                return data;
+            },
+            set: (key, data) => {
+                const item = { timestamp: Date.now(), data };
+                localStorage.setItem(key, JSON.stringify(item));
             }
         };
 
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
         async function fetchApi(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); return await r.json(); } catch (e) { console.error(`API Error: ${e}`); throw e; } }
-        async function fetchGames() { try { const data = await fetchApi(`${SRC_API_BASE}/series/sm64romhacks/games?max=200&embed=cover-small`); allGames = data.data; renderGameList(allGames); } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; } }
-        async function fetchGameDetails(gameId) { DOMElements.leaderboard.tableContainer.innerHTML = '<div class="loader">Loading...</div>'; try { const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`); currentGameData = data.data; initializeLeaderboardView(); } catch (e) { DOMElements.leaderboard.tableContainer.innerHTML = 'Error loading data.'; } }
+        async function fetchGames() { try { const data = await fetchApi(`${SRC_API_BASE}/series/sm64romhacks/games?max=200`); allGames = data.data; renderGameList(allGames); } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; } }
+        async function fetchGameDetails(gameId) {
+            DOMElements.leaderboard.tableWrapper.classList.add('loading');
+            const cachedData = cache.get(`game_${gameId}`);
+            if (cachedData) {
+                currentGameData = cachedData;
+                initializeLeaderboardView();
+                return;
+            }
+            try {
+                const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`);
+                currentGameData = data.data;
+                cache.set(`game_${gameId}`, currentGameData);
+                initializeLeaderboardView();
+            } catch (e) { DOMElements.leaderboard.tableContainer.innerHTML = 'Error loading data.'; DOMElements.leaderboard.tableWrapper.classList.remove('loading'); }
+        }
         async function fetchLevelVariables(levelId) { try { const data = await fetchApi(`${SRC_API_BASE}/levels/${levelId}/variables`); return data.data; } catch (e) { return []; } }
         
         function handleRouting() {
@@ -235,8 +295,6 @@
             if (!currentSelection.gameId || !currentSelection.categoryId) return;
             let newHash = `#/leaderboard/game/${currentSelection.gameId}/category/${currentSelection.categoryId}`;
             if (currentSelection.levelId !== 'full-game') newHash += `/level/${currentSelection.levelId}`;
-            const subCatString = Object.entries(currentSelection.subCategoryValues).map(([k,v]) => `${k}=${v}`).join('&');
-            if (subCatString) newHash += `?vars=${subCatString}`;
             if (window.location.hash !== newHash) { window.location.hash = newHash; }
         }
 
@@ -324,13 +382,14 @@
             return path;
         }
         function fetchRunsFromFirebase(path) {
-            DOMElements.leaderboard.tableContainer.innerHTML = '<div class="loader">Loading runs...</div>';
+            DOMElements.leaderboard.tableWrapper.classList.add('loading');
             onValue(ref(database, path), (snapshot) => {
                 const runs = [];
                 snapshot.forEach(childSnapshot => { runs.push({ key: childSnapshot.key, ...childSnapshot.val() }); });
                 runs.sort((a, b) => parseTimeToMs(a.time) - parseTimeToMs(b.time));
                 renderLeaderboardTable(runs, path);
-            });
+                DOMElements.leaderboard.tableWrapper.classList.remove('loading');
+            }, { onlyOnce: true }); // Use onlyOnce to avoid constant re-renders when data changes elsewhere
         }
         function renderLeaderboardTable(runs, path) {
             const container = DOMElements.leaderboard.tableContainer;
@@ -342,7 +401,7 @@
                 let dateStr = 'Invalid Date';
                 if (run.date) {
                     const parts = run.date.split('-');
-                    if (parts.length === 3) { dateStr = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(); }
+                    if (parts.length === 3) { dateStr = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])).toLocaleDateString(); }
                 }
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${dateStr}</td>
@@ -381,12 +440,25 @@
         
         function openSubmitModal() {
             editingRun = { key: null, path: null }; DOMElements.modal.title.textContent = "Submit New Run";
+            DOMElements.modal.runForm.style.display = 'block'; DOMElements.modal.rulesDisplayContainer.style.display = 'none';
+            DOMElements.modal.submitBtn.style.display = 'block';
             DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block';
         }
         function openEditModal(run, path) {
             editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
             DOMElements.modal.playerName.value = run.player || ''; DOMElements.modal.runTime.value = run.time || '';
             DOMElements.modal.videoUrl.value = run.videoUrl || ''; DOMElements.modal.runDate.value = run.date || '';
+            DOMElements.modal.runForm.style.display = 'block'; DOMElements.modal.rulesDisplayContainer.style.display = 'none';
+            DOMElements.modal.submitBtn.style.display = 'block';
+            DOMElements.modal.container.style.display = 'block';
+        }
+        function openRulesModal() {
+            const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
+            if (!category) return;
+            DOMElements.modal.title.textContent = `${category.name} - Rules`;
+            DOMElements.modal.rulesDisplay.textContent = category.rules || "No rules specified for this category.";
+            DOMElements.modal.runForm.style.display = 'none'; DOMElements.modal.rulesDisplayContainer.style.display = 'block';
+            DOMElements.modal.submitBtn.style.display = 'none';
             DOMElements.modal.container.style.display = 'block';
         }
         function closeSubmitModal() {
@@ -441,13 +513,9 @@
                 pendingRuns.forEach(runInfo => {
                     const { key, data, pendingPath, approvedCollectionPath } = runInfo;
                     const card = document.createElement('div'); card.className = 'pending-run-card';
-                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(data.player)}</p>
-                        <p><strong>Time:</strong> ${escapeHtml(data.time)}</p>
-                        <p><strong>Video:</strong> <a href="${data.videoUrl}" target="_blank">Link</a></p>
+                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(data.player)}</p><p><strong>Time:</strong> ${escapeHtml(data.time)}</p><p><strong>Video:</strong> <a href="${data.videoUrl}" target="_blank">Link</a></p>
                         <div class="pending-run-actions">
-                            <button class="approve-btn">Approve</button>
-                            <button class="edit-btn">Edit</button>
-                            <button class="reject-btn">Reject</button>
+                            <button class="approve-btn">Approve</button><button class="edit-btn">Edit</button><button class="reject-btn">Reject</button>
                         </div>`;
                     card.querySelector('.approve-btn').addEventListener('click', () => approveRun(data, pendingPath, approvedCollectionPath));
                     card.querySelector('.edit-btn').addEventListener('click', () => openEditModal({key, ...data}, pendingPath));
@@ -473,9 +541,21 @@
             const query = DOMElements.home.gameSearch.value.toLowerCase();
             document.querySelectorAll('.game-card').forEach(card => card.style.display = card.dataset.gameName.includes(query) ? '' : 'none');
         });
+        DOMElements.home.gameSort.addEventListener('change', (e) => {
+            const sortType = e.target.value;
+            const sortedGames = [...allGames].sort((a,b) => {
+                if (sortType === 'newest') return new Date(b.released) - new Date(a.released);
+                if (sortType === 'oldest') return new Date(a.released) - new Date(b.released);
+                if (sortType === 'az') return a.names.international.localeCompare(b.names.international);
+                return 0; // default
+            });
+            renderGameList(sortedGames);
+        });
+        
         DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { currentSelection.levelId = e.target.value; currentSelection.categoryId = null; currentSelection.subCategoryValues = {}; updateUI(); });
         DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); updateURL(); });
         DOMElements.leaderboard.openModalBtn.addEventListener('click', openSubmitModal);
+        DOMElements.leaderboard.showRulesBtn.addEventListener('click', openRulesModal);
         DOMElements.modal.cancelBtn.addEventListener('click', closeSubmitModal);
         DOMElements.modal.submitBtn.addEventListener('click', submitRunToFirebase);
         DOMElements.mod.loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, DOMElements.mod.emailInput.value, DOMElements.mod.passwordInput.value).catch(e => DOMElements.mod.loginError.textContent = 'Login failed.'));
