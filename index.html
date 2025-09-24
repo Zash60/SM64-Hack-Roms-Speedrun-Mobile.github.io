@@ -36,13 +36,15 @@
         .game-card { display: flex; flex-direction: column; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease; border: 1px solid var(--border-color); }
         .game-card:hover { transform: scale(1.05); }
         .game-card a { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; }
-        .game-card-image-container { position: relative; }
-        .game-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
-        .game-card-year { position: absolute; top: 5px; right: 5px; background-color: rgba(0,0,0,0.7); color: white; padding: 2px 6px; font-size: 0.75rem; border-radius: 4px; font-weight: bold; }
+        .game-card img { width: 100%; height: 120px; object-fit: cover; }
         .game-card-info { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
         .game-card-title { font-size: 0.9rem; text-align: center; flex-grow: 1; }
-        .game-card-time { font-size: 0.8rem; text-align: center; color: var(--text-muted-color); margin-top: 5px; }
+        .game-card-time { font-size: 0.8rem; text-align: center; color: var(--text-muted-color); margin-top: 5px; transition: opacity 0.3s ease; }
+        .game-card-year { font-size: 0.7rem; text-align: center; color: var(--text-muted-color); margin-top: 2px; }
 
+        /* Real-time update indicator */
+        .time-updating { opacity: 0.7; }
+        .last-updated { font-size: 0.6rem; color: var(--text-muted-color); text-align: center; margin-top: 1rem; }
 
         .leaderboard-header { text-align: center; margin-bottom: 1.5rem; }
         .leaderboard-header h2 { margin: 0 0 5px 0; }
@@ -137,6 +139,7 @@
                 </div>
                 <h2>Games in Series</h2>
                 <div id="game-list" class="loader">Loading all games...</div>
+                <div class="last-updated" id="last-updated">Last updated: Loading...</div>
             </div>
 
             <div id="leaderboard-view" class="view">
@@ -224,11 +227,13 @@
         let editingRun = { key: null, path: null };
         let allGames = [];
         let currentSelection = { gameId: null, levelId: null, categoryId: null, subCategoryValues: {}, starName: null };
+        let updateTimer = null;
+        let lastUpdateTime = null;
 
         const DOMElements = {
             views: { home: document.getElementById('home-view'), leaderboard: document.getElementById('leaderboard-view'), mod: document.getElementById('mod-view') },
             nav: { home: document.getElementById('nav-home'), mod: document.getElementById('nav-mod') },
-            home: { gameList: document.getElementById('game-list'), gameSearch: document.getElementById('game-search'), gameSort: document.getElementById('game-sort') },
+            home: { gameList: document.getElementById('game-list'), gameSearch: document.getElementById('game-search'), gameSort: document.getElementById('game-sort'), lastUpdated: document.getElementById('last-updated') },
             leaderboard: {
                 title: document.getElementById('leaderboard-game-title'), levelSelect: document.getElementById('level-select'), categoryPills: document.getElementById('category-pills'),
                 singleStarContainer: document.getElementById('single-star-container'), singleStarSelect: document.getElementById('single-star-select'),
@@ -241,71 +246,195 @@
                 loginError: document.getElementById('login-error'), pendingRunsList: document.getElementById('pending-runs-list')
             },
             modal: {
-                container: document.getElementById('submit-run-modal'), title: document.getElementById('modal-title'), submitBtn: document.getElementById('modal-submit'),
-                cancelBtn: document.getElementById('modal-cancel'), playerName: document.getElementById('player-name'), runTime: document.getElementById('run-time'),
-                videoUrl: document.getElementById('video-url'), runDate: document.getElementById('run-date'), runForm: document.getElementById('run-form'),
-                rulesDisplayContainer: document.getElementById('rules-display-container'), rulesDisplay: document.querySelector('.rules-display')
+                container: document.getElementById('submit-run-modal'), title: document.getElementById('modal-title'), runForm: document.getElementById('run-form'),
+                playerName: document.getElementById('player-name'), runTime: document.getElementById('run-time'), videoUrl: document.getElementById('video-url'), runDate: document.getElementById('run-date'),
+                rulesDisplayContainer: document.getElementById('rules-display-container'), rulesDisplay: document.querySelector('.rules-display'),
+                cancelBtn: document.getElementById('modal-cancel'), submitBtn: document.getElementById('modal-submit')
             }
         };
-        
-        const cache = {
-            get: (key) => { const item = localStorage.getItem(key); if (!item) return null; const { timestamp, data } = JSON.parse(item); if (Date.now() - timestamp > 24 * 60 * 60 * 1000) { localStorage.removeItem(key); return null; } return data; },
-            set: (key, data) => { localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data })); }
-        };
 
-        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
-        async function fetchApi(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); return await r.json(); } catch (e) { console.error(`API Error: ${e}`); throw e; } }
-        
+        // Real-time update system
+        function startRealTimeUpdates() {
+            // Update every minute (60000ms)
+            updateTimer = setInterval(() => {
+                updateAllTimeDisplays();
+                updateLastUpdatedTime();
+            }, 60000);
+            
+            // Initial update
+            updateLastUpdatedTime();
+        }
+
+        function stopRealTimeUpdates() {
+            if (updateTimer) {
+                clearInterval(updateTimer);
+                updateTimer = null;
+            }
+        }
+
+        function updateAllTimeDisplays() {
+            // Update game cards time displays
+            const gameCards = document.querySelectorAll('.game-card-time[data-release-date]');
+            gameCards.forEach(timeElement => {
+                const releaseDate = timeElement.getAttribute('data-release-date');
+                if (releaseDate) {
+                    // Add visual feedback during update
+                    timeElement.classList.add('time-updating');
+                    setTimeout(() => {
+                        timeElement.textContent = timeAgo(releaseDate);
+                        timeElement.classList.remove('time-updating');
+                    }, 100);
+                }
+            });
+
+            // Update leaderboard table date displays if visible
+            const leaderboardDates = document.querySelectorAll('.leaderboard-table .relative-date[data-date]');
+            leaderboardDates.forEach(dateElement => {
+                const date = dateElement.getAttribute('data-date');
+                if (date) {
+                    dateElement.classList.add('time-updating');
+                    setTimeout(() => {
+                        dateElement.textContent = timeAgo(date);
+                        dateElement.classList.remove('time-updating');
+                    }, 100);
+                }
+            });
+        }
+
+        function updateLastUpdatedTime() {
+            lastUpdateTime = new Date();
+            if (DOMElements.home.lastUpdated) {
+                DOMElements.home.lastUpdated.textContent = `Last updated: ${lastUpdateTime.toLocaleTimeString()}`;
+            }
+        }
+
+        function getCurrentDateTime() {
+            return new Date();
+        }
+
+        function formatCurrentDateTime() {
+            const now = getCurrentDateTime();
+            return {
+                date: now.toLocaleDateString(),
+                time: now.toLocaleTimeString(),
+                iso: now.toISOString(),
+                timestamp: now.getTime()
+            };
+        }
+
         async function fetchGames() {
             try {
-                let allFetchedGames = [];
-                let nextUrl = `${SRC_API_BASE}/series/sm64romhacks/games?max=200&embed=assets`;
-                while (nextUrl) {
-                    const data = await fetchApi(nextUrl);
-                    allFetchedGames.push(...data.data);
-                    const nextLink = data.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri.replace('http://', 'https://') : null;
-                }
-                allGames = allFetchedGames;
-                sortAndRenderGames('az');
-            } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; }
+                const response = await fetch('https://www.speedrun.com/api/v1/series/sm64_hacks/games?embed=levels,categories,variables&max=200');
+                const data = await response.json();
+                allGames = data.data;
+                sortAndRenderGames('newest');
+                updateLastUpdatedTime();
+            } catch (error) {
+                console.error('Error fetching games:', error);
+                DOMElements.home.gameList.innerHTML = '<p>Error loading games. Please try again later.</p>';
+            }
         }
 
-        async function fetchGameDetails(gameId) {
-            DOMElements.leaderboard.tableWrapper.classList.add('loading');
-            const cachedData = cache.get(`game_${gameId}`);
-            if (cachedData) { currentGameData = cachedData; initializeLeaderboardView(); return; }
+        async function fetchGameData(gameId) {
             try {
-                const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`);
-                currentGameData = data.data; cache.set(`game_${gameId}`, currentGameData);
-                initializeLeaderboardView();
-            } catch (e) { DOMElements.leaderboard.tableContainer.innerHTML = 'Error loading data.'; DOMElements.leaderboard.tableWrapper.classList.remove('loading'); }
-        }
-        async function fetchLevelVariables(levelId) { try { const data = await fetchApi(`${SRC_API_BASE}/levels/${levelId}/variables`); return data.data; } catch (e) { return []; } }
-        
-        function handleRouting() {
-            const hash = window.location.hash.replace(/^#\/?|\/$/g, '').split('/');
-            const view = hash[0] || 'home';
-            switchView(view);
-            if (view === 'leaderboard' && hash[1] === 'game' && hash[2]) {
-                currentSelection.gameId = hash[2];
-                if (!currentGameData || currentGameData.id !== currentSelection.gameId) { fetchGameDetails(currentSelection.gameId); }
-            } else if (view === 'mod' && isMod) { fetchPendingRuns(); }
-        }
-        function updateURL() {
-            if (!currentSelection.gameId || !currentSelection.categoryId) return;
-            let newHash = `#/leaderboard/game/${currentSelection.gameId}/category/${currentSelection.categoryId}`;
-            if (currentSelection.levelId !== 'full-game') newHash += `/level/${currentSelection.levelId}`;
-            if (window.location.hash !== newHash) { window.location.hash = newHash; }
+                const response = await fetch(`https://www.speedrun.com/api/v1/games/${gameId}?embed=levels,categories,variables`);
+                const data = await response.json();
+                return data.data;
+            } catch (error) {
+                console.error('Error fetching game data:', error);
+                return null;
+            }
         }
 
-        function switchView(viewName) { Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); }
+        async function fetchLevelVariables(levelId) {
+            try {
+                const response = await fetch(`https://www.speedrun.com/api/v1/levels/${levelId}/variables`);
+                const data = await response.json();
+                return data.data;
+            } catch (error) {
+                console.error('Error fetching level variables:', error);
+                return [];
+            }
+        }
+
+        function updateURL() {
+            const params = new URLSearchParams();
+            if (currentSelection.levelId) params.set('level', currentSelection.levelId);
+            if (currentSelection.categoryId) params.set('category', currentSelection.categoryId);
+            if (currentSelection.starName) params.set('star', currentSelection.starName);
+            Object.entries(currentSelection.subCategoryValues).forEach(([k, v]) => params.set(k, v));
+            const newHash = `#/leaderboard/game/${currentGameData.id}${params.toString() ? '?' + params.toString() : ''}`;
+            if (window.location.hash !== newHash) {
+                window.history.replaceState(null, '', newHash);
+            }
+        }
+
+        function parseURLParams() {
+            const hash = window.location.hash;
+            const [path, queryString] = hash.split('?');
+            const params = new URLSearchParams(queryString || '');
+            
+            currentSelection.levelId = params.get('level') || 'full-game';
+            currentSelection.categoryId = params.get('category') || null;
+            currentSelection.starName = params.get('star') || null;
+            currentSelection.subCategoryValues = {};
+            
+            params.forEach((value, key) => {
+                if (!['level', 'category', 'star'].includes(key)) {
+                    currentSelection.subCategoryValues[key] = value;
+                }
+            });
+        }
+
+        async function handleRouting() {
+            const hash = window.location.hash || '#/home';
+            const [, route, type, id] = hash.split('/');
+
+            if (route === 'home') {
+                switchView('home');
+                startRealTimeUpdates();
+            } else if (route === 'leaderboard' && type === 'game' && id) {
+                const gameId = id.split('?')[0];
+                currentGameData = await fetchGameData(gameId);
+                if (currentGameData) {
+                    currentSelection.gameId = gameId;
+                    parseURLParams();
+                    switchView('leaderboard');
+                    initializeLeaderboardView();
+                    stopRealTimeUpdates(); // Stop updates on leaderboard view for performance
+                } else {
+                    window.location.hash = '#/home';
+                }
+            } else if (route === 'mod') {
+                switchView('mod');
+                stopRealTimeUpdates();
+            } else {
+                window.location.hash = '#/home';
+            }
+        }
+
+        function switchView(viewName) { 
+            Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); 
+            Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); 
+            if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); 
+            if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); 
+        }
         
         function sortAndRenderGames(sortType) {
-             const sortedGames = [...allGames].sort((a, b) => {
-                if (sortType === 'newest') return new Date(b.released) - new Date(a.released);
-                if (sortType === 'oldest') return new Date(a.released) - new Date(b.released);
-                if (sortType === 'az') return a.names.international.localeCompare(b.names.international);
+            const sortedGames = [...allGames].sort((a, b) => {
+                if (sortType === 'newest') {
+                    const dateA = new Date(a.released);
+                    const dateB = new Date(b.released);
+                    return dateB - dateA;
+                }
+                if (sortType === 'oldest') {
+                    const dateA = new Date(a.released);
+                    const dateB = new Date(b.released);
+                    return dateA - dateB;
+                }
+                if (sortType === 'az') {
+                    return a.names.international.localeCompare(b.names.international);
+                }
                 return 0;
             });
             renderGameList(sortedGames);
@@ -319,13 +448,11 @@
                 const imgSrc = game.assets['cover-small'] ? game.assets['cover-small'].uri : 'https://www.speedrun.com/images/1st.png';
                 card.innerHTML = `
                     <a href="#/leaderboard/game/${game.id}">
-                        <div class="game-card-image-container">
-                             <img src="${imgSrc}" alt="${game.names.international}" loading="lazy">
-                             <div class="game-card-year">${getYear(game.released)}</div>
-                        </div>
+                        <img src="${imgSrc}" alt="${game.names.international}" loading="lazy">
                         <div class="game-card-info">
                             <div class="game-card-title">${game.names.international}</div>
-                            <div class="game-card-time">${timeAgo(game.released)}</div>
+                            <div class="game-card-year">${getYear(game.released)}</div>
+                            <div class="game-card-time" data-release-date="${game.released}">${timeAgo(game.released)}</div>
                         </div>
                     </a>`;
                 list.appendChild(card);
@@ -444,12 +571,29 @@
         }
         async function submitRunToFirebase() {
             const isEditing = !!editingRun.path;
-            const runData = { player: DOMElements.modal.playerName.value.trim(), time: DOMElements.modal.runTime.value.trim(), videoUrl: DOMElements.modal.videoUrl.value.trim(), date: DOMElements.modal.runDate.value, submittedAt: new Date().toISOString() };
+            const currentTime = formatCurrentDateTime();
+            const runData = { 
+                player: DOMElements.modal.playerName.value.trim(), 
+                time: DOMElements.modal.runTime.value.trim(), 
+                videoUrl: DOMElements.modal.videoUrl.value.trim(), 
+                date: DOMElements.modal.runDate.value, 
+                submittedAt: currentTime.iso,
+                submittedTimestamp: currentTime.timestamp
+            };
             if (!runData.player || !runData.time || !runData.date || !runData.videoUrl) { alert("Please fill all fields."); return; }
             
             try {
-                if (isEditing) { await set(ref(database, editingRun.path), runData); } 
-                else { const path = generateFirebasePath('pending_runs'); if (!path) { alert("Error: Cannot determine submission path."); return; } await push(ref(database, path), runData); alert("Run submitted for approval!"); }
+                if (isEditing) { 
+                    runData.lastModified = currentTime.iso;
+                    runData.lastModifiedTimestamp = currentTime.timestamp;
+                    await set(ref(database, editingRun.path), runData); 
+                } 
+                else { 
+                    const path = generateFirebasePath('pending_runs'); 
+                    if (!path) { alert("Error: Cannot determine submission path."); return; } 
+                    await push(ref(database, path), runData); 
+                    alert("Run submitted for approval!"); 
+                }
                 closeSubmitModal();
             } catch (e) { console.error("Error submitting run:", e); alert("Error submitting run."); }
         }
@@ -459,7 +603,7 @@
             editingRun = { key: null, path: null }; DOMElements.modal.title.textContent = "Submit New Run";
             DOMElements.modal.runForm.style.display = 'block'; DOMElements.modal.rulesDisplayContainer.style.display = 'none';
             DOMElements.modal.submitBtn.style.display = 'block';
-            DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block';
+            DOMElements.modal.runDate.valueAsDate = getCurrentDateTime(); DOMElements.modal.container.style.display = 'block';
         }
         function openEditModal(run, path) {
             editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
@@ -493,6 +637,7 @@
                 if (document.getElementById('leaderboard-view').classList.contains('active')) { updateLeaderboard(); }
             });
         }
+        
         function fetchPendingRuns() {
             DOMElements.mod.pendingRunsList.innerHTML = '<div class="loader">Loading...</div>';
             onValue(ref(database, 'pending_runs'), (snapshot) => {
@@ -543,6 +688,9 @@
         }
         async function approveRun(runData, pendingPath, approvedCollectionPath) {
             try {
+                const currentTime = formatCurrentDateTime();
+                runData.approvedAt = currentTime.iso;
+                runData.approvedTimestamp = currentTime.timestamp;
                 await push(ref(database, approvedCollectionPath), runData);
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
@@ -553,46 +701,42 @@
             let date;
             if (String(dateString).match(/^\d{4}$/)) {
                 date = new Date(parseInt(dateString), 0, 1);
+            } else if (String(dateString).match(/^\d{4}-\d{2}-\d{2}$/)) {
+                date = new Date(dateString);
+            } else if (String(dateString).match(/^\d{4}-\d{2}$/)) {
+                date = new Date(dateString + '-01');
             } else {
                 date = new Date(dateString);
             }
             if (isNaN(date.getTime())) return '';
 
-            const now = new Date();
+            const now = getCurrentDateTime();
+            const seconds = Math.round((now - date) / 1000);
+            const minutes = Math.round(seconds / 60);
+            const hours = Math.round(minutes / 60);
+            const days = Math.round(hours / 24);
+            const months = Math.round(days / 30.44);
+            const years = Math.round(days / 365.25);
 
-            if (date > now) {
-                return `Releases in ${date.getFullYear()}`;
-            }
-
-            const seconds = Math.floor((now - date) / 1000);
-            let yearDiff = now.getFullYear() - date.getFullYear();
-            let monthDiff = now.getMonth() - date.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < date.getDate())) {
-                yearDiff--;
-            }
-            if (yearDiff > 0) return `${yearDiff} year${yearDiff > 1 ? 's' : ''} ago`;
-            
-            const months = Math.floor(seconds / 2592000); // Average month
+            if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
             if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
-            const days = Math.floor(seconds / 86400);
             if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-            const hours = Math.floor(seconds / 3600);
             if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-            const minutes = Math.floor(seconds / 60);
             if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-            
-            return `just now`;
-        }
-        
-        function getYear(dateString) {
-            if (!dateString) return "";
-            return String(dateString).substring(0, 4);
+            return `a few seconds ago`;
         }
 
         function parseTimeToMs(timeStr) {
             if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
             timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
         }
+
+        function getYear(dateString) {
+            if (!dateString) return "";
+            const date = new Date(dateString);
+            return isNaN(date.getTime()) ? "" : date.getFullYear();
+        }
+
         function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
         
         DOMElements.home.gameSearch.addEventListener('keyup', () => {
@@ -612,7 +756,15 @@
         window.addEventListener('hashchange', handleRouting);
         window.addEventListener('DOMContentLoaded', handleRouting);
 
-        function init() { fetchGames(); setupAuth(); }
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopRealTimeUpdates();
+        });
+
+        function init() { 
+            fetchGames(); 
+            setupAuth(); 
+        }
         init();
     </script>
 </body>
