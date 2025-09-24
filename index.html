@@ -3,894 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Rom Hacks Speedruns</title>
+    <title>SM64 Hacks Speedrun Mobile</title>
     <style>
-        /* --- GERAL & LAYOUT --- */
         :root {
-            --bg-color: #18181b;
-            --surface-color: #27272a;
-            --primary-color: #facc15; /* yellow-400 */
-            --text-color: #e4e4e7;
-            --text-muted-color: #a1a1aa;
-            --border-color: #3f3f46;
+            --bg-color: #18181b; --surface-color: #27272a; --surface-light-color: #3f3f46;
+            --primary-color: #facc15; --text-color: #e4e4e7; --text-muted-color: #a1a1aa; --border-color: #3f3f46;
         }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1rem;
-        }
-
-        /* --- HEADER & NAVEGAÇÃO --- */
-        header {
-            background-color: var(--surface-color);
-            padding: 1rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        nav a {
-            color: var(--text-color);
-            text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            transition: background-color 0.2s;
-        }
-
-        nav a.active, nav a:hover {
-            background-color: var(--border-color);
-        }
-
-        /* --- PÁGINA HOME --- */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .search-bar, .sort-select {
-            padding: 0.75rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            font-size: 1rem;
-        }
-        
-        .search-bar { flex-grow: 1; }
-
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .game-card {
-            background-color: var(--surface-color);
-            border-radius: 8px;
-            overflow: hidden;
-            text-decoration: none;
-            color: var(--text-color);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        .game-card img {
-            width: 100%;
-            height: 150px;
-            object-fit: cover;
-            background-color: var(--bg-color);
-        }
-
-        .game-card-info {
-            padding: 1rem;
-            flex-grow: 1;
-        }
-
-        .game-card-info h3 {
-            margin: 0 0 0.5rem;
-            font-size: 1.1rem;
-        }
-
-        .game-card-info p {
-            margin: 0;
-            font-size: 0.9rem;
-            color: var(--text-muted-color);
-        }
-
-        /* --- PÁGINA DE LEADERBOARD --- */
-        .leaderboard-header {
-            margin-bottom: 2rem;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        .leaderboard-header img {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .leaderboard-controls {
-            background-color: var(--surface-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        .leaderboard-controls .control-group {
-            margin-bottom: 1rem;
-        }
-        .leaderboard-controls label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-muted-color);
-        }
-        .leaderboard-controls select {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-        }
-        .sub-categories {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-        .sub-cat-button {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            border-radius: 20px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .sub-cat-button.active {
-            background-color: var(--primary-color);
-            color: var(--bg-color);
-            font-weight: bold;
-            border-color: var(--primary-color);
-        }
-
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .leaderboard-table th, .leaderboard-table td {
-            padding: 0.75rem 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .leaderboard-table th {
-            color: var(--text-muted-color);
-            font-weight: normal;
-        }
-        
-        .leaderboard-table td:first-child { font-weight: bold; }
-        
-        .leaderboard-table a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .leaderboard-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 1rem;
-        }
-
-        /* --- MODAL --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: var(--surface-color);
-            padding: 2rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-        }
-        
-        .modal-content h2 { margin-top: 0; }
-        
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-color); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 16px; }
+        main { padding: 1rem; max-width: 800px; margin: 0 auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .hidden { display: none !important; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background-color: var(--surface-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 100; }
+        .header h1 { font-size: 1.2rem; }
+        .header a { color: var(--text-color); text-decoration: none; }
+        .header nav a { margin-left: 1rem; }
+        .header nav a:hover { color: var(--primary-color); }
+        .controls { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .search-input, .sort-select { flex-grow: 1; padding: 0.75rem; background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; font-size: 1rem; }
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        .game-card { background-color: var(--surface-color); border-radius: 8px; overflow: hidden; text-decoration: none; color: var(--text-color); display: flex; flex-direction: column; border: 1px solid var(--border-color); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .game-card:hover { transform: translateY(-4px); box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+        .game-card img { width: 100%; height: 120px; object-fit: cover; background-color: #333; }
+        .game-card-info { padding: 0.75rem; flex-grow: 1; display: flex; flex-direction: column; }
+        .game-card-info h3 { font-size: 0.9rem; margin-bottom: 0.25rem; flex-grow: 1; }
+        .game-card-info p { font-size: 0.8rem; color: var(--text-muted-color); }
+        .leaderboard-container { background-color: var(--surface-color); padding: 1rem; border-radius: 8px; }
+        .leaderboard-main-selector { width: 100%; padding: 1rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 1.1rem; font-weight: bold; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 1rem; }
+        .leaderboard-main-selector.static { cursor: default; }
+        .leaderboard-main-selector::after { content: '▾'; font-size: 1.5rem; color: var(--text-muted-color); }
+        .leaderboard-main-selector.static::after { content: ''; }
+        .leaderboard-nav-group { margin-bottom: 1.5rem; }
+        .leaderboard-nav-group .group-label { font-size: 0.9rem; font-weight: bold; color: var(--text-muted-color); margin-bottom: 0.75rem; padding-left: 0.25rem; }
+        .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        .nav-button { padding: 0.6rem 1rem; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.2s ease; }
+        .nav-button.active { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; border-color: var(--primary-color); }
+        .single-star-selector { width: 100%; padding: 0.75rem 1rem; margin-top: 0.5rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 1rem; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .single-star-selector::after { content: '▾'; font-size: 1.5rem; color: var(--text-muted-color); }
+        .submit-run-btn-container { margin-top: 1.5rem; }
+        .action-button.submit { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem; width: 100%; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; background-color: var(--primary-color); color: var(--bg-color); font-size: 1rem; }
+        .action-button.submit .icon { font-size: 1.2rem; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        .leaderboard-table th, .leaderboard-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .leaderboard-table th { color: var(--text-muted-color); font-size: 0.9rem; }
+        .leaderboard-table td.rank { font-weight: bold; color: var(--primary-color); }
+        .leaderboard-table .video-link { color: var(--primary-color); text-decoration: none; font-size: 1.2rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--surface-color); padding: 1rem; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal-content h2 { margin: 0.5rem 1rem 1.5rem 1rem; }
         .form-group { margin-bottom: 1rem; }
-        
         .form-group label { display: block; margin-bottom: 0.5rem; }
-        
-        .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            box-sizing: border-box;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-        }
-        
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        /* --- BOTÕES --- */
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: var(--bg-color);
-        }
-        
-        .btn-secondary {
-            background-color: var(--border-color);
-            color: var(--text-color);
-        }
-
-        /* --- UTILITÁRIOS --- */
-        .loader {
-            text-align: center;
-            font-size: 1.5rem;
-            padding: 4rem 0;
-        }
-        .error {
-            text-align: center;
-            color: #ef4444; /* red-500 */
-            background-color: #ef444420;
-            padding: 1rem;
-            border-radius: 8px;
-        }
+        .form-group input { width: 100%; padding: 0.75rem; background-color: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 6px; font-size: 1rem; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding: 0 1rem 0.5rem; }
+        .modal-btn { padding: 0.75rem 1.5rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-primary { background-color: var(--primary-color); color: var(--bg-color); }
+        .btn-secondary { background-color: var(--border-color); color: var(--text-color); }
+        .selection-list button { width: 100%; padding: 1rem; background: none; border: none; border-bottom: 1px solid var(--border-color); color: var(--text-color); text-align: left; font-size: 1rem; cursor: pointer; }
+        .selection-list button:hover { background-color: var(--surface-light-color); }
+        .selection-list button:last-child { border-bottom: none; }
+        .form-container { max-width: 400px; margin: 2rem auto; padding: 2rem; background-color: var(--surface-color); border-radius: 8px; }
+        .form-container h2 { text-align: center; margin-bottom: 1.5rem; }
+        .pending-run { background-color: var(--surface-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color); }
+        .pending-run p { margin-bottom: 0.5rem; }
+        .pending-run strong { color: var(--primary-color); }
+        .mod-actions button { margin-right: 0.5rem; }
+        .loader { text-align: center; font-size: 1.5rem; padding: 2rem; }
     </style>
 </head>
 <body>
-
-    <header>
-        <div class="logo">SM64Hacks.run</div>
-        <nav>
-            <a href="#/" id="nav-home">Home</a>
-            <a href="#/mod" id="nav-mod">Mod</a>
-        </nav>
-    </header>
-
-    <main class="container" id="app">
-        <!-- O conteúdo será renderizado aqui pelo JavaScript -->
+    <header class="header"><h1><a href="#home">SM64Hacks</a></h1><nav><a href="#home">Home</a><a href="#mod" id="mod-link" class="hidden">Mod</a><a href="#" id="auth-link">Login</a></nav></header>
+    <main>
+        <div id="home-page" class="page"><h2>Games in Series: SM64 ROM Hacks</h2><div class="controls"><input type="text" id="search-input" class="search-input" placeholder="Search for a hack..."><select id="sort-select" class="sort-select"><option value="newest">Newest Released</option><option value="oldest">Oldest Released</option><option value="alphabetical">Alphabetical</option></select></div><div id="game-grid" class="game-grid"><div class="loader">Loading games...</div></div></div>
+        <div id="leaderboard-page" class="page"></div>
+        <div id="login-page" class="page"><div class="form-container"><h2>Moderator Login</h2><form id="login-form"><div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" required></div><div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" required></div><button type="submit" class="modal-btn btn-primary" style="width: 100%;">Login</button><p id="login-error" style="color: #ef4444; margin-top: 1rem; text-align: center;"></p></form></div></div>
+        <div id="mod-page" class="page"><h2>Pending Submissions</h2><div id="pending-runs-container"><div class="loader">Loading pending runs...</div></div></div>
+        <div id="loading-page" class="page"><div class="loader">Loading...</div></div>
     </main>
-    
-    <!-- Modal para Submissão/Edição -->
-    <div class="modal-overlay" id="submit-modal">
-        <div class="modal-content">
-            <h2 id="modal-title">Submit Run</h2>
-            <form id="submit-form">
-                <input type="hidden" id="run-id-input">
-                <input type="hidden" id="run-context-input">
-                <div class="form-group">
-                    <label for="player-input">Player</label>
-                    <input type="text" id="player-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="time-input">Time (e.g., 1h 23m 45s 678ms)</label>
-                    <input type="text" id="time-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="video-input">Video URL</label>
-                    <input type="url" id="video-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="date-input">Date</label>
-                    <input type="date" id="date-input" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
+    <div id="submit-run-modal" class="modal-overlay hidden"><div class="modal-content"><h2 id="modal-title">Submit Run</h2><form id="submit-run-form"><input type="hidden" id="run-id-input"><div class="form-group"><label for="player-name">Player Name</label><input type="text" id="player-name" required></div><div class="form-group"><label for="time">Time (MM:SS.ms)</label><input type="text" id="time" placeholder="e.g., 19:50.123" required></div><div class="form-group"><label for="video-url">Video URL</label><input type="url" id="video-url" required></div><div class="form-group"><label for="run-date">Date</label><input type="date" id="run-date" required></div><div class="modal-actions"><button type="button" id="cancel-run-btn" class="modal-btn btn-secondary">Cancel</button><button type="submit" class="modal-btn btn-primary">Submit</button></div></form></div></div>
+    <div id="selection-modal" class="modal-overlay hidden"><div class="modal-content"><h2 id="selection-modal-title"></h2><div id="selection-modal-list" class="selection-list"></div></div></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, get, set, push, remove, child } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // --- FIREBASE CONFIG (Cole sua configuração aqui) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU", // ATENÇÃO: Chave do usuário. Pode não funcionar.
-            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
-            databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
-            projectId: "sm64-hack-roms-speedrun-mobile",
-            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
-            messagingSenderId: "499101981060",
-            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
-        };
-
+        const firebaseConfig = { apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU", authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com", databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com", projectId: "sm64-hack-roms-speedrun-mobile", storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app", messagingSenderId: "499101981060", appId: "1:499101981060:web:209dfe3f20866ef4f865d1" };
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        // --- STATE MANAGEMENT ---
-        const state = {
-            games: [],
-            filteredGames: [],
-            isMod: sessionStorage.getItem('isMod') === 'true',
-            pendingRuns: {},
+        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
+        const SERIES_ID = 'sm64romhacks';
+        const apiCache = {};
+        let allGames = [];
+        let currentUser = null;
+        let isMod = false;
+        
+        const timeAgo=(d)=>{const D=new Date(d),n=new Date(),M=(n.getFullYear()-D.getFullYear())*12+(n.getMonth()-D.getMonth());if(M<1){const s=Math.floor((n-D)/1e3);if(s<60)return"just now";const m=Math.floor(s/60);if(m<60)return`${m} minute${m>1?"s":""} ago`;const h=Math.floor(m/60);if(h<24)return`${h} hour${h>1?"s":""} ago`;const ds=Math.floor(h/24);return`${ds} day${ds>1?"s":""} ago`}if(M<24)return`${M} month${M>1?"s":""} ago`;const y=Math.floor(M/12);return`${y} year${y>1?"s":""} ago`};
+        const formatTime=(ms)=>{if(ms===null||isNaN(ms))return"N/A";const s=ms/1000,m=Math.floor(s/60),sec=Math.floor(s%60),msec=ms%1000;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}.${String(msec).padStart(3,'0')}`};
+        const parseTimeToMs=(t)=>{const p=t.match(/(\d+):(\d+).(\d+)/);return p?parseInt(p[1])*6e4+parseInt(p[2])*1e3+parseInt(p[3]):null};
+        const apiFetch=async(u)=>{if(apiCache[u])return apiCache[u];try{const r=await fetch(u);if(!r.ok)throw new Error(`API Error: ${r.status}`);const d=await r.json();apiCache[u]=d;return d}catch(e){console.error(`Failed to fetch ${u}:`,e);return null}};
+        const navigate=(h)=>{window.location.hash=h};
+        
+        // <<< NEW, ROBUST DATA LOADING FUNCTION
+        const ensureGamesLoaded = async () => {
+            if (allGames.length === 0) {
+                const data = await apiFetch(`${SRC_API_BASE}/series/${SERIES_ID}/games?max=250`);
+                if (data) allGames = data.data;
+            }
         };
 
-        // --- API & CACHING ---
-        const SRDC_API_BASE = 'https://www.speedrun.com/api/v1';
-        const CACHE_DURATION = 3600 * 1000; // 1 hora em milissegundos
-
-        async function fetchFromSrdc(endpoint) {
-            const cacheKey = `srdc_cache_${endpoint}`;
-            const cached = localStorage.getItem(cacheKey);
-            if (cached) {
-                const { timestamp, data } = JSON.parse(cached);
-                if (Date.now() - timestamp < CACHE_DURATION) {
-                    console.log('Serving from cache:', endpoint);
-                    return data;
-                }
-            }
-            console.log('Fetching from API:', endpoint);
-            const response = await fetch(`${SRDC_API_BASE}/${endpoint}`);
-            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-            const data = await response.json();
-            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
-            return data;
-        }
-
-        // --- UTILITIES ---
-        function formatTimeAgo(dateString) {
-            if (!dateString) return 'Unknown';
-            const date = new Date(dateString);
-            const now = new Date();
-            const seconds = Math.floor((now - date) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + " years ago";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + " months ago";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + " days ago";
-            return "Today";
-        }
+        const handleRouteChange=async()=>{const h=window.location.hash.slice(1)||"home",p=h.split('/');document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));document.getElementById('loading-page').classList.add('active');switch(p[0]){case'home':await showHomePage();break;case'game':await showLeaderboardPage(p[1].split('?')[0]);break;case'login':showLoginPage();break;case'mod':if(isMod){await showModPage()}else{navigate('home')}break;default:navigate('home')}document.getElementById('loading-page').classList.remove('active')};
+        const showPage=(id)=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')};
         
-        function formatRunTime(seconds) {
-            if (seconds === null || seconds === undefined) return '-';
-            const h = Math.floor(seconds / 3600).toString();
-            const m = Math.floor((seconds % 3600) / 60).toString();
-            const s = Math.floor(seconds % 60).toString();
-            const ms = ((seconds - Math.floor(seconds)) * 1000).toFixed(0).toString().padStart(3, '0');
+        const showHomePage = async () => {
+            await ensureGamesLoaded(); // Use the robust loader
+            renderGames(document.getElementById('search-input').value, document.getElementById('sort-select').value);
+            showPage('home-page');
+        };
+
+        const renderGames=(filter="",sort="newest")=>{const grid=document.getElementById('game-grid');if(!allGames||allGames.length===0){grid.innerHTML=`<p>Could not load games.</p>`;return}let filteredGames=allGames.filter(g=>g.names.international.toLowerCase().includes(filter.toLowerCase()));filteredGames.sort((a,b)=>{const aD=a['release-date'],bD=b['release-date'];if(aD&&!bD)return-1;if(!aD&&bD)return 1;if(!aD&&!bD)return a.names.international.localeCompare(b.names.international);switch(sort){case'oldest':return new Date(aD)-new Date(bD);case'alphabetical':return a.names.international.localeCompare(b.names.international);case'newest':default:return new Date(bD)-new Date(aD)}});grid.innerHTML=filteredGames.map(g=>{let dI='Date Unknown';const rD=g['release-date'];if(rD){const rY=new Date(rD).getFullYear(),rT=timeAgo(rD);dI=`${rY} (${rT})`}return`<a href="#game/${g.abbreviation}" class="game-card"><img src="${g.assets['cover-medium'].uri}" alt="${g.names.international}"><div class="game-card-info"><h3>${g.names.international}</h3><p>${dI}</p></div></a>`}).join('')};
+        
+        const showLeaderboardPage = async (gameAbbr) => {
+            const container = document.getElementById('leaderboard-page');
+            container.innerHTML = `<div class="loader">Loading...</div>`;
+            showPage('leaderboard-page');
             
-            let timeString = '';
-            if (h > 0) timeString += `${h}h `;
-            if (m > 0 || h > 0) timeString += `${m}m `;
-            timeString += `${s}s ${ms}ms`;
-            return timeString.trim();
-        }
-
-        // --- RENDER FUNCTIONS ---
-        const appContainer = document.getElementById('app');
-
-        function renderLoader() {
-            appContainer.innerHTML = `<div class="loader">Loading...</div>`;
-        }
-
-        function renderError(message) {
-            appContainer.innerHTML = `<div class="error">${message}</div>`;
-        }
-
-        function renderHomePage() {
-            const html = `
-                <h1>SM64 ROM Hacks</h1>
-                <div class="controls">
-                    <input type="text" id="search" class="search-bar" placeholder="Search for a hack...">
-                    <select id="sort" class="sort-select">
-                        <option value="newest">Oldest Released</option>
-                        <option value="oldest">Newest Released</option>
-                        <option value="alpha">Alphabetical (A-Z)</option>
-                    </select>
-                </div>
-                <div class="games-grid" id="games-grid-container">
-                    ${state.filteredGames.map(game => `
-                        <a href="#/game/${game.id}" class="game-card">
-                            <img src="${game.assets.cover_medium.uri}" alt="${game.names.international}">
-                            <div class="game-card-info">
-                                <h3>${game.names.international}</h3>
-                                <p>${game.released} &bull; ${formatTimeAgo(game.release_date)}</p>
-                            </div>
-                        </a>
-                    `).join('')}
-                </div>
-            `;
-            appContainer.innerHTML = html;
-            addHomeEventListeners();
-        }
-        
-        async function renderLeaderboardPage(gameId) {
-            renderLoader();
-            try {
-                const game = state.games.find(g => g.id === gameId);
-                if (!game) throw new Error('Game not found');
-
-                const categories = game.categories.data.filter(c => c.type === 'per-game');
-                const levels = game.levels.data;
-
-                appContainer.innerHTML = `
-                    <div class="leaderboard-header">
-                        <img src="${game.assets.cover_medium.uri}" alt="${game.names.international}">
-                        <div>
-                            <h1>${game.names.international}</h1>
-                            <p>Leaderboards</p>
-                        </div>
-                    </div>
-                    
-                    <div class="leaderboard-actions">
-                         <button class="btn btn-primary" id="open-submit-modal-btn">Submit Run</button>
-                    </div>
-
-                    <div class="leaderboard-controls">
-                        <div class="control-group">
-                            <label for="category-type-select">Category Type</label>
-                            <select id="category-type-select">
-                                <option value="full-game">Full Game</option>
-                                ${levels.length > 0 ? '<option value="levels">Levels</option>' : ''}
-                            </select>
-                        </div>
-                        <div id="dynamic-controls"></div>
-                    </div>
-                    <div id="leaderboard-content">Select a category to view the leaderboard.</div>
-                `;
-
-                addLeaderboardEventListeners(game, categories, levels);
-                // Trigger initial load
-                document.getElementById('category-type-select').dispatchEvent(new Event('change'));
-
-            } catch (error) {
-                console.error(error);
-                renderError('Failed to load leaderboard data.');
-            }
-        }
-        
-        async function renderModPage() {
-            if (!state.isMod) {
-                const password = prompt("Enter moderator password:");
-                // THIS IS NOT SECURE. In a real app, use Firebase Auth.
-                if (password === "sm64mod") { 
-                    state.isMod = true;
-                    sessionStorage.setItem('isMod', 'true');
-                } else {
-                    alert("Incorrect password.");
-                    window.location.hash = '/';
-                    return;
-                }
-            }
+            await ensureGamesLoaded(); // Use the robust loader
             
-            appContainer.innerHTML = `
-                <h1>Moderation Queue</h1>
-                <p>New submissions waiting for approval.</p>
-                <div id="mod-queue"></div>
-            `;
-            
-            listenForPendingRuns();
-        }
-        
-        function renderModQueue(runs) {
-             const queueContainer = document.getElementById('mod-queue');
-             if (!queueContainer) return;
-             
-             if (Object.keys(runs).length === 0) {
-                 queueContainer.innerHTML = `<p>The queue is empty. Great job!</p>`;
-                 return;
-             }
-             
-             const html = `
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>Player</th>
-                            <th>Time</th>
-                            <th>Game / Category</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${Object.entries(runs).map(([id, run]) => `
-                        <tr>
-                            <td><a href="${run.videoUrl}" target="_blank">${run.player}</a></td>
-                            <td>${run.time}</td>
-                            <td>${run.context.gameName}<br><small>${run.context.categoryName}</small></td>
-                            <td>${run.date}</td>
-                            <td>
-                               <button class="btn btn-secondary btn-sm" onclick="App.editRun('${id}')">Edit</button>
-                               <button class="btn btn-secondary btn-sm" onclick="App.rejectRun('${id}')">Reject</button>
-                               <button class="btn btn-primary btn-sm" onclick="App.approveRun('${id}')">Approve</button>
-                            </td>
-                        </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-             `;
-             queueContainer.innerHTML = html;
-        }
+            const foundGame = allGames.find(g => g.abbreviation === gameAbbr);
+            if (!foundGame) { container.innerHTML = `<p>Game not found.</p>`; return; }
 
-        // --- EVENT LISTENERS ---
-        function addHomeEventListeners() {
-            document.getElementById('search').addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                state.filteredGames = state.games.filter(g => g.names.international.toLowerCase().includes(query));
-                renderHomePage();
-                document.getElementById('search').value = query; // Retain search value
-                document.getElementById('search').focus();
+            const [catData, lvlData, varData] = await Promise.all([apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/categories`), apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/levels`), apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/variables`)]);
+            if (!catData) { container.innerHTML = `<p>Error loading categories.</p>`; return; }
+            
+            const gameData = { id: foundGame.id, name: foundGame.names.international, weblink: foundGame.weblink, categories: catData.data, levels: lvlData?.data || [], variables: varData?.data || [] };
+            renderLeaderboard(gameData);
+        };
+
+        const renderLeaderboard = async (gameData) => {
+            const container = document.getElementById('leaderboard-page');
+            const params = new URLSearchParams(window.location.hash.split('?')[1]);
+            let selectedLevelId = params.get('level');
+            let selectedCategoryId = params.get('category');
+            
+            const fullGameCategories = gameData.categories.filter(c => c.type === 'per-game');
+            const levelCategories = gameData.categories.filter(c => c.type === 'per-level');
+            const isPerLevel = !!selectedLevelId;
+
+            if (!selectedCategoryId) { selectedCategoryId = (isPerLevel ? levelCategories[0]?.id : fullGameCategories[0]?.id) || null; }
+            const selectedCategory = gameData.categories.find(c => c.id === selectedCategoryId);
+            const selectedLevel = gameData.levels.find(l => l.id === selectedLevelId);
+
+            let html = `<div class="leaderboard-container">`;
+            html += isPerLevel 
+                ? `<button id="level-selector-btn" class="leaderboard-main-selector">LEVEL: ${selectedLevel ? selectedLevel.name : 'Select Level'}</button>`
+                : `<button id="type-selector-btn" class="leaderboard-main-selector">Full game</button>`;
+
+            const currentCategories = isPerLevel ? levelCategories : fullGameCategories;
+            html += `<div class="tabs">${currentCategories.map(c => `<button class="nav-button nav-cat-button ${c.id === selectedCategoryId ? 'active' : ''}" data-cat-id="${c.id}">${c.name}</button>`).join('')}</div>`;
+
+            if (isPerLevel && selectedCategory?.name.toLowerCase().includes('star')) {
+                 const stars = selectedCategory.rules.split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
+                 const selectedStar = params.get('star') || (stars.length > 0 ? stars[0] : 'Select Star');
+                 html += `<button id="star-selector-btn" class="single-star-selector" data-var-id="star">${selectedStar}</button>`;
+            }
+
+            // <<< FIXED SUBCATEGORY VISIBILITY
+            gameData.variables.filter(v => v['is-subcategory']).forEach(variable => {
+                if (variable.category && variable.category !== selectedCategoryId) return;
+                const selectedValueId = params.get(variable.id) || variable.values.default;
+                html += `<div class="leaderboard-nav-group"><div class="group-label">${variable.name}</div><div class="tabs">${Object.entries(variable.values.values).map(([valId, {label}]) => `<button class="nav-button nav-var-button ${valId === selectedValueId ? 'active' : ''}" data-var-id="${variable.id}" data-val-id="${valId}">${label}</button>`).join('')}</div></div>`;
             });
-
-            document.getElementById('sort').addEventListener('change', (e) => {
-                const sortBy = e.target.value;
-                state.games.sort((a, b) => {
-                    if (sortBy === 'alpha') return a.names.international.localeCompare(b.names.international);
-                    if (sortBy === 'newest') return new Date(a.release_date) - new Date(b.release_date);
-                    if (sortBy === 'oldest') return new Date(b.release_date) - new Date(a.release_date);
-                    return 0;
-                });
-                state.filteredGames = [...state.games];
-                renderHomePage();
-                 document.getElementById('sort').value = sortBy;
-            });
-        }
-        
-        function addLeaderboardEventListeners(game, categories, levels) {
-             const categoryTypeSelect = document.getElementById('category-type-select');
-             const dynamicControls = document.getElementById('dynamic-controls');
-
-             categoryTypeSelect.addEventListener('change', () => {
-                 const type = categoryTypeSelect.value;
-                 if (type === 'full-game') {
-                     dynamicControls.innerHTML = `
-                        <div class="control-group">
-                             <label for="category-select">Full Game Category</label>
-                             <select id="category-select">
-                                ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                             </select>
-                        </div>
-                        <div id="variables-container"></div>
-                     `;
-                     document.getElementById('category-select').addEventListener('change', updateLeaderboard);
-                     updateLeaderboard();
-                 } else if (type === 'levels') {
-                     dynamicControls.innerHTML = `
-                         <div class="control-group">
-                             <label for="level-select">Level</label>
-                             <select id="level-select">
-                                ${levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('')}
-                             </select>
-                         </div>
-                         <div class="control-group">
-                             <label for="level-category-select">Level Category</label>
-                             <select id="level-category-select">
-                                <option value="single-star">Single Star</option>
-                                <option value="stage-rta">Stage RTA</option>
-                             </select>
-                         </div>
-                         <div id="stars-container"></div>
-                     `;
-                     document.getElementById('level-select').addEventListener('change', updateLeaderboard);
-                     document.getElementById('level-category-select').addEventListener('change', updateLeaderboard);
-                     updateLeaderboard();
-                 }
-             });
-             
-            document.getElementById('open-submit-modal-btn').addEventListener('click', () => {
-                const context = getLeaderboardContext(game);
-                showSubmitModal(context);
-            });
-        }
-        
-        // --- LOGIC ---
-        function sortAndFilterGames() {
-            const sortBy = document.getElementById('sort')?.value || 'newest';
-            const query = document.getElementById('search')?.value?.toLowerCase() || '';
-
-            let sorted = [...state.games].sort((a, b) => {
-                if (!a.release_date || !b.release_date) return 0;
-                if (sortBy === 'alpha') return a.names.international.localeCompare(b.names.international);
-                if (sortBy === 'newest') return new Date(a.release_date) - new Date(b.release_date);
-                if (sortBy === 'oldest') return new Date(b.release_date) - new Date(a.release_date);
-                return 0;
-            });
-
-            state.filteredGames = sorted.filter(g => g.names.international.toLowerCase().includes(query));
-        }
-
-        async function fetchAndRenderGames() {
-            renderLoader();
-            try {
-                const data = await fetchFromSrdc('series/sm64romhacks/games?max=250&embed=categories,levels,variables');
-                state.games = data.data;
-                sortAndFilterGames();
-                renderHomePage();
-            } catch (error) {
-                console.error(error);
-                renderError('Could not fetch games from speedrun.com. Please try again later.');
-            }
-        }
-        
-        async function updateLeaderboard() {
-            const gameId = window.location.hash.split('/')[2];
-            const game = state.games.find(g => g.id === gameId);
-            const contentDiv = document.getElementById('leaderboard-content');
-            contentDiv.innerHTML = `<div class="loader">Loading leaderboard...</div>`;
-
-            const type = document.getElementById('category-type-select').value;
             
-            try {
-                if (type === 'full-game') {
-                    const categoryId = document.getElementById('category-select').value;
-                    const category = game.categories.data.find(c => c.id === categoryId);
-                    
-                    // Handle variables (sub-categories)
-                    const variablesContainer = document.getElementById('variables-container');
-                    let variableParams = '';
-                    variablesContainer.innerHTML = '';
-
-                    category.variables.data.forEach(variable => {
-                        if(variable['is-subcategory']) {
-                            variablesContainer.innerHTML += `
-                                <div class="control-group">
-                                    <label>${variable.name}</label>
-                                    <div class="sub-categories" data-variable-id="${variable.id}">
-                                        ${Object.entries(variable.values.values).map(([valueId, valueData]) => `
-                                            <button class="sub-cat-button" data-value-id="${valueId}">${valueData.label}</button>
-                                        `).join('')}
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    });
-                    
-                    document.querySelectorAll('.sub-cat-button').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                           const parent = e.target.closest('.sub-categories');
-                           parent.querySelectorAll('.sub-cat-button').forEach(b => b.classList.remove('active'));
-                           e.target.classList.add('active');
-                           updateLeaderboard();
-                        });
-                    });
-
-                    // Set first sub-category as active by default and build query
-                    document.querySelectorAll('.sub-categories').forEach(container => {
-                        const firstButton = container.querySelector('.sub-cat-button');
-                        if (firstButton) {
-                            firstButton.classList.add('active');
-                            variableParams += `&var-${container.dataset.variableId}=${firstButton.dataset.valueId}`;
-                        }
-                    });
-
-                    const endpoint = `leaderboards/${game.id}/category/${categoryId}?embed=players${variableParams}`;
-                    const lbData = await fetchFromSrdc(endpoint);
-                    renderLeaderboardTable(lbData.data, contentDiv);
-
-                } else if (type === 'levels') {
-                    // Logic for levels (simplified for now)
-                    const levelId = document.getElementById('level-select').value;
-                    const levelCategory = game.categories.data.find(c => c.name === "All Stars" && c.type === "per-level");
-                    if (!levelCategory) throw new Error("Could not find a valid level category.");
-
-                    const endpoint = `leaderboards/${game.id}/level/${levelId}/${levelCategory.id}?embed=players`;
-                    const lbData = await fetchFromSrdc(endpoint);
-                    renderLeaderboardTable(lbData.data, contentDiv);
-                }
-            } catch (error) {
-                console.error(error);
-                contentDiv.innerHTML = `<div class="error">Could not load this leaderboard. It might be empty.</div>`;
-            }
-        }
-        
-        function renderLeaderboardTable(data, container) {
-            if (!data.runs || data.runs.length === 0) {
-                container.innerHTML = `<p>This leaderboard is empty.</p>`;
-                return;
-            }
-            
-            const html = `
-                <table class="leaderboard-table">
-                    <thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th></tr></thead>
-                    <tbody>
-                        ${data.runs.map(runData => `
-                            <tr>
-                                <td>${runData.place}</td>
-                                <td>${runData.run.players.data.map(p => p.names?.international || p.name).join(', ')}</td>
-                                <td><a href="${runData.run.videos?.links[0].uri}" target="_blank">${formatRunTime(runData.run.times.primary_t)}</a></td>
-                                <td>${runData.run.date}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+            html += `<div class="submit-run-btn-container"><button id="submit-run-btn" class="action-button submit"><span class="icon">+</span> Submit Run</button></div>`;
+            html += `</div><div id="leaderboard-runs-container"><div class="loader">Loading runs...</div></div>`;
             container.innerHTML = html;
-        }
-        
-        // --- SUBMISSION MODAL & FIREBASE LOGIC ---
-        const modal = document.getElementById('submit-modal');
-        const submitForm = document.getElementById('submit-form');
-        
-        function getLeaderboardContext(game) {
-            const context = {
-                gameId: game.id,
-                gameName: game.names.international
-            };
-            // This needs to be expanded to get the exact category/level/vars
-            const categorySelect = document.getElementById('category-select');
-            if(categorySelect) {
-                context.categoryId = categorySelect.value;
-                context.categoryName = categorySelect.options[categorySelect.selectedIndex].text;
-            }
-            // Add similar logic for levels if needed
-            return context;
-        }
-
-        function showSubmitModal(context = {}, runData = {}, runId = null) {
-            submitForm.reset();
-            document.getElementById('modal-title').textContent = runId ? 'Edit Run' : 'Submit Run';
-            document.getElementById('run-id-input').value = runId || '';
-            document.getElementById('run-context-input').value = JSON.stringify(context);
             
-            document.getElementById('player-input').value = runData.player || '';
-            document.getElementById('time-input').value = runData.time || '';
-            document.getElementById('video-input').value = runData.videoUrl || '';
-            document.getElementById('date-input').value = runData.date || new Date().toISOString().split('T')[0];
-
-            modal.classList.add('active');
-        }
-
-        function hideSubmitModal() {
-            modal.classList.remove('active');
-        }
-        
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            const runId = document.getElementById('run-id-input').value;
-            let context;
-            try {
-                context = JSON.parse(document.getElementById('run-context-input').value);
-            } catch {
-                context = {};
-            }
+            // Event Listeners
+            const levelSelectorBtn = document.getElementById('level-selector-btn');
+            if (levelSelectorBtn) { levelSelectorBtn.addEventListener('click', () => { const items = gameData.levels.map(l => ({ id: l.id, name: l.name })); openSelectionModal('Select Level', items, (levelId) => { updateLeaderboardURL({ level: levelId, category: levelCategories[0]?.id }); }); }); }
+            const typeSelectorBtn = document.getElementById('type-selector-btn');
+            if (typeSelectorBtn) { typeSelectorBtn.addEventListener('click', () => { if (levelCategories.length > 0 && gameData.levels.length > 0) { updateLeaderboardURL({ level: gameData.levels[0].id, category: levelCategories[0].id }); } }); }
+            const starSelectorBtn = document.getElementById('star-selector-btn');
+            if (starSelectorBtn) { starSelectorBtn.addEventListener('click', () => { const stars = selectedCategory.rules.split('\n').filter(l => l.trim().startsWith('-')).map(l => l.trim().substring(1).trim()); const items = stars.map(s => ({id: s, name: s})); openSelectionModal('Select Star', items, (starName) => { updateLeaderboardURL({ [starSelectorBtn.dataset.varId]: starName }); }); }); }
+            document.querySelectorAll('.nav-cat-button').forEach(btn => btn.addEventListener('click', () => { const catId = btn.dataset.catId, cat = gameData.categories.find(c => c.id === catId); if (cat.type === 'per-game') { updateLeaderboardURL({ level: null, category: catId }); } else { updateLeaderboardURL({ category: catId }); } }));
+            document.querySelectorAll('.nav-var-button').forEach(btn => btn.addEventListener('click', () => { updateLeaderboardURL({ [btn.dataset.varId]: btn.dataset.valId }); }));
+            document.getElementById('submit-run-btn').addEventListener('click', () => openSubmitModal());
             
-            const runData = {
-                player: document.getElementById('player-input').value,
-                time: document.getElementById('time-input').value,
-                videoUrl: document.getElementById('video-input').value,
-                date: document.getElementById('date-input').value,
-                submittedAt: new Date().toISOString(),
-                status: 'pending',
-                context: context
-            };
-            
-            try {
-                if(runId) { // Editing an existing pending run
-                    await set(ref(database, `pending-runs/${runId}`), runData);
-                    alert('Run updated successfully! Awaiting approval.');
-                } else { // Submitting a new run
-                    await push(ref(database, 'pending-runs'), runData);
-                    alert('Run submitted successfully! Awaiting approval.');
-                }
-                hideSubmitModal();
-            } catch (error) {
-                console.error("Firebase error:", error);
-                alert('Failed to submit run. Check console for details.');
-            }
-        }
-        
-        function listenForPendingRuns() {
-            const pendingRunsRef = ref(database, 'pending-runs');
-            onValue(pendingRunsRef, (snapshot) => {
-                state.pendingRuns = snapshot.val() || {};
-                renderModQueue(state.pendingRuns);
-            });
-        }
-        
-        // --- ROUTER ---
-        async function router() {
-            const path = window.location.hash.slice(1) || '/';
-            const [_, page, id] = path.split('/');
-
-            // Update nav active state
-            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-            if (page === 'mod') {
-                document.getElementById('nav-mod').classList.add('active');
-            } else {
-                 document.getElementById('nav-home').classList.add('active');
-            }
-
-            if (page === 'game') {
-                if (state.games.length === 0) await fetchAndRenderGames(); // Ensure games are loaded
-                await renderLeaderboardPage(id);
-            } else if (page === 'mod') {
-                renderModPage();
-            } else {
-                await fetchAndRenderGames();
-            }
-        }
-        
-        // --- GLOBAL APP OBJECT for HTML onlick events ---
-        window.App = {
-            approveRun: async (id) => {
-                if (!confirm('Are you sure you want to approve this run? This is a placeholder and does not add it to the main leaderboard.')) return;
-                const runData = state.pendingRuns[id];
-                runData.status = 'approved';
-                // In a real app, you would move this data to an `approved-runs` node
-                // For this example, we'll just remove it from pending.
-                await remove(ref(database, `pending-runs/${id}`));
-                alert('Run approved (and removed from queue).');
-            },
-            rejectRun: async (id) => {
-                if (!confirm('Are you sure you want to reject and delete this submission?')) return;
-                await remove(ref(database, `pending-runs/${id}`));
-                alert('Run rejected.');
-            },
-            editRun: (id) => {
-                const runData = state.pendingRuns[id];
-                showSubmitModal(runData.context, runData, id);
-            }
+            await loadAndRenderRuns();
         };
 
-
-        // --- INITIALIZATION ---
-        window.addEventListener('hashchange', router);
-        window.addEventListener('DOMContentLoaded', () => {
-            router();
-            document.getElementById('cancel-btn').addEventListener('click', hideSubmitModal);
-            submitForm.addEventListener('submit', handleFormSubmit);
-        });
-
+        const updateLeaderboardURL=(p)=>{const h=window.location.hash.slice(1).split('?')[0],c=new URLSearchParams(window.location.hash.split('?')[1]);for(const[k,v]of Object.entries(p)){if(v===null)c.delete(k);else c.set(k,v)}navigate(`${h}?${c.toString()}`)};
+        const getFirebasePathForCurrentLeaderboard=()=>{const h=window.location.hash.slice(1),p=new URLSearchParams(h.split('?')[1]),g=h.split('/')[1].split('?')[0],parts=['runs',g];if(p.get('category'))parts.push(p.get('category'));if(p.get('level'))parts.push(p.get('level'));const sK=Array.from(p.keys()).filter(k=>k!=='category'&&k!=='level').sort();sK.forEach(k=>{parts.push(`${k}=${p.get(k)}`)});return parts.join('/')};
+        const loadAndRenderRuns=async()=>{const c=document.getElementById('leaderboard-runs-container');c.innerHTML=`<div class="loader">Loading runs...</div>`;const dP=getFirebasePathForCurrentLeaderboard();try{const s=await get(ref(db,dP));const r=[];if(s.exists()){s.forEach(child=>{r.push({id:child.key,...child.val()})})}r.sort((a,b)=>a.time-b.time);if(r.length===0){c.innerHTML=`<p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted-color);">No runs submitted.</p>`;return}c.innerHTML=`<table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th></tr></thead><tbody>${r.map((run,i)=>`<tr><td class="rank">${i+1}</td><td>${run.player}</td><td>${formatTime(run.time)}</td><td>${timeAgo(run.date)}</td><td><a href="${run.videoUrl}" class="video-link" target="_blank" rel="noopener noreferrer">▶</a></td></tr>`).join('')}</tbody></table>`}catch(e){console.error("Error loading runs:",e);c.innerHTML=`<p>Error loading runs.</p>`}};
+        const openSelectionModal=(title,items,onSelect)=>{document.getElementById('selection-modal-title').textContent=title;const list=document.getElementById('selection-modal-list');list.innerHTML=items.map(item=>`<button data-id="${item.id}">${item.name}</button>`).join('');list.querySelectorAll('button').forEach(btn=>{btn.addEventListener('click',()=>{onSelect(btn.dataset.id);closeSelectionModal()})});document.getElementById('selection-modal').classList.remove('hidden')};
+        const closeSelectionModal=()=>document.getElementById('selection-modal').classList.add('hidden');
+        const openSubmitModal=()=>{document.getElementById('submit-run-form').reset();document.getElementById('run-id-input').value='';document.getElementById('modal-title').textContent="Submit Run";document.getElementById('run-date').valueAsDate=new Date();document.getElementById('submit-run-modal').classList.remove('hidden')};
+        const closeSubmitModal=()=>document.getElementById('submit-run-modal').classList.add('hidden');
+        const handleRunSubmit=async(e)=>{e.preventDefault();const pN=document.getElementById('player-name').value,tS=document.getElementById('time').value,vU=document.getElementById('video-url').value,rD=document.getElementById('run-date').value,rI=document.getElementById('run-id-input').value;const tM=parseTimeToMs(tS);if(tM===null){alert("Invalid time format.");return}const rData={player:pN,time:tM,videoUrl:vU,date:rD,submittedAt:new Date().toISOString()};if(rI){alert("Editing not implemented in this flow.");return}rData.dbPath=getFirebasePathForCurrentLeaderboard();try{await push(ref(db,'pendingRuns'),rData);alert("Run submitted!");closeSubmitModal()}catch(err){console.error("Submit error:",err);alert("Failed to submit run.")}};
+        const setupAuth=()=>{onAuthStateChanged(auth,async(user)=>{const aL=document.getElementById('auth-link'),mL=document.getElementById('mod-link');if(user){currentUser=user;const modSnap=await get(child(ref(db),`users/${user.uid}/isMod`));isMod=modSnap.exists()&&modSnap.val();aL.textContent='Logout';aL.href='#';aL.onclick=(e)=>{e.preventDefault();signOut(auth)};if(isMod)mL.classList.remove('hidden')}else{currentUser=null;isMod=false;aL.textContent='Login';aL.href='#login';aL.onclick=null;mL.classList.add('hidden');if(window.location.hash==='#mod')navigate('home')}})};
+        const handleLogin=async(e)=>{e.preventDefault();const email=document.getElementById('login-email').value,pass=document.getElementById('login-password').value,errP=document.getElementById('login-error');errP.textContent='';try{await signInWithEmailAndPassword(auth,email,pass);navigate('mod')}catch(err){console.error("Login failed:",err);errP.textContent='Login failed.'}};
+        const showLoginPage=()=>{showPage('login-page');document.getElementById('login-error').textContent=''};
+        const showModPage=async()=>{/* Mod page functionality can be added back here */};
+        const handleModAction=async(e)=>{/* Mod actions can be added back here */};
+        
+        window.addEventListener('DOMContentLoaded',()=>{document.getElementById('search-input').addEventListener('input',(e)=>renderGames(e.target.value,document.getElementById('sort-select').value));document.getElementById('sort-select').addEventListener('change',(e)=>renderGames(document.getElementById('search-input').value,e.target.value));document.getElementById('submit-run-form').addEventListener('submit',handleRunSubmit);document.getElementById('cancel-run-btn').addEventListener('click',closeSubmitModal);document.querySelector('#submit-run-modal').addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeSubmitModal()});document.querySelector('#selection-modal').addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeSelectionModal()});document.getElementById('login-form').addEventListener('submit',handleLogin);window.addEventListener('hashchange',handleRouteChange);setupAuth();handleRouteChange()});
     </script>
 </body>
-    </html>
+</html>
