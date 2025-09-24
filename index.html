@@ -63,7 +63,7 @@
         .leaderboard-table th, .leaderboard-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
         .leaderboard-table th { font-size: 0.8rem; color: var(--text-muted-color); text-transform: uppercase; }
         .leaderboard-table td:nth-child(1) { font-weight: bold; }
-        .leaderboard-table td:nth-child(3) { font-family: 'Courier New', Courier, monospace; }
+        /* A REGRA DA FONTE PARA A COLUNA DE TEMPO FOI REMOVIDA DAQUI */
         .leaderboard-table .video-link { text-decoration: none; color: var(--primary-color); font-size: 1.2em; }
         .leaderboard-table .mod-actions button { background: none; border: 1px solid; border-radius: 4px; color: var(--text-muted-color); cursor: pointer; margin: 0 2px; padding: 3px 6px; }
         .leaderboard-table .mod-actions .edit { border-color: var(--primary-color); color: var(--primary-color); }
@@ -339,16 +339,11 @@
             table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th>${isMod ? '<th>Actions</th>' : ''}</tr></thead>`;
             const tbody = document.createElement('tbody');
             runs.forEach((run, index) => {
-                // *** FIX: Robust date formatting ***
                 let dateStr = 'Invalid Date';
                 if (run.date) {
-                    // Split to avoid timezone issues from direct parsing
                     const parts = run.date.split('-');
-                    if (parts.length === 3) {
-                       dateStr = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString();
-                    }
+                    if (parts.length === 3) { dateStr = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString(); }
                 }
-
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${dateStr}</td>
                     <td><a href="${run.videoUrl}" target="_blank" class="video-link" title="Watch video">▶</a></td>
@@ -390,11 +385,8 @@
         }
         function openEditModal(run, path) {
             editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
-            // *** FIX: Safely populate fields, defaulting to empty string ***
-            DOMElements.modal.playerName.value = run.player || ''; 
-            DOMElements.modal.runTime.value = run.time || '';
-            DOMElements.modal.videoUrl.value = run.videoUrl || ''; 
-            DOMElements.modal.runDate.value = run.date || '';
+            DOMElements.modal.playerName.value = run.player || ''; DOMElements.modal.runTime.value = run.time || '';
+            DOMElements.modal.videoUrl.value = run.videoUrl || ''; DOMElements.modal.runDate.value = run.date || '';
             DOMElements.modal.container.style.display = 'block';
         }
         function closeSubmitModal() {
@@ -425,16 +417,16 @@
                         const catId = catSnap.key;
                         catSnap.forEach(levelSnap => {
                             const levelId = levelSnap.key;
-                            if (levelSnap.hasChild('player')) { // Path structure: game/cat/run
+                            if (levelSnap.hasChild('player')) {
                                 const runSnap = levelSnap; const runKey = runSnap.key;
                                 pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}` });
                             } else {
                                 levelSnap.forEach(subCatSnap => {
                                     const subCatId = subCatSnap.key;
-                                    if (subCatSnap.hasChild('player')) { // Path: game/cat/level/run
+                                    if (subCatSnap.hasChild('player')) {
                                         const runSnap = subCatSnap; const runKey = runSnap.key;
                                         pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}` });
-                                    } else { // Path: game/cat/level/subcat/run
+                                    } else {
                                         subCatSnap.forEach(runSnap => {
                                             const runKey = runSnap.key;
                                             pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${subCatId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}/${subCatId}` });
