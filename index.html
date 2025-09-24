@@ -281,7 +281,12 @@
                 const pill = document.createElement('div');
                 pill.className = `pill ${cat.id === currentSelection.categoryId ? 'active' : ''}`;
                 pill.textContent = cat.name;
-                pill.addEventListener('click', () => { currentSelection.categoryId = cat.id; updateUI(); });
+                pill.addEventListener('click', () => { 
+                    currentSelection.categoryId = cat.id; 
+                    // *** ALTERAÇÃO 1: Reiniciar subcategorias ao clicar em uma categoria principal ***
+                    currentSelection.subCategoryValues = {}; 
+                    updateUI(); 
+                });
                 container.appendChild(pill);
             });
         }
@@ -292,7 +297,7 @@
             subCatContainer.innerHTML = '';
             starContainer.style.display = 'none';
             currentSelection.starName = null;
-            currentSelection.subCategoryValues = {};
+            // *** ALTERAÇÃO 2: A linha que reiniciava "subCategoryValues" foi REMOVIDA daqui ***
 
             const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
             if (!category) return;
@@ -306,13 +311,19 @@
                     const pillsContainer = document.createElement('div');
                     pillsContainer.className = 'pills-container';
 
-                    currentSelection.subCategoryValues[variable.id] = variable.values.default;
+                    // Se não houver valor selecionado para esta variável, use o padrão
+                    if (!currentSelection.subCategoryValues[variable.id]) {
+                        currentSelection.subCategoryValues[variable.id] = variable.values.default;
+                    }
                     
                     for (const [valueId, valueData] of Object.entries(variable.values.values)) {
                         const pill = document.createElement('div');
                         pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
                         pill.textContent = valueData.label;
-                        pill.addEventListener('click', () => { currentSelection.subCategoryValues[variable.id] = valueId; updateUI(); });
+                        pill.addEventListener('click', () => { 
+                            currentSelection.subCategoryValues[variable.id] = valueId; 
+                            updateUI(); 
+                        });
                         pillsContainer.appendChild(pill);
                     }
                     group.appendChild(pillsContainer);
@@ -428,7 +439,15 @@
         DOMElements.nav.home.addEventListener('click', () => switchView('home'));
         DOMElements.nav.mod.addEventListener('click', () => switchView('mod'));
         DOMElements.leaderboard.backButton.addEventListener('click', () => switchView('home'));
-        DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { currentSelection.levelId = e.target.value; currentSelection.categoryId = null; updateUI(); });
+
+        DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { 
+            currentSelection.levelId = e.target.value; 
+            currentSelection.categoryId = null; 
+            // *** ALTERAÇÃO 3: Reiniciar subcategorias ao trocar de level ***
+            currentSelection.subCategoryValues = {}; 
+            updateUI(); 
+        });
+
         DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); });
 
         function openSubmitModal() { DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block'; }
@@ -450,7 +469,6 @@
             return totalMs;
         }
 
-        // *** FUNÇÃO CORRIGIDA ***
         function escapeHtml(unsafe) {
             return unsafe
                  .replace(/&/g, "&amp;")
