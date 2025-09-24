@@ -219,7 +219,8 @@
         async function fetchGameDetails(gameId) {
             DOMElements.leaderboard.tableContainer.innerHTML = '<div class="loader">Loading leaderboard...</div>';
             try {
-                const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories.variables`);
+                // *** ALTERAÇÃO 1: Adicionar "variables" ao embed para buscar a lista principal de variáveis do jogo ***
+                const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`);
                 currentGameData = data.data;
                 initializeLeaderboardView();
             } catch (error) {
@@ -283,7 +284,6 @@
                 pill.textContent = cat.name;
                 pill.addEventListener('click', () => { 
                     currentSelection.categoryId = cat.id; 
-                    // *** ALTERAÇÃO 1: Reiniciar subcategorias ao clicar em uma categoria principal ***
                     currentSelection.subCategoryValues = {}; 
                     updateUI(); 
                 });
@@ -297,21 +297,25 @@
             subCatContainer.innerHTML = '';
             starContainer.style.display = 'none';
             currentSelection.starName = null;
-            // *** ALTERAÇÃO 2: A linha que reiniciava "subCategoryValues" foi REMOVIDA daqui ***
 
-            const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
-            if (!category) return;
+            if (!currentSelection.categoryId) return;
+            
+            // *** ALTERAÇÃO 2: Procurar na lista principal de variáveis do jogo em vez de dentro da categoria ***
+            const allGameVariables = currentGameData.variables.data || [];
+            
+            // Uma variável é aplicável se pertence à categoria atual OU se é global (category === null)
+            const applicableVariables = allGameVariables.filter(variable => {
+                return (variable.category === currentSelection.categoryId || variable.category === null) && !variable['is-subcategory'];
+            });
 
-            const standardVariables = category.variables.data.filter(v => !v['is-subcategory']);
-            if (standardVariables.length > 0) {
-                standardVariables.forEach(variable => {
+            if (applicableVariables.length > 0) {
+                applicableVariables.forEach(variable => {
                     const group = document.createElement('div');
                     group.className = 'filter-group';
                     group.innerHTML = `<label>${variable.name}</label>`;
                     const pillsContainer = document.createElement('div');
                     pillsContainer.className = 'pills-container';
 
-                    // Se não houver valor selecionado para esta variável, use o padrão
                     if (!currentSelection.subCategoryValues[variable.id]) {
                         currentSelection.subCategoryValues[variable.id] = variable.values.default;
                     }
@@ -333,7 +337,7 @@
 
             if (currentSelection.levelId !== 'full-game') {
                 const levelVars = await fetchLevelVariables(currentSelection.levelId);
-                const starVariable = levelVars.find(v => v.category === category.id && v['is-subcategory']);
+                const starVariable = levelVars.find(v => v.category === currentSelection.categoryId && v['is-subcategory']);
 
                 if (starVariable) {
                     starContainer.style.display = 'block';
@@ -443,7 +447,6 @@
         DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { 
             currentSelection.levelId = e.target.value; 
             currentSelection.categoryId = null; 
-            // *** ALTERAÇÃO 3: Reiniciar subcategorias ao trocar de level ***
             currentSelection.subCategoryValues = {}; 
             updateUI(); 
         });
