@@ -33,11 +33,14 @@
         #game-search { width: 100%; box-sizing: border-box; }
 
         #game-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
-        .game-card { background-color: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease, opacity 0.3s; border: 1px solid var(--border-color); }
+        .game-card { display: flex; flex-direction: column; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease; border: 1px solid var(--border-color); }
         .game-card:hover { transform: scale(1.05); }
-        .game-card a { text-decoration: none; color: inherit; }
+        .game-card a { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; }
         .game-card img { width: 100%; height: 120px; object-fit: cover; }
-        .game-card-title { padding: 10px; font-size: 0.9rem; text-align: center; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .game-card-info { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
+        .game-card-title { font-size: 0.9rem; text-align: center; flex-grow: 1; }
+        .game-card-time { font-size: 0.8rem; text-align: center; color: var(--text-muted-color); margin-top: 5px; }
+
 
         .leaderboard-header { text-align: center; margin-bottom: 1.5rem; }
         .leaderboard-header h2 { margin: 0 0 5px 0; }
@@ -259,7 +262,6 @@
                     const data = await fetchApi(nextUrl);
                     allFetchedGames.push(...data.data);
                     const nextLink = data.pagination.links.find(link => link.rel === 'next');
-                    // *** FIX: Force HTTPS on subsequent page requests ***
                     nextUrl = nextLink ? nextLink.uri.replace('http://', 'https://') : null;
                 }
                 allGames = allFetchedGames;
@@ -313,7 +315,14 @@
                 const card = document.createElement('div'); card.className = 'game-card';
                 card.dataset.gameId = game.id; card.dataset.gameName = game.names.international.toLowerCase();
                 const imgSrc = game.assets['cover-small'] ? game.assets['cover-small'].uri : 'https://www.speedrun.com/images/1st.png';
-                card.innerHTML = `<a href="#/leaderboard/game/${game.id}"><img src="${imgSrc}" alt="${game.names.international}" loading="lazy"><div class="game-card-title">${game.names.international}</div></a>`;
+                card.innerHTML = `
+                    <a href="#/leaderboard/game/${game.id}">
+                        <img src="${imgSrc}" alt="${game.names.international}" loading="lazy">
+                        <div class="game-card-info">
+                            <div class="game-card-title">${game.names.international}</div>
+                            <div class="game-card-time">${timeAgo(game.created)}</div>
+                        </div>
+                    </a>`;
                 list.appendChild(card);
             });
         }
@@ -532,6 +541,26 @@
                 await push(ref(database, approvedCollectionPath), runData);
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
+        }
+        
+        // *** NEW: timeAgo function for relative dates ***
+        function timeAgo(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.round((now - date) / 1000);
+            const minutes = Math.round(seconds / 60);
+            const hours = Math.round(minutes / 60);
+            const days = Math.round(hours / 24);
+            const months = Math.round(days / 30.44);
+            const years = Math.round(days / 365.25);
+
+            if (seconds < 60) return `${seconds} seconds ago`;
+            if (minutes < 60) return `${minutes} minutes ago`;
+            if (hours < 24) return `${hours} hours ago`;
+            if (days < 30) return `${days} days ago`;
+            if (months < 12) return `${months} months ago`;
+            return `${years} years ago`;
         }
 
         function parseTimeToMs(timeStr) {
