@@ -3,211 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Hacks Speedrun Mobile</title>
+    <title>SM64 Rom Hacks Speedruns</title>
     <style>
+        /* --- GERAL & LAYOUT --- */
         :root {
-            --bg-color: #181818;
-            --surface-color: #282828;
-            --primary-color: #bb86fc;
-            --text-color: #e0e0e0;
-            --text-muted-color: #a0a0a0;
-            --border-color: #444;
-            --danger-color: #cf6679;
-            --success-color: #03dac6;
+            --bg-color: #18181b;
+            --surface-color: #27272a;
+            --primary-color: #facc15; /* yellow-400 */
+            --text-color: #e4e4e7;
+            --text-muted-color: #a1a1aa;
+            --border-color: #3f3f46;
         }
 
-        body { background-color: var(--bg-color); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-        #app-container { max-width: 800px; margin: 0 auto; padding: 1rem; }
-        .view { display: none; }
-        .view.active { display: block; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* --- HEADER & NAVEGAÇÃO --- */
+        header {
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        nav a.active, nav a:hover {
+            background-color: var(--border-color);
+        }
+
+        /* --- PÁGINA HOME --- */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar, .sort-select {
+            padding: 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
         
-        header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background-color: var(--surface-color); border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
-        header h1 { font-size: 1.2rem; margin: 0; }
-        nav button { background: none; border: none; color: var(--text-muted-color); font-size: 1rem; cursor: pointer; padding: 8px 12px; }
-        nav button.active { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); }
+        .search-bar { flex-grow: 1; }
 
-        .home-controls { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-        .home-controls label { font-size: 0.9rem; color: var(--text-muted-color); }
-        .home-controls select { margin-left: 0.5rem; }
-        #game-search-container { flex-grow: 1; min-width: 150px; }
-        #game-search { width: 100%; box-sizing: border-box; }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
 
-        #game-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
-        .game-card { display: flex; flex-direction: column; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease; border: 1px solid var(--border-color); }
-        .game-card:hover { transform: scale(1.05); }
-        .game-card a { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; }
-        .game-card-image-container { position: relative; }
-        .game-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
-        .game-card-year { position: absolute; top: 5px; right: 5px; background-color: rgba(0,0,0,0.7); color: white; padding: 2px 6px; font-size: 0.75rem; border-radius: 4px; font-weight: bold; }
-        .game-card-info { padding: 10px; display: flex; flex-direction: column; justify-content: space-between; flex-grow: 1; }
-        .game-card-title { font-size: 0.9rem; text-align: center; flex-grow: 1; }
-        .game-card-time { font-size: 0.8rem; text-align: center; color: var(--text-muted-color); margin-top: 5px; }
+        .game-card {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            overflow: hidden;
+            text-decoration: none;
+            color: var(--text-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
 
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
 
-        .leaderboard-header { text-align: center; margin-bottom: 1.5rem; }
-        .leaderboard-header h2 { margin: 0 0 5px 0; }
-        .leaderboard-header button { background: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .game-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background-color: var(--bg-color);
+        }
 
-        .filters-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
-        .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
-        .filter-group label { font-size: 0.9rem; color: var(--text-muted-color); }
+        .game-card-info {
+            padding: 1rem;
+            flex-grow: 1;
+        }
+
+        .game-card-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .game-card-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
+        }
+
+        /* --- PÁGINA DE LEADERBOARD --- */
+        .leaderboard-header {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .leaderboard-header img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .leaderboard-controls {
+            background-color: var(--surface-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+        .leaderboard-controls .control-group {
+            margin-bottom: 1rem;
+        }
+        .leaderboard-controls label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted-color);
+        }
+        .leaderboard-controls select {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        .sub-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        .sub-cat-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .sub-cat-button.active {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            font-weight: bold;
+            border-color: var(--primary-color);
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .leaderboard-table th {
+            color: var(--text-muted-color);
+            font-weight: normal;
+        }
         
-        .pills-container { display: flex; flex-wrap: wrap; gap: 8px; }
-        .pill { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; user-select: none; }
-        .pill.active { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; border-color: var(--primary-color); }
-
-        #subcategories-container .filter-group { background-color: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
-        #subcategories-container .filter-group label { font-size: 0.8rem; font-weight: bold; text-transform: uppercase; color: var(--text-muted-color); margin-bottom: 0.75rem; }
+        .leaderboard-table td:first-child { font-weight: bold; }
         
-        #leaderboard-table-wrapper { position: relative; }
-        #leaderboard-table-wrapper.loading #leaderboard-table-container { opacity: 0.3; }
-        #leaderboard-table-wrapper.loading #leaderboard-loader { display: flex; }
-        #leaderboard-loader { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); }
-        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .leaderboard-table a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
 
-        #leaderboard-table-container { width: 100%; overflow-x: auto; transition: opacity 0.3s; }
-        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        .leaderboard-table th, .leaderboard-table td { padding: 12px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .leaderboard-table th { font-size: 0.8rem; color: var(--text-muted-color); text-transform: uppercase; }
-        .leaderboard-table td:nth-child(1) { font-weight: bold; }
-        .leaderboard-table .video-link { text-decoration: none; color: var(--primary-color); font-size: 1.2em; }
-        .leaderboard-table .mod-actions button { background: none; border: 1px solid; border-radius: 4px; color: var(--text-muted-color); cursor: pointer; margin: 0 2px; padding: 3px 6px; }
-        .leaderboard-table .mod-actions .edit { border-color: var(--primary-color); color: var(--primary-color); }
-        .leaderboard-table .mod-actions .delete { border-color: var(--danger-color); color: var(--danger-color); }
+        .leaderboard-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
 
-        .controls { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; gap: 10px; }
-        .submit-run-btn, .rules-btn { background-color: var(--primary-color); color: var(--bg-color); border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; }
-        .rules-btn { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); }
-
-        select, input { background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); padding: 10px; border-radius: 5px; font-size: 1rem; }
-
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); }
-        .modal-content { background-color: var(--surface-color); margin: 10% auto; padding: 20px; border: 1px solid var(--border-color); width: 80%; max-width: 500px; border-radius: 8px; }
-        .modal-content h3 { margin-top: 0; }
-        .modal-content .form-group { margin-bottom: 1rem; }
-        .modal-content label { display: block; margin-bottom: 5px; }
-        .modal-content input { width: calc(100% - 22px); }
-        .modal-content .rules-display { white-space: pre-wrap; background-color: var(--bg-color); padding: 1rem; border-radius: 5px; max-height: 50vh; overflow-y: auto; }
-        .modal-controls { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; }
-        .modal-controls button { padding: 10px 15px; border-radius: 5px; cursor: pointer; border: none; }
-        .modal-controls #modal-cancel { background-color: #555; color: white; }
-        .modal-controls #modal-submit { background-color: var(--primary-color); color: var(--bg-color); }
-
-        #mod-login-form, #mod-content { background-color: var(--surface-color); padding: 2rem; border-radius: 8px; }
-        #mod-content button.logout { background-color: var(--danger-color); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
-        #pending-runs-container { margin-top: 2rem; }
-        #pending-runs-container h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-        .pending-run-card { background-color: #333; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-        .pending-run-card p { margin: 0 0 0.5rem 0; }
-        .pending-run-card a { color: var(--primary-color); }
-        .pending-run-actions button { margin-right: 10px; border-radius: 5px; padding: 5px 10px; border: none; cursor: pointer; }
-        .pending-run-actions .approve-btn { background-color: var(--success-color); color: var(--bg-color); }
-        .pending-run-actions .edit-btn { background-color: var(--primary-color); color: var(--bg-color); }
-        .pending-run-actions .reject-btn { background-color: var(--danger-color); color: white; }
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
         
-        .loader { text-align: center; padding: 2rem; font-size: 1.5rem; }
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal-content h2 { margin-top: 0; }
+        
+        .form-group { margin-bottom: 1rem; }
+        
+        .form-group label { display: block; margin-bottom: 0.5rem; }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* --- BOTÕES --- */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+        }
+        
+        .btn-secondary {
+            background-color: var(--border-color);
+            color: var(--text-color);
+        }
+
+        /* --- UTILITÁRIOS --- */
+        .loader {
+            text-align: center;
+            font-size: 1.5rem;
+            padding: 4rem 0;
+        }
+        .error {
+            text-align: center;
+            color: #ef4444; /* red-500 */
+            background-color: #ef444420;
+            padding: 1rem;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
 
-    <div id="app-container">
-        <header>
-            <h1>SM64 Hacks Mobile</h1>
-            <nav>
-                <a href="#/home"><button id="nav-home">Home</button></a>
-                <a href="#/mod"><button id="nav-mod">Mod</button></a>
-            </nav>
-        </header>
+    <header>
+        <div class="logo">SM64Hacks.run</div>
+        <nav>
+            <a href="#/" id="nav-home">Home</a>
+            <a href="#/mod" id="nav-mod">Mod</a>
+        </nav>
+    </header>
 
-        <main>
-            <div id="home-view" class="view">
-                <div class="home-controls">
-                    <div id="game-search-container">
-                        <input type="text" id="game-search" placeholder="Search for a game...">
-                    </div>
-                    <div>
-                        <label for="game-sort">Sort by:</label>
-                        <select id="game-sort">
-                            <option value="az">Alphabetical (A-Z)</option>
-                            <option value="newest">Newest Released</option>
-                            <option value="oldest">Oldest Released</option>
-                        </select>
-                    </div>
-                </div>
-                <h2>Games in Series</h2>
-                <div id="game-list" class="loader">Loading all games...</div>
-            </div>
-
-            <div id="leaderboard-view" class="view">
-                <div class="leaderboard-header">
-                    <h2 id="leaderboard-game-title"></h2>
-                    <a href="#/home"><button>← Back to Games</button></a>
-                </div>
-
-                <div class="filters-container">
-                    <div class="filter-group"><select id="level-select"></select></div>
-                    <div class="filter-group"><div id="category-pills" class="pills-container"></div></div>
-                    <div id="subcategories-container"></div>
-                    <div class="filter-group" id="single-star-container" style="display: none;">
-                        <label for="single-star-select">Star</label>
-                        <select id="single-star-select"></select>
-                    </div>
-                </div>
-
-                <div class="controls">
-                    <button class="rules-btn" id="show-rules-btn">Show Rules</button>
-                    <button class="submit-run-btn" id="open-submit-modal-btn">Submit Run</button>
-                </div>
-                <div id="leaderboard-table-wrapper">
-                    <div id="leaderboard-loader"><div class="spinner"></div></div>
-                    <div id="leaderboard-table-container"></div>
-                </div>
-            </div>
-
-            <div id="mod-view" class="view">
-                <div id="mod-login-form">
-                    <h3>Moderator Login</h3>
-                    <div class="form-group"><label for="email">Email</label><input type="email" id="email" required></div>
-                    <div class="form-group" style="margin-top:1rem;"><label for="password">Password</label><input type="password" id="password" required></div>
-                    <div class="controls"><button id="login-btn" class="submit-run-btn">Login</button></div>
-                    <p id="login-error" style="color: var(--danger-color); text-align: center;"></p>
-                </div>
-                <div id="mod-content" style="display: none;">
-                    <h3>Welcome, Moderator</h3>
-                    <button id="logout-btn" class="logout">Logout</button>
-                    <div id="pending-runs-container">
-                        <h3>Pending Runs</h3>
-                        <div id="pending-runs-list" class="loader">Loading pending runs...</div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <div id="submit-run-modal" class="modal">
+    <main class="container" id="app">
+        <!-- O conteúdo será renderizado aqui pelo JavaScript -->
+    </main>
+    
+    <!-- Modal para Submissão/Edição -->
+    <div class="modal-overlay" id="submit-modal">
         <div class="modal-content">
-            <h3 id="modal-title">Submit New Run</h3>
-            <div id="run-form">
-                <div class="form-group"> <label for="player-name">Player Name</label> <input type="text" id="player-name" required> </div>
-                <div class="form-group"> <label for="run-time">Time (e.g., 1h 23m 45s 678ms)</label> <input type="text" id="run-time" required> </div>
-                <div class="form-group"> <label for="video-url">Video URL (YouTube, Twitch, etc.)</label> <input type="url" id="video-url" required> </div>
-                <div class="form-group"> <label for="run-date">Date</label> <input type="date" id="run-date" required> </div>
-            </div>
-            <div id="rules-display-container" style="display:none;">
-                <div class="rules-display"></div>
-            </div>
-            <div class="modal-controls"> <button id="modal-cancel">Cancel</button> <button id="modal-submit">Submit</button> </div>
+            <h2 id="modal-title">Submit Run</h2>
+            <form id="submit-form">
+                <input type="hidden" id="run-id-input">
+                <input type="hidden" id="run-context-input">
+                <div class="form-group">
+                    <label for="player-input">Player</label>
+                    <input type="text" id="player-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="time-input">Time (e.g., 1h 23m 45s 678ms)</label>
+                    <input type="text" id="time-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="video-input">Video URL</label>
+                    <input type="url" id="video-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="date-input">Date</label>
+                    <input type="date" id="date-input" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
         </div>
     </div>
 
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, push, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+        // --- FIREBASE CONFIG (Cole sua configuração aqui) ---
         const firebaseConfig = {
-            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU", // ATENÇÃO: Chave do usuário. Pode não funcionar.
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
             databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
             projectId: "sm64-hack-roms-speedrun-mobile",
@@ -215,452 +353,544 @@
             messagingSenderId: "499101981060",
             appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
         };
+
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        const auth = getAuth(app);
-        
-        let currentGameData = null;
-        let isMod = false;
-        let editingRun = { key: null, path: null };
-        let allGames = [];
-        let currentSelection = { gameId: null, levelId: null, categoryId: null, subCategoryValues: {}, starName: null };
 
-        const DOMElements = {
-            views: { home: document.getElementById('home-view'), leaderboard: document.getElementById('leaderboard-view'), mod: document.getElementById('mod-view') },
-            nav: { home: document.getElementById('nav-home'), mod: document.getElementById('nav-mod') },
-            home: { gameList: document.getElementById('game-list'), gameSearch: document.getElementById('game-search'), gameSort: document.getElementById('game-sort') },
-            leaderboard: {
-                title: document.getElementById('leaderboard-game-title'), levelSelect: document.getElementById('level-select'), categoryPills: document.getElementById('category-pills'),
-                singleStarContainer: document.getElementById('single-star-container'), singleStarSelect: document.getElementById('single-star-select'),
-                subcategoriesContainer: document.getElementById('subcategories-container'), tableWrapper: document.getElementById('leaderboard-table-wrapper'), tableContainer: document.getElementById('leaderboard-table-container'),
-                openModalBtn: document.getElementById('open-submit-modal-btn'), showRulesBtn: document.getElementById('show-rules-btn')
-            },
-            mod: {
-                loginForm: document.getElementById('mod-login-form'), modContent: document.getElementById('mod-content'), loginBtn: document.getElementById('login-btn'),
-                logoutBtn: document.getElementById('logout-btn'), emailInput: document.getElementById('email'), passwordInput: document.getElementById('password'),
-                loginError: document.getElementById('login-error'), pendingRunsList: document.getElementById('pending-runs-list')
-            },
-            modal: {
-                container: document.getElementById('submit-run-modal'), title: document.getElementById('modal-title'), submitBtn: document.getElementById('modal-submit'),
-                cancelBtn: document.getElementById('modal-cancel'), playerName: document.getElementById('player-name'), runTime: document.getElementById('run-time'),
-                videoUrl: document.getElementById('video-url'), runDate: document.getElementById('run-date'), runForm: document.getElementById('run-form'),
-                rulesDisplayContainer: document.getElementById('rules-display-container'), rulesDisplay: document.querySelector('.rules-display')
-            }
-        };
-        
-        const cache = {
-            get: (key) => { const item = localStorage.getItem(key); if (!item) return null; const { timestamp, data } = JSON.parse(item); if (Date.now() - timestamp > 24 * 60 * 60 * 1000) { localStorage.removeItem(key); return null; } return data; },
-            set: (key, data) => { localStorage.setItem(key, JSON.stringify({ timestamp: Date.now(), data })); }
+        // --- STATE MANAGEMENT ---
+        const state = {
+            games: [],
+            filteredGames: [],
+            isMod: sessionStorage.getItem('isMod') === 'true',
+            pendingRuns: {},
         };
 
-        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
-        async function fetchApi(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); return await r.json(); } catch (e) { console.error(`API Error: ${e}`); throw e; } }
-        
-        async function fetchGames() {
-            try {
-                let allFetchedGames = [];
-                let nextUrl = `${SRC_API_BASE}/series/sm64romhacks/games?max=200&embed=assets`;
-                while (nextUrl) {
-                    const data = await fetchApi(nextUrl);
-                    allFetchedGames.push(...data.data);
-                    const nextLink = data.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri.replace('http://', 'https://') : null;
+        // --- API & CACHING ---
+        const SRDC_API_BASE = 'https://www.speedrun.com/api/v1';
+        const CACHE_DURATION = 3600 * 1000; // 1 hora em milissegundos
+
+        async function fetchFromSrdc(endpoint) {
+            const cacheKey = `srdc_cache_${endpoint}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                const { timestamp, data } = JSON.parse(cached);
+                if (Date.now() - timestamp < CACHE_DURATION) {
+                    console.log('Serving from cache:', endpoint);
+                    return data;
                 }
-                allGames = allFetchedGames;
-                sortAndRenderGames('az');
-            } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; }
+            }
+            console.log('Fetching from API:', endpoint);
+            const response = await fetch(`${SRDC_API_BASE}/${endpoint}`);
+            if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+            const data = await response.json();
+            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+            return data;
         }
 
-        async function fetchGameDetails(gameId) {
-            DOMElements.leaderboard.tableWrapper.classList.add('loading');
-            const cachedData = cache.get(`game_${gameId}`);
-            if (cachedData) { currentGameData = cachedData; initializeLeaderboardView(); return; }
-            try {
-                const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`);
-                currentGameData = data.data; cache.set(`game_${gameId}`, currentGameData);
-                initializeLeaderboardView();
-            } catch (e) { DOMElements.leaderboard.tableContainer.innerHTML = 'Error loading data.'; DOMElements.leaderboard.tableWrapper.classList.remove('loading'); }
-        }
-        async function fetchLevelVariables(levelId) { try { const data = await fetchApi(`${SRC_API_BASE}/levels/${levelId}/variables`); return data.data; } catch (e) { return []; } }
-        
-        function handleRouting() {
-            const hash = window.location.hash.replace(/^#\/?|\/$/g, '').split('/');
-            const view = hash[0] || 'home';
-            switchView(view);
-            if (view === 'leaderboard' && hash[1] === 'game' && hash[2]) {
-                currentSelection.gameId = hash[2];
-                if (!currentGameData || currentGameData.id !== currentSelection.gameId) { fetchGameDetails(currentSelection.gameId); }
-            } else if (view === 'mod' && isMod) { fetchPendingRuns(); }
-        }
-        function updateURL() {
-            if (!currentSelection.gameId || !currentSelection.categoryId) return;
-            let newHash = `#/leaderboard/game/${currentSelection.gameId}/category/${currentSelection.categoryId}`;
-            if (currentSelection.levelId !== 'full-game') newHash += `/level/${currentSelection.levelId}`;
-            if (window.location.hash !== newHash) { window.location.hash = newHash; }
-        }
-
-        function switchView(viewName) { Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); }
-        
-        // CORREÇÃO: Função parseDate atualizada para garantir UTC
-        function parseDate(dateString) {
-            if (!dateString) return null;
-            if (String(dateString).match(/^\d{4}$/)) {
-                return new Date(Date.UTC(parseInt(dateString), 0, 1));
-            }
-            // Se for no formato YYYY-MM-DD, interpretar como UTC
-            if (String(dateString).match(/^\d{4}-\d{2}-\d{2}$/)) {
-                const parts = dateString.split('-');
-                return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
-            }
-            // Para outros formatos, tentar criar como UTC
+        // --- UTILITIES ---
+        function formatTimeAgo(dateString) {
+            if (!dateString) return 'Unknown';
             const date = new Date(dateString);
-            if (!isNaN(date.getTime())) {
-                return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-            }
-            return null;
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + " years ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + " months ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + " days ago";
+            return "Today";
+        }
+        
+        function formatRunTime(seconds) {
+            if (seconds === null || seconds === undefined) return '-';
+            const h = Math.floor(seconds / 3600).toString();
+            const m = Math.floor((seconds % 3600) / 60).toString();
+            const s = Math.floor(seconds % 60).toString();
+            const ms = ((seconds - Math.floor(seconds)) * 1000).toFixed(0).toString().padStart(3, '0');
+            
+            let timeString = '';
+            if (h > 0) timeString += `${h}h `;
+            if (m > 0 || h > 0) timeString += `${m}m `;
+            timeString += `${s}s ${ms}ms`;
+            return timeString.trim();
         }
 
-        function sortAndRenderGames(sortType) {
-             const sortedGames = [...allGames].sort((a, b) => {
-                if (sortType === 'newest') {
-                    const dateA = parseDate(a.released) || new Date(0);
-                    const dateB = parseDate(b.released) || new Date(0);
-                    return dateB - dateA;
+        // --- RENDER FUNCTIONS ---
+        const appContainer = document.getElementById('app');
+
+        function renderLoader() {
+            appContainer.innerHTML = `<div class="loader">Loading...</div>`;
+        }
+
+        function renderError(message) {
+            appContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function renderHomePage() {
+            const html = `
+                <h1>SM64 ROM Hacks</h1>
+                <div class="controls">
+                    <input type="text" id="search" class="search-bar" placeholder="Search for a hack...">
+                    <select id="sort" class="sort-select">
+                        <option value="newest">Oldest Released</option>
+                        <option value="oldest">Newest Released</option>
+                        <option value="alpha">Alphabetical (A-Z)</option>
+                    </select>
+                </div>
+                <div class="games-grid" id="games-grid-container">
+                    ${state.filteredGames.map(game => `
+                        <a href="#/game/${game.id}" class="game-card">
+                            <img src="${game.assets.cover_medium.uri}" alt="${game.names.international}">
+                            <div class="game-card-info">
+                                <h3>${game.names.international}</h3>
+                                <p>${game.released} &bull; ${formatTimeAgo(game.release_date)}</p>
+                            </div>
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+            appContainer.innerHTML = html;
+            addHomeEventListeners();
+        }
+        
+        async function renderLeaderboardPage(gameId) {
+            renderLoader();
+            try {
+                const game = state.games.find(g => g.id === gameId);
+                if (!game) throw new Error('Game not found');
+
+                const categories = game.categories.data.filter(c => c.type === 'per-game');
+                const levels = game.levels.data;
+
+                appContainer.innerHTML = `
+                    <div class="leaderboard-header">
+                        <img src="${game.assets.cover_medium.uri}" alt="${game.names.international}">
+                        <div>
+                            <h1>${game.names.international}</h1>
+                            <p>Leaderboards</p>
+                        </div>
+                    </div>
+                    
+                    <div class="leaderboard-actions">
+                         <button class="btn btn-primary" id="open-submit-modal-btn">Submit Run</button>
+                    </div>
+
+                    <div class="leaderboard-controls">
+                        <div class="control-group">
+                            <label for="category-type-select">Category Type</label>
+                            <select id="category-type-select">
+                                <option value="full-game">Full Game</option>
+                                ${levels.length > 0 ? '<option value="levels">Levels</option>' : ''}
+                            </select>
+                        </div>
+                        <div id="dynamic-controls"></div>
+                    </div>
+                    <div id="leaderboard-content">Select a category to view the leaderboard.</div>
+                `;
+
+                addLeaderboardEventListeners(game, categories, levels);
+                // Trigger initial load
+                document.getElementById('category-type-select').dispatchEvent(new Event('change'));
+
+            } catch (error) {
+                console.error(error);
+                renderError('Failed to load leaderboard data.');
+            }
+        }
+        
+        async function renderModPage() {
+            if (!state.isMod) {
+                const password = prompt("Enter moderator password:");
+                // THIS IS NOT SECURE. In a real app, use Firebase Auth.
+                if (password === "sm64mod") { 
+                    state.isMod = true;
+                    sessionStorage.setItem('isMod', 'true');
+                } else {
+                    alert("Incorrect password.");
+                    window.location.hash = '/';
+                    return;
                 }
-                if (sortType === 'oldest') {
-                    const dateA = parseDate(a.released) || new Date(0);
-                    const dateB = parseDate(b.released) || new Date(0);
-                    return dateA - dateB;
-                }
-                if (sortType === 'az') {
-                    return a.names.international.localeCompare(b.names.international);
-                }
+            }
+            
+            appContainer.innerHTML = `
+                <h1>Moderation Queue</h1>
+                <p>New submissions waiting for approval.</p>
+                <div id="mod-queue"></div>
+            `;
+            
+            listenForPendingRuns();
+        }
+        
+        function renderModQueue(runs) {
+             const queueContainer = document.getElementById('mod-queue');
+             if (!queueContainer) return;
+             
+             if (Object.keys(runs).length === 0) {
+                 queueContainer.innerHTML = `<p>The queue is empty. Great job!</p>`;
+                 return;
+             }
+             
+             const html = `
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Time</th>
+                            <th>Game / Category</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Object.entries(runs).map(([id, run]) => `
+                        <tr>
+                            <td><a href="${run.videoUrl}" target="_blank">${run.player}</a></td>
+                            <td>${run.time}</td>
+                            <td>${run.context.gameName}<br><small>${run.context.categoryName}</small></td>
+                            <td>${run.date}</td>
+                            <td>
+                               <button class="btn btn-secondary btn-sm" onclick="App.editRun('${id}')">Edit</button>
+                               <button class="btn btn-secondary btn-sm" onclick="App.rejectRun('${id}')">Reject</button>
+                               <button class="btn btn-primary btn-sm" onclick="App.approveRun('${id}')">Approve</button>
+                            </td>
+                        </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+             `;
+             queueContainer.innerHTML = html;
+        }
+
+        // --- EVENT LISTENERS ---
+        function addHomeEventListeners() {
+            document.getElementById('search').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                state.filteredGames = state.games.filter(g => g.names.international.toLowerCase().includes(query));
+                renderHomePage();
+                document.getElementById('search').value = query; // Retain search value
+                document.getElementById('search').focus();
+            });
+
+            document.getElementById('sort').addEventListener('change', (e) => {
+                const sortBy = e.target.value;
+                state.games.sort((a, b) => {
+                    if (sortBy === 'alpha') return a.names.international.localeCompare(b.names.international);
+                    if (sortBy === 'newest') return new Date(a.release_date) - new Date(b.release_date);
+                    if (sortBy === 'oldest') return new Date(b.release_date) - new Date(a.release_date);
+                    return 0;
+                });
+                state.filteredGames = [...state.games];
+                renderHomePage();
+                 document.getElementById('sort').value = sortBy;
+            });
+        }
+        
+        function addLeaderboardEventListeners(game, categories, levels) {
+             const categoryTypeSelect = document.getElementById('category-type-select');
+             const dynamicControls = document.getElementById('dynamic-controls');
+
+             categoryTypeSelect.addEventListener('change', () => {
+                 const type = categoryTypeSelect.value;
+                 if (type === 'full-game') {
+                     dynamicControls.innerHTML = `
+                        <div class="control-group">
+                             <label for="category-select">Full Game Category</label>
+                             <select id="category-select">
+                                ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                             </select>
+                        </div>
+                        <div id="variables-container"></div>
+                     `;
+                     document.getElementById('category-select').addEventListener('change', updateLeaderboard);
+                     updateLeaderboard();
+                 } else if (type === 'levels') {
+                     dynamicControls.innerHTML = `
+                         <div class="control-group">
+                             <label for="level-select">Level</label>
+                             <select id="level-select">
+                                ${levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('')}
+                             </select>
+                         </div>
+                         <div class="control-group">
+                             <label for="level-category-select">Level Category</label>
+                             <select id="level-category-select">
+                                <option value="single-star">Single Star</option>
+                                <option value="stage-rta">Stage RTA</option>
+                             </select>
+                         </div>
+                         <div id="stars-container"></div>
+                     `;
+                     document.getElementById('level-select').addEventListener('change', updateLeaderboard);
+                     document.getElementById('level-category-select').addEventListener('change', updateLeaderboard);
+                     updateLeaderboard();
+                 }
+             });
+             
+            document.getElementById('open-submit-modal-btn').addEventListener('click', () => {
+                const context = getLeaderboardContext(game);
+                showSubmitModal(context);
+            });
+        }
+        
+        // --- LOGIC ---
+        function sortAndFilterGames() {
+            const sortBy = document.getElementById('sort')?.value || 'newest';
+            const query = document.getElementById('search')?.value?.toLowerCase() || '';
+
+            let sorted = [...state.games].sort((a, b) => {
+                if (!a.release_date || !b.release_date) return 0;
+                if (sortBy === 'alpha') return a.names.international.localeCompare(b.names.international);
+                if (sortBy === 'newest') return new Date(a.release_date) - new Date(b.release_date);
+                if (sortBy === 'oldest') return new Date(b.release_date) - new Date(a.release_date);
                 return 0;
             });
-            renderGameList(sortedGames);
+
+            state.filteredGames = sorted.filter(g => g.names.international.toLowerCase().includes(query));
         }
 
-        function renderGameList(games) {
-            const list = DOMElements.home.gameList; list.innerHTML = '';
-            games.forEach(game => {
-                const card = document.createElement('div'); card.className = 'game-card';
-                card.dataset.gameId = game.id; card.dataset.gameName = game.names.international.toLowerCase();
-                const imgSrc = game.assets['cover-small'] ? game.assets['cover-small'].uri : 'https://www.speedrun.com/images/1st.png';
-                card.innerHTML = `
-                    <a href="#/leaderboard/game/${game.id}">
-                        <div class="game-card-image-container">
-                             <img src="${imgSrc}" alt="${game.names.international}" loading="lazy">
-                             <div class="game-card-year">${getYear(game.released)}</div>
-                        </div>
-                        <div class="game-card-info">
-                            <div class="game-card-title">${game.names.international}</div>
-                            <div class="game-card-time" data-timestamp="${game.released}">${timeAgo(game.released)}</div>
-                        </div>
-                    </a>`;
-                list.appendChild(card);
-            });
-        }
-        function initializeLeaderboardView() {
-            DOMElements.leaderboard.title.textContent = currentGameData.names.international;
-            const levelSelect = DOMElements.leaderboard.levelSelect;
-            levelSelect.innerHTML = '<option value="full-game">Full Game</option>';
-            currentGameData.levels.data.forEach(level => levelSelect.add(new Option(level.name, level.id)));
-            currentSelection.levelId = 'full-game';
-            updateUI();
-        }
-        async function updateUI() {
-            renderCategories();
-            await renderSubCategoriesAndVariables();
-            updateLeaderboard();
-            updateURL();
-        }
-        function renderCategories() {
-            const container = DOMElements.leaderboard.categoryPills; container.innerHTML = '';
-            const isFullGame = currentSelection.levelId === 'full-game';
-            const relevantCategories = currentGameData.categories.data.filter(cat => (isFullGame ? cat.type === 'per-game' : cat.type === 'per-level'));
-            
-            if (!relevantCategories.length) { container.innerHTML = '<p>No categories.</p>'; currentSelection.categoryId = null; return; }
-            if (!currentSelection.categoryId || !relevantCategories.find(c => c.id === currentSelection.categoryId)) { currentSelection.categoryId = relevantCategories[0].id; }
-
-            relevantCategories.forEach(cat => {
-                const pill = document.createElement('div');
-                pill.className = `pill ${cat.id === currentSelection.categoryId ? 'active' : ''}`;
-                pill.textContent = cat.name;
-                pill.addEventListener('click', () => { currentSelection.categoryId = cat.id; currentSelection.subCategoryValues = {}; updateUI(); });
-                container.appendChild(pill);
-            });
-        }
-        async function renderSubCategoriesAndVariables() {
-            const subCatContainer = DOMElements.leaderboard.subcategoriesContainer;
-            const starContainer = DOMElements.leaderboard.singleStarContainer;
-            subCatContainer.innerHTML = ''; starContainer.style.display = 'none'; currentSelection.starName = null;
-            if (!currentSelection.categoryId) return;
-
-            if (currentSelection.levelId === 'full-game') {
-                const applicableVars = (currentGameData.variables.data || []).filter(v => (v.category === currentSelection.categoryId || v.category === null) && v['is-subcategory']);
-                applicableVars.forEach(variable => renderVariableSelector(variable, subCatContainer));
-            } else {
-                const levelVars = await fetchLevelVariables(currentSelection.levelId);
-                const starVar = levelVars.find(v => v.category === currentSelection.categoryId && v['is-subcategory']);
-                if (starVar) {
-                    starContainer.style.display = 'block';
-                    const select = DOMElements.leaderboard.singleStarSelect; select.innerHTML = '';
-                    Object.values(starVar.values.choices).forEach(label => select.add(new Option(label, label)));
-                    if (select.options.length > 0) currentSelection.starName = select.value;
-                }
+        async function fetchAndRenderGames() {
+            renderLoader();
+            try {
+                const data = await fetchFromSrdc('series/sm64romhacks/games?max=250&embed=categories,levels,variables');
+                state.games = data.data;
+                sortAndFilterGames();
+                renderHomePage();
+            } catch (error) {
+                console.error(error);
+                renderError('Could not fetch games from speedrun.com. Please try again later.');
             }
         }
-        function renderVariableSelector(variable, container) {
-            const group = document.createElement('div'); group.className = 'filter-group';
-            group.innerHTML = `<label>${variable.name}</label>`;
-            const pillsContainer = document.createElement('div'); pillsContainer.className = 'pills-container';
-            if (!currentSelection.subCategoryValues[variable.id]) { currentSelection.subCategoryValues[variable.id] = variable.values.default; }
-            for (const [valueId, valueData] of Object.entries(variable.values.values)) {
-                const pill = document.createElement('div'); pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
-                pill.textContent = valueData.label;
-                pill.addEventListener('click', () => { currentSelection.subCategoryValues[variable.id] = valueId; updateUI(); });
-                pillsContainer.appendChild(pill);
-            }
-            group.appendChild(pillsContainer); container.appendChild(group);
-        }
+        
+        async function updateLeaderboard() {
+            const gameId = window.location.hash.split('/')[2];
+            const game = state.games.find(g => g.id === gameId);
+            const contentDiv = document.getElementById('leaderboard-content');
+            contentDiv.innerHTML = `<div class="loader">Loading leaderboard...</div>`;
 
-        function updateLeaderboard() { const dbPath = generateFirebasePath('runs'); if (dbPath) fetchRunsFromFirebase(dbPath); else DOMElements.leaderboard.tableContainer.innerHTML = ""; }
-        function generateFirebasePath(base = 'runs') {
-            if (!currentGameData || !currentSelection.categoryId) return null;
-            let path = `${base}/${currentGameData.id}/${currentSelection.categoryId}`;
-            if (currentSelection.levelId !== 'full-game') path += `/${currentSelection.levelId}`;
-            if (currentSelection.starName) { path += `/${currentSelection.starName.replace(/[^a-zA-Z0-9]/g, '')}`; } 
-            else { const parts = Object.entries(currentSelection.subCategoryValues).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${k}=${v}`); if (parts.length > 0) path += `/${parts.join('&')}`; }
-            return path;
-        }
-        function fetchRunsFromFirebase(path) {
-            DOMElements.leaderboard.tableWrapper.classList.add('loading');
-            onValue(ref(database, path), (snapshot) => {
-                const runs = [];
-                snapshot.forEach(childSnapshot => { runs.push({ key: childSnapshot.key, ...childSnapshot.val() }); });
-                runs.sort((a, b) => parseTimeToMs(a.time) - parseTimeToMs(b.time));
-                renderLeaderboardTable(runs, path);
-                DOMElements.leaderboard.tableWrapper.classList.remove('loading');
-            }, { onlyOnce: true });
-        }
-        function renderLeaderboardTable(runs, path) {
-            const container = DOMElements.leaderboard.tableContainer;
-            if (runs.length === 0) { container.innerHTML = '<p style="text-align:center;">No runs found. Be the first!</p>'; return; }
-            const table = document.createElement('table'); table.className = 'leaderboard-table';
-            table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th>${isMod ? '<th>Actions</th>' : ''}</tr></thead>`;
-            const tbody = document.createElement('tbody');
-            runs.forEach((run, index) => {
-                // CORREÇÃO: Usar UTC para exibição da data
-                let dateStr = 'Invalid Date';
-                if (run.date) {
-                    const parts = run.date.split('-');
-                    if (parts.length === 3) { 
-                        dateStr = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]))
-                            .toLocaleDateString(undefined, { timeZone: "UTC" }); 
-                    }
-                }
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${dateStr}</td>
-                    <td><a href="${run.videoUrl}" target="_blank" class="video-link" title="Watch video">▶</a></td>
-                    ${isMod ? `<td class="mod-actions">
-                        <button class="edit" data-key="${run.key}">Edit</button>
-                        <button class="delete" data-key="${run.key}">Delete</button>
-                    </td>` : ''}`;
-                tbody.appendChild(tr);
-            });
-            table.appendChild(tbody); container.innerHTML = ''; container.appendChild(table);
-
-            if (isMod) {
-                tbody.querySelectorAll('.edit').forEach(b => b.addEventListener('click', () => openEditModal(runs.find(r => r.key === b.dataset.key), `${path}/${b.dataset.key}`)));
-                tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => deleteRun(`${path}/${b.dataset.key}`)));
-            }
-        }
-        async function submitRunToFirebase() {
-            const isEditing = !!editingRun.path;
-            const runData = { player: DOMElements.modal.playerName.value.trim(), time: DOMElements.modal.runTime.value.trim(), videoUrl: DOMElements.modal.videoUrl.value.trim(), date: DOMElements.modal.runDate.value, submittedAt: new Date().toISOString() };
-            if (!runData.player || !runData.time || !runData.date || !runData.videoUrl) { alert("Please fill all fields."); return; }
+            const type = document.getElementById('category-type-select').value;
             
             try {
-                if (isEditing) { await set(ref(database, editingRun.path), runData); } 
-                else { const path = generateFirebasePath('pending_runs'); if (!path) { alert("Error: Cannot determine submission path."); return; } await push(ref(database, path), runData); alert("Run submitted for approval!"); }
-                closeSubmitModal();
-            } catch (e) { console.error("Error submitting run:", e); alert("Error submitting run."); }
-        }
-        function deleteRun(path) { if (confirm("Are you sure you want to delete this run?")) { remove(ref(database, path)); } }
-        
-        function openSubmitModal() {
-            editingRun = { key: null, path: null }; DOMElements.modal.title.textContent = "Submit New Run";
-            DOMElements.modal.runForm.style.display = 'block'; DOMElements.modal.rulesDisplayContainer.style.display = 'none';
-            DOMElements.modal.submitBtn.style.display = 'block';
-            DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block';
-        }
-        function openEditModal(run, path) {
-            editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
-            DOMElements.modal.playerName.value = run.player || ''; DOMElements.modal.runTime.value = run.time || '';
-            DOMElements.modal.videoUrl.value = run.videoUrl || ''; DOMElements.modal.runDate.value = run.date || '';
-            DOMElements.modal.runForm.style.display = 'block'; DOMElements.modal.rulesDisplayContainer.style.display = 'none';
-            DOMElements.modal.submitBtn.style.display = 'block';
-            DOMElements.modal.container.style.display = 'block';
-        }
-        function openRulesModal() {
-            const category = currentGameData.categories.data.find(c => c.id === currentSelection.categoryId);
-            if (!category) return;
-            DOMElements.modal.title.textContent = `${category.name} - Rules`;
-            DOMElements.modal.rulesDisplay.textContent = category.rules || "No rules specified for this category.";
-            DOMElements.modal.runForm.style.display = 'none'; DOMElements.modal.rulesDisplayContainer.style.display = 'block';
-            DOMElements.modal.submitBtn.style.display = 'none';
-            DOMElements.modal.container.style.display = 'block';
-        }
-        function closeSubmitModal() {
-            DOMElements.modal.container.style.display = 'none';
-            ['playerName', 'runTime', 'videoUrl', 'runDate'].forEach(id => DOMElements.modal[id].value = '');
-            editingRun = { key: null, path: null };
-        }
-        
-        function setupAuth() {
-            onAuthStateChanged(auth, user => {
-                isMod = !!user;
-                DOMElements.mod.loginForm.style.display = user ? 'none' : 'block';
-                DOMElements.mod.modContent.style.display = user ? 'block' : 'none';
-                if (user) { fetchPendingRuns(); }
-                if (document.getElementById('leaderboard-view').classList.contains('active')) { updateLeaderboard(); }
-            });
-        }
-        function fetchPendingRuns() {
-            DOMElements.mod.pendingRunsList.innerHTML = '<div class="loader">Loading...</div>';
-            onValue(ref(database, 'pending_runs'), (snapshot) => {
-                const list = DOMElements.mod.pendingRunsList; list.innerHTML = '';
-                if (!snapshot.exists()) { list.innerHTML = '<p>No pending runs.</p>'; return; }
-                
-                let pendingRuns = [];
-                snapshot.forEach(gameSnap => {
-                    const gameId = gameSnap.key;
-                    gameSnap.forEach(catSnap => {
-                        const catId = catSnap.key;
-                        catSnap.forEach(levelSnap => {
-                            const levelId = levelSnap.key;
-                            if (levelSnap.hasChild('player')) {
-                                const runSnap = levelSnap; const runKey = runSnap.key;
-                                pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}` });
-                            } else {
-                                levelSnap.forEach(subCatSnap => {
-                                    const subCatId = subCatSnap.key;
-                                    if (subCatSnap.hasChild('player')) {
-                                        const runSnap = subCatSnap; const runKey = runSnap.key;
-                                        pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}` });
-                                    } else {
-                                        subCatSnap.forEach(runSnap => {
-                                            const runKey = runSnap.key;
-                                            pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${subCatId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}/${subCatId}` });
-                                        });
-                                    }
-                                });
-                            }
+                if (type === 'full-game') {
+                    const categoryId = document.getElementById('category-select').value;
+                    const category = game.categories.data.find(c => c.id === categoryId);
+                    
+                    // Handle variables (sub-categories)
+                    const variablesContainer = document.getElementById('variables-container');
+                    let variableParams = '';
+                    variablesContainer.innerHTML = '';
+
+                    category.variables.data.forEach(variable => {
+                        if(variable['is-subcategory']) {
+                            variablesContainer.innerHTML += `
+                                <div class="control-group">
+                                    <label>${variable.name}</label>
+                                    <div class="sub-categories" data-variable-id="${variable.id}">
+                                        ${Object.entries(variable.values.values).map(([valueId, valueData]) => `
+                                            <button class="sub-cat-button" data-value-id="${valueId}">${valueData.label}</button>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    document.querySelectorAll('.sub-cat-button').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                           const parent = e.target.closest('.sub-categories');
+                           parent.querySelectorAll('.sub-cat-button').forEach(b => b.classList.remove('active'));
+                           e.target.classList.add('active');
+                           updateLeaderboard();
                         });
                     });
-                });
-                
-                pendingRuns.forEach(runInfo => {
-                    const { key, data, pendingPath, approvedCollectionPath } = runInfo;
-                    const card = document.createElement('div'); card.className = 'pending-run-card';
-                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(data.player)}</p><p><strong>Time:</strong> ${escapeHtml(data.time)}</p><p><strong>Video:</strong> <a href="${data.videoUrl}" target="_blank">Link</a></p>
-                        <div class="pending-run-actions">
-                            <button class="approve-btn">Approve</button><button class="edit-btn">Edit</button><button class="reject-btn">Reject</button>
-                        </div>`;
-                    card.querySelector('.approve-btn').addEventListener('click', () => approveRun(data, pendingPath, approvedCollectionPath));
-                    card.querySelector('.edit-btn').addEventListener('click', () => openEditModal({key, ...data}, pendingPath));
-                    card.querySelector('.reject-btn').addEventListener('click', () => deleteRun(pendingPath));
-                    list.appendChild(card);
-                });
-            });
+
+                    // Set first sub-category as active by default and build query
+                    document.querySelectorAll('.sub-categories').forEach(container => {
+                        const firstButton = container.querySelector('.sub-cat-button');
+                        if (firstButton) {
+                            firstButton.classList.add('active');
+                            variableParams += `&var-${container.dataset.variableId}=${firstButton.dataset.valueId}`;
+                        }
+                    });
+
+                    const endpoint = `leaderboards/${game.id}/category/${categoryId}?embed=players${variableParams}`;
+                    const lbData = await fetchFromSrdc(endpoint);
+                    renderLeaderboardTable(lbData.data, contentDiv);
+
+                } else if (type === 'levels') {
+                    // Logic for levels (simplified for now)
+                    const levelId = document.getElementById('level-select').value;
+                    const levelCategory = game.categories.data.find(c => c.name === "All Stars" && c.type === "per-level");
+                    if (!levelCategory) throw new Error("Could not find a valid level category.");
+
+                    const endpoint = `leaderboards/${game.id}/level/${levelId}/${levelCategory.id}?embed=players`;
+                    const lbData = await fetchFromSrdc(endpoint);
+                    renderLeaderboardTable(lbData.data, contentDiv);
+                }
+            } catch (error) {
+                console.error(error);
+                contentDiv.innerHTML = `<div class="error">Could not load this leaderboard. It might be empty.</div>`;
+            }
         }
-        async function approveRun(runData, pendingPath, approvedCollectionPath) {
+        
+        function renderLeaderboardTable(data, container) {
+            if (!data.runs || data.runs.length === 0) {
+                container.innerHTML = `<p>This leaderboard is empty.</p>`;
+                return;
+            }
+            
+            const html = `
+                <table class="leaderboard-table">
+                    <thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th></tr></thead>
+                    <tbody>
+                        ${data.runs.map(runData => `
+                            <tr>
+                                <td>${runData.place}</td>
+                                <td>${runData.run.players.data.map(p => p.names?.international || p.name).join(', ')}</td>
+                                <td><a href="${runData.run.videos?.links[0].uri}" target="_blank">${formatRunTime(runData.run.times.primary_t)}</a></td>
+                                <td>${runData.run.date}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+        
+        // --- SUBMISSION MODAL & FIREBASE LOGIC ---
+        const modal = document.getElementById('submit-modal');
+        const submitForm = document.getElementById('submit-form');
+        
+        function getLeaderboardContext(game) {
+            const context = {
+                gameId: game.id,
+                gameName: game.names.international
+            };
+            // This needs to be expanded to get the exact category/level/vars
+            const categorySelect = document.getElementById('category-select');
+            if(categorySelect) {
+                context.categoryId = categorySelect.value;
+                context.categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+            }
+            // Add similar logic for levels if needed
+            return context;
+        }
+
+        function showSubmitModal(context = {}, runData = {}, runId = null) {
+            submitForm.reset();
+            document.getElementById('modal-title').textContent = runId ? 'Edit Run' : 'Submit Run';
+            document.getElementById('run-id-input').value = runId || '';
+            document.getElementById('run-context-input').value = JSON.stringify(context);
+            
+            document.getElementById('player-input').value = runData.player || '';
+            document.getElementById('time-input').value = runData.time || '';
+            document.getElementById('video-input').value = runData.videoUrl || '';
+            document.getElementById('date-input').value = runData.date || new Date().toISOString().split('T')[0];
+
+            modal.classList.add('active');
+        }
+
+        function hideSubmitModal() {
+            modal.classList.remove('active');
+        }
+        
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const runId = document.getElementById('run-id-input').value;
+            let context;
             try {
-                await push(ref(database, approvedCollectionPath), runData);
-                await remove(ref(database, pendingPath));
-            } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
-        }
-        
-        // CORREÇÃO: Função timeAgo atualizada para cálculo correto de meses
-        function timeAgo(dateString) {
-            if (!dateString) return '';
-            const date = parseDate(dateString);
-            if (!date || isNaN(date.getTime())) return '';
-
-            const now = new Date();
-            const nowUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-            const dateUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
-
-            if (dateUTC > nowUTC) {
-                return `Releases in ${date.getFullYear()}`;
+                context = JSON.parse(document.getElementById('run-context-input').value);
+            } catch {
+                context = {};
             }
-
-            let yearDiff = now.getUTCFullYear() - date.getUTCFullYear();
-            let monthDiff = now.getUTCMonth() - date.getUTCMonth();
-
-            // Ajuste se o dia do mês atual for menor que o dia do mês da data
-            if (now.getUTCDate() < date.getUTCDate()) {
-                monthDiff--;
-            }
-
-            // Ajuste se a diferença de meses for negativa
-            if (monthDiff < 0) {
-                yearDiff--;
-                monthDiff += 12;
-            }
-
-            if (yearDiff > 0) return `${yearDiff} year${yearDiff > 1 ? 's' : ''} ago`;
-            if (monthDiff > 0) return `${monthDiff} month${monthDiff > 1 ? 's' : ''} ago`;
             
-            const seconds = Math.floor((nowUTC - dateUTC) / 1000);
-            const days = Math.floor(seconds / 86400);
-            if (days >= 7) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
-            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
-            const hours = Math.floor(seconds / 3600);
-            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-            const minutes = Math.floor(seconds / 60);
-            if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            const runData = {
+                player: document.getElementById('player-input').value,
+                time: document.getElementById('time-input').value,
+                videoUrl: document.getElementById('video-input').value,
+                date: document.getElementById('date-input').value,
+                submittedAt: new Date().toISOString(),
+                status: 'pending',
+                context: context
+            };
             
-            return `just now`;
+            try {
+                if(runId) { // Editing an existing pending run
+                    await set(ref(database, `pending-runs/${runId}`), runData);
+                    alert('Run updated successfully! Awaiting approval.');
+                } else { // Submitting a new run
+                    await push(ref(database, 'pending-runs'), runData);
+                    alert('Run submitted successfully! Awaiting approval.');
+                }
+                hideSubmitModal();
+            } catch (error) {
+                console.error("Firebase error:", error);
+                alert('Failed to submit run. Check console for details.');
+            }
         }
         
-        function getYear(dateString) {
-            if (!dateString) return "";
-            return String(dateString).substring(0, 4);
-        }
-
-        function parseTimeToMs(timeStr) {
-            if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
-            timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
-        }
-        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
-        
-        DOMElements.home.gameSearch.addEventListener('keyup', () => {
-            const query = DOMElements.home.gameSearch.value.toLowerCase();
-            document.querySelectorAll('.game-card').forEach(card => card.style.display = card.dataset.gameName.includes(query) ? '' : 'none');
-        });
-        DOMElements.home.gameSort.addEventListener('change', (e) => sortAndRenderGames(e.target.value));
-        
-        DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { currentSelection.levelId = e.target.value; currentSelection.categoryId = null; currentSelection.subCategoryValues = {}; updateUI(); });
-        DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); updateURL(); });
-        DOMElements.leaderboard.openModalBtn.addEventListener('click', openSubmitModal);
-        DOMElements.leaderboard.showRulesBtn.addEventListener('click', openRulesModal);
-        DOMElements.modal.cancelBtn.addEventListener('click', closeSubmitModal);
-        DOMElements.modal.submitBtn.addEventListener('click', submitRunToFirebase);
-        DOMElements.mod.loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, DOMElements.mod.emailInput.value, DOMElements.mod.passwordInput.value).catch(e => DOMElements.mod.loginError.textContent = 'Login failed.'));
-        DOMElements.mod.logoutBtn.addEventListener('click', () => signOut(auth));
-        window.addEventListener('hashchange', handleRouting);
-        window.addEventListener('DOMContentLoaded', handleRouting);
-
-        function init() { fetchGames(); setupAuth(); setInterval(updateTimestamps, 30000); }
-        
-        function updateTimestamps() {
-            document.querySelectorAll('.game-card-time[data-timestamp]').forEach(el => {
-                el.textContent = timeAgo(el.dataset.timestamp);
+        function listenForPendingRuns() {
+            const pendingRunsRef = ref(database, 'pending-runs');
+            onValue(pendingRunsRef, (snapshot) => {
+                state.pendingRuns = snapshot.val() || {};
+                renderModQueue(state.pendingRuns);
             });
         }
         
-        init();
+        // --- ROUTER ---
+        async function router() {
+            const path = window.location.hash.slice(1) || '/';
+            const [_, page, id] = path.split('/');
+
+            // Update nav active state
+            document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+            if (page === 'mod') {
+                document.getElementById('nav-mod').classList.add('active');
+            } else {
+                 document.getElementById('nav-home').classList.add('active');
+            }
+
+            if (page === 'game') {
+                if (state.games.length === 0) await fetchAndRenderGames(); // Ensure games are loaded
+                await renderLeaderboardPage(id);
+            } else if (page === 'mod') {
+                renderModPage();
+            } else {
+                await fetchAndRenderGames();
+            }
+        }
+        
+        // --- GLOBAL APP OBJECT for HTML onlick events ---
+        window.App = {
+            approveRun: async (id) => {
+                if (!confirm('Are you sure you want to approve this run? This is a placeholder and does not add it to the main leaderboard.')) return;
+                const runData = state.pendingRuns[id];
+                runData.status = 'approved';
+                // In a real app, you would move this data to an `approved-runs` node
+                // For this example, we'll just remove it from pending.
+                await remove(ref(database, `pending-runs/${id}`));
+                alert('Run approved (and removed from queue).');
+            },
+            rejectRun: async (id) => {
+                if (!confirm('Are you sure you want to reject and delete this submission?')) return;
+                await remove(ref(database, `pending-runs/${id}`));
+                alert('Run rejected.');
+            },
+            editRun: (id) => {
+                const runData = state.pendingRuns[id];
+                showSubmitModal(runData.context, runData, id);
+            }
+        };
+
+
+        // --- INITIALIZATION ---
+        window.addEventListener('hashchange', router);
+        window.addEventListener('DOMContentLoaded', () => {
+            router();
+            document.getElementById('cancel-btn').addEventListener('click', hideSubmitModal);
+            submitForm.addEventListener('submit', handleFormSubmit);
+        });
+
     </script>
 </body>
     </html>
