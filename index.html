@@ -339,8 +339,18 @@
             table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th>${isMod ? '<th>Actions</th>' : ''}</tr></thead>`;
             const tbody = document.createElement('tbody');
             runs.forEach((run, index) => {
+                // *** FIX: Robust date formatting ***
+                let dateStr = 'Invalid Date';
+                if (run.date) {
+                    // Split to avoid timezone issues from direct parsing
+                    const parts = run.date.split('-');
+                    if (parts.length === 3) {
+                       dateStr = new Date(parts[0], parts[1] - 1, parts[2]).toLocaleDateString();
+                    }
+                }
+
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${new Date(run.date).toLocaleDateString()}</td>
+                tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${dateStr}</td>
                     <td><a href="${run.videoUrl}" target="_blank" class="video-link" title="Watch video">▶</a></td>
                     ${isMod ? `<td class="mod-actions">
                         <button class="edit" data-key="${run.key}">Edit</button>
@@ -362,10 +372,8 @@
             
             try {
                 if (isEditing) {
-                    // *** FIX: Use set() for editing an existing run ***
                     await set(ref(database, editingRun.path), runData);
                 } else {
-                    // *** Use push() for submitting a new run for approval ***
                     const path = generateFirebasePath('pending_runs');
                     if (!path) { alert("Error: Cannot determine submission path."); return; }
                     await push(ref(database, path), runData);
@@ -382,8 +390,11 @@
         }
         function openEditModal(run, path) {
             editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
-            DOMElements.modal.playerName.value = run.player; DOMElements.modal.runTime.value = run.time;
-            DOMElements.modal.videoUrl.value = run.videoUrl; DOMElements.modal.runDate.value = run.date;
+            // *** FIX: Safely populate fields, defaulting to empty string ***
+            DOMElements.modal.playerName.value = run.player || ''; 
+            DOMElements.modal.runTime.value = run.time || '';
+            DOMElements.modal.videoUrl.value = run.videoUrl || ''; 
+            DOMElements.modal.runDate.value = run.date || '';
             DOMElements.modal.container.style.display = 'block';
         }
         function closeSubmitModal() {
@@ -408,34 +419,29 @@
                 if (!snapshot.exists()) { list.innerHTML = '<p>No pending runs.</p>'; return; }
                 
                 let pendingRuns = [];
-                // *** FIX: Rewritten with explicit nested loops for robust path generation ***
                 snapshot.forEach(gameSnap => {
                     const gameId = gameSnap.key;
                     gameSnap.forEach(catSnap => {
                         const catId = catSnap.key;
                         catSnap.forEach(levelSnap => {
                             const levelId = levelSnap.key;
-                            levelSnap.forEach(subCatSnap => {
-                                if (subCatSnap.hasChild('player')) { // Run is at this level
-                                    const runSnap = subCatSnap;
-                                    const runKey = runSnap.key;
-                                    pendingRuns.push({
-                                        key: runKey, data: runSnap.val(),
-                                        pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${runKey}`,
-                                        approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}`
-                                    });
-                                } else { // Run is one level deeper
+                            if (levelSnap.hasChild('player')) { // Path structure: game/cat/run
+                                const runSnap = levelSnap; const runKey = runSnap.key;
+                                pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}` });
+                            } else {
+                                levelSnap.forEach(subCatSnap => {
                                     const subCatId = subCatSnap.key;
-                                    subCatSnap.forEach(runSnap => {
-                                        const runKey = runSnap.key;
-                                        pendingRuns.push({
-                                            key: runKey, data: runSnap.val(),
-                                            pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${subCatId}/${runKey}`,
-                                            approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}/${subCatId}`
+                                    if (subCatSnap.hasChild('player')) { // Path: game/cat/level/run
+                                        const runSnap = subCatSnap; const runKey = runSnap.key;
+                                        pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}` });
+                                    } else { // Path: game/cat/level/subcat/run
+                                        subCatSnap.forEach(runSnap => {
+                                            const runKey = runSnap.key;
+                                            pendingRuns.push({ key: runKey, data: runSnap.val(), pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${subCatId}/${runKey}`, approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}/${subCatId}` });
                                         });
-                                    });
-                                }
-                            });
+                                    }
+                                });
+                            }
                         });
                     });
                 });
@@ -460,7 +466,6 @@
         }
         async function approveRun(runData, pendingPath, approvedCollectionPath) {
             try {
-                // *** FIX: Use push() on the collection path to generate a new key in the 'runs' node ***
                 await push(ref(database, approvedCollectionPath), runData);
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
