@@ -39,6 +39,7 @@
         #game-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
         .game-card { background-color: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease, opacity 0.3s; border: 1px solid var(--border-color); }
         .game-card:hover { transform: scale(1.05); }
+        .game-card a { text-decoration: none; color: inherit; }
         .game-card img { width: 100%; height: auto; display: block; }
         .game-card-title { padding: 10px; font-size: 0.9rem; text-align: center; }
 
@@ -64,9 +65,9 @@
         .leaderboard-table td:nth-child(1) { font-weight: bold; }
         .leaderboard-table td:nth-child(3) { font-family: 'Courier New', Courier, monospace; }
         .leaderboard-table .video-link { text-decoration: none; color: var(--primary-color); font-size: 1.2em; }
-        .leaderboard-table .mod-actions button { background: none; border: 1px solid; border-radius: 4px; color: var(--text-muted-color); cursor: pointer; margin-right: 5px; padding: 3px 6px; }
-        .leaderboard-table .mod-actions button.edit { border-color: var(--success-color); color: var(--success-color); }
-        .leaderboard-table .mod-actions button.delete { border-color: var(--danger-color); color: var(--danger-color); }
+        .leaderboard-table .mod-actions button { background: none; border: 1px solid; border-radius: 4px; color: var(--text-muted-color); cursor: pointer; margin: 0 2px; padding: 3px 6px; }
+        .leaderboard-table .mod-actions .edit { border-color: var(--primary-color); color: var(--primary-color); }
+        .leaderboard-table .mod-actions .delete { border-color: var(--danger-color); color: var(--danger-color); }
 
         .controls { display: flex; justify-content: flex-end; margin-top: 1rem; }
         .submit-run-btn { background-color: var(--primary-color); color: var(--bg-color); border: none; padding: 10px 20px; border-radius: 5px; font-size: 1rem; font-weight: bold; cursor: pointer; }
@@ -91,8 +92,9 @@
         .pending-run-card { background-color: #333; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
         .pending-run-card p { margin: 0 0 0.5rem 0; }
         .pending-run-card a { color: var(--primary-color); }
-        .pending-run-actions button { margin-right: 10px; }
+        .pending-run-actions button { margin-right: 10px; border-radius: 5px; padding: 5px 10px; border: none; cursor: pointer; }
         .pending-run-actions .approve-btn { background-color: var(--success-color); color: var(--bg-color); }
+        .pending-run-actions .edit-btn { background-color: var(--primary-color); color: var(--bg-color); }
         .pending-run-actions .reject-btn { background-color: var(--danger-color); color: white; }
         
         .loader { text-align: center; padding: 2rem; font-size: 1.5rem; }
@@ -174,7 +176,6 @@
         import { getDatabase, ref, push, onValue, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // --- Firebase Config and Init ---
         const firebaseConfig = {
             apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
@@ -188,14 +189,12 @@
         const database = getDatabase(app);
         const auth = getAuth(app);
         
-        // --- Global State ---
         let currentGameData = null;
         let isMod = false;
         let editingRun = { key: null, path: null };
         let allGames = [];
         let currentSelection = { gameId: null, levelId: null, categoryId: null, subCategoryValues: {}, starName: null };
 
-        // --- DOM Elements ---
         const DOMElements = {
             views: { home: document.getElementById('home-view'), leaderboard: document.getElementById('leaderboard-view'), mod: document.getElementById('mod-view') },
             nav: { home: document.getElementById('nav-home'), mod: document.getElementById('nav-mod') },
@@ -217,46 +216,36 @@
             }
         };
 
-        // --- API & Data Fetching ---
         const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
         async function fetchApi(url) { try { const r = await fetch(url); if (!r.ok) throw new Error(r.statusText); return await r.json(); } catch (e) { console.error(`API Error: ${e}`); throw e; } }
         async function fetchGames() { try { const data = await fetchApi(`${SRC_API_BASE}/series/sm64romhacks/games?max=200&embed=cover-small`); allGames = data.data; renderGameList(allGames); } catch (e) { DOMElements.home.gameList.innerHTML = 'Error loading games.'; } }
         async function fetchGameDetails(gameId) { DOMElements.leaderboard.tableContainer.innerHTML = '<div class="loader">Loading...</div>'; try { const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`); currentGameData = data.data; initializeLeaderboardView(); } catch (e) { DOMElements.leaderboard.tableContainer.innerHTML = 'Error loading data.'; } }
         async function fetchLevelVariables(levelId) { try { const data = await fetchApi(`${SRC_API_BASE}/levels/${levelId}/variables`); return data.data; } catch (e) { return []; } }
         
-        // --- Routing ---
         function handleRouting() {
             const hash = window.location.hash.replace(/^#\/?|\/$/g, '').split('/');
             const view = hash[0] || 'home';
             switchView(view);
-            
             if (view === 'leaderboard' && hash[1] === 'game' && hash[2]) {
                 currentSelection.gameId = hash[2];
-                if (!currentGameData || currentGameData.id !== currentSelection.gameId) {
-                    fetchGameDetails(currentSelection.gameId);
-                }
-            } else if (view === 'mod' && isMod) {
-                fetchPendingRuns();
-            }
+                if (!currentGameData || currentGameData.id !== currentSelection.gameId) { fetchGameDetails(currentSelection.gameId); }
+            } else if (view === 'mod' && isMod) { fetchPendingRuns(); }
         }
         function updateURL() {
             if (!currentSelection.gameId || !currentSelection.categoryId) return;
             let newHash = `#/leaderboard/game/${currentSelection.gameId}/category/${currentSelection.categoryId}`;
             if (currentSelection.levelId !== 'full-game') newHash += `/level/${currentSelection.levelId}`;
-            // Add other params like subcategories later if needed
-            window.location.hash = newHash;
+            const subCatString = Object.entries(currentSelection.subCategoryValues).map(([k,v]) => `${k}=${v}`).join('&');
+            if (subCatString) newHash += `?vars=${subCatString}`;
+            if (window.location.hash !== newHash) { window.location.hash = newHash; }
         }
 
-        // --- UI Rendering & Updates ---
         function switchView(viewName) { Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); }
         function renderGameList(games) {
-            const list = DOMElements.home.gameList;
-            list.innerHTML = '';
+            const list = DOMElements.home.gameList; list.innerHTML = '';
             games.forEach(game => {
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.dataset.gameId = game.id;
-                card.dataset.gameName = game.names.international.toLowerCase();
+                const card = document.createElement('div'); card.className = 'game-card';
+                card.dataset.gameId = game.id; card.dataset.gameName = game.names.international.toLowerCase();
                 card.innerHTML = `<a href="#/leaderboard/game/${game.id}"><img src="${game.assets['cover-small'].uri}" alt="${game.names.international}" loading="lazy"><div class="game-card-title">${game.names.international}</div></a>`;
                 list.appendChild(card);
             });
@@ -276,8 +265,7 @@
             updateURL();
         }
         function renderCategories() {
-            const container = DOMElements.leaderboard.categoryPills;
-            container.innerHTML = '';
+            const container = DOMElements.leaderboard.categoryPills; container.innerHTML = '';
             const isFullGame = currentSelection.levelId === 'full-game';
             const relevantCategories = currentGameData.categories.data.filter(cat => (isFullGame ? cat.type === 'per-game' : cat.type === 'per-level'));
             
@@ -306,35 +294,27 @@
                 const starVar = levelVars.find(v => v.category === currentSelection.categoryId && v['is-subcategory']);
                 if (starVar) {
                     starContainer.style.display = 'block';
-                    const select = DOMElements.leaderboard.singleStarSelect;
-                    select.innerHTML = '';
+                    const select = DOMElements.leaderboard.singleStarSelect; select.innerHTML = '';
                     Object.values(starVar.values.choices).forEach(label => select.add(new Option(label, label)));
                     if (select.options.length > 0) currentSelection.starName = select.value;
                 }
             }
         }
         function renderVariableSelector(variable, container) {
-            const group = document.createElement('div');
-            group.className = 'filter-group';
+            const group = document.createElement('div'); group.className = 'filter-group';
             group.innerHTML = `<label>${variable.name}</label>`;
-            const pillsContainer = document.createElement('div');
-            pillsContainer.className = 'pills-container';
-
+            const pillsContainer = document.createElement('div'); pillsContainer.className = 'pills-container';
             if (!currentSelection.subCategoryValues[variable.id]) { currentSelection.subCategoryValues[variable.id] = variable.values.default; }
-            
             for (const [valueId, valueData] of Object.entries(variable.values.values)) {
-                const pill = document.createElement('div');
-                pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
+                const pill = document.createElement('div'); pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
                 pill.textContent = valueData.label;
                 pill.addEventListener('click', () => { currentSelection.subCategoryValues[variable.id] = valueId; updateUI(); });
                 pillsContainer.appendChild(pill);
             }
-            group.appendChild(pillsContainer);
-            container.appendChild(group);
+            group.appendChild(pillsContainer); container.appendChild(group);
         }
 
-        // --- Leaderboard & Run Management ---
-        function updateLeaderboard() { const dbPath = generateFirebasePath(); if (dbPath) fetchRunsFromFirebase(dbPath); else DOMElements.leaderboard.tableContainer.innerHTML = ""; }
+        function updateLeaderboard() { const dbPath = generateFirebasePath('runs'); if (dbPath) fetchRunsFromFirebase(dbPath); else DOMElements.leaderboard.tableContainer.innerHTML = ""; }
         function generateFirebasePath(base = 'runs') {
             if (!currentGameData || !currentSelection.categoryId) return null;
             let path = `${base}/${currentGameData.id}/${currentSelection.categoryId}`;
@@ -368,12 +348,11 @@
                     </td>` : ''}`;
                 tbody.appendChild(tr);
             });
-            table.appendChild(tbody);
-            container.innerHTML = ''; container.appendChild(table);
+            table.appendChild(tbody); container.innerHTML = ''; container.appendChild(table);
 
             if (isMod) {
-                tbody.querySelectorAll('.edit').forEach(b => b.addEventListener('click', () => openEditModal(runs.find(r => r.key === b.dataset.key), path)));
-                tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => deleteRun(b.dataset.key, path)));
+                tbody.querySelectorAll('.edit').forEach(b => b.addEventListener('click', () => openEditModal(runs.find(r => r.key === b.dataset.key), `${path}/${b.dataset.key}`)));
+                tbody.querySelectorAll('.delete').forEach(b => b.addEventListener('click', () => deleteRun(`${path}/${b.dataset.key}`)));
             }
         }
         async function submitRunToFirebase() {
@@ -381,33 +360,24 @@
             const path = isEditing ? editingRun.path : generateFirebasePath('pending_runs');
             if (!path) { alert("Error: Cannot determine submission path."); return; }
 
-            const runData = {
-                player: DOMElements.modal.playerName.value.trim(), time: DOMElements.modal.runTime.value.trim(),
-                videoUrl: DOMElements.modal.videoUrl.value.trim(), date: DOMElements.modal.runDate.value,
-                submittedAt: new Date().toISOString()
-            };
-
+            const runData = { player: DOMElements.modal.playerName.value.trim(), time: DOMElements.modal.runTime.value.trim(), videoUrl: DOMElements.modal.videoUrl.value.trim(), date: DOMElements.modal.runDate.value, submittedAt: new Date().toISOString() };
             if (!runData.player || !runData.time || !runData.date || !runData.videoUrl) { alert("Please fill all fields."); return; }
             
             try {
-                const runRef = isEditing ? ref(database, `${path}/${editingRun.key}`) : push(ref(database, path));
+                const runRef = isEditing ? ref(database, path) : push(ref(database, path));
                 await set(runRef, runData);
                 closeSubmitModal();
                 if(!isEditing) alert("Run submitted for approval!");
             } catch (e) { console.error(e); alert("Error submitting run."); }
         }
-        function deleteRun(key, path) { if (confirm("Are you sure you want to delete this run?")) { remove(ref(database, `${path}/${key}`)); } }
+        function deleteRun(path) { if (confirm("Are you sure?")) { remove(ref(database, path)); } }
         
-        // --- Modal ---
         function openSubmitModal() {
-            editingRun = { key: null, path: null };
-            DOMElements.modal.title.textContent = "Submit New Run";
-            DOMElements.modal.runDate.valueAsDate = new Date();
-            DOMElements.modal.container.style.display = 'block';
+            editingRun = { key: null, path: null }; DOMElements.modal.title.textContent = "Submit New Run";
+            DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block';
         }
         function openEditModal(run, path) {
-            editingRun = { key: run.key, path };
-            DOMElements.modal.title.textContent = "Edit Run";
+            editingRun = { key: run.key, path }; DOMElements.modal.title.textContent = "Edit Run";
             DOMElements.modal.playerName.value = run.player; DOMElements.modal.runTime.value = run.time;
             DOMElements.modal.videoUrl.value = run.videoUrl; DOMElements.modal.runDate.value = run.date;
             DOMElements.modal.container.style.display = 'block';
@@ -418,69 +388,74 @@
             editingRun = { key: null, path: null };
         }
         
-        // --- Authentication & Moderation ---
         function setupAuth() {
             onAuthStateChanged(auth, user => {
-                isMod = !!user; // Simple check, in real app you'd check a custom claim or DB entry
+                isMod = !!user;
                 DOMElements.mod.loginForm.style.display = user ? 'none' : 'block';
                 DOMElements.mod.modContent.style.display = user ? 'block' : 'none';
-                if (user) fetchPendingRuns();
-                handleRouting(); // Re-evaluate view access
+                if (user) { fetchPendingRuns(); }
+                if (document.getElementById('leaderboard-view').classList.contains('active')) { updateLeaderboard(); } // Refresh leaderboard to show/hide mod buttons
             });
         }
         function fetchPendingRuns() {
             DOMElements.mod.pendingRunsList.innerHTML = '<div class="loader">Loading...</div>';
             onValue(ref(database, 'pending_runs'), (snapshot) => {
-                const list = DOMElements.mod.pendingRunsList;
-                list.innerHTML = '';
+                const list = DOMElements.mod.pendingRunsList; list.innerHTML = '';
                 if (!snapshot.exists()) { list.innerHTML = '<p>No pending runs.</p>'; return; }
                 
-                snapshot.forEach(gameSnapshot => {
-                    gameSnapshot.forEach(categorySnapshot => {
-                        categorySnapshot.forEach(runPathSnapshot => {
-                            runPathSnapshot.forEach(runSnapshot => {
-                                const run = { key: runSnapshot.key, ...runSnapshot.val() };
-                                const runPath = runSnapshot.ref.toString().split('.com/')[1];
-                                const card = document.createElement('div');
-                                card.className = 'pending-run-card';
-                                card.innerHTML = `
-                                    <p><strong>Player:</strong> ${escapeHtml(run.player)}</p>
-                                    <p><strong>Time:</strong> ${escapeHtml(run.time)}</p>
-                                    <p><strong>Video:</strong> <a href="${run.videoUrl}" target="_blank">Link</a></p>
-                                    <div class="pending-run-actions">
-                                        <button class="approve-btn">Approve</button>
-                                        <button class="reject-btn">Reject</button>
-                                    </div>`;
-                                card.querySelector('.approve-btn').addEventListener('click', () => approveRun(run, runPath));
-                                card.querySelector('.reject-btn').addEventListener('click', () => remove(runSnapshot.ref));
-                                list.appendChild(card);
+                snapshot.forEach(gameSnap => {
+                    gameSnap.forEach(catSnap => {
+                        catSnap.forEach(levelSnap => {
+                            levelSnap.forEach(subCatOrRunSnap => {
+                                // Logic to handle paths with and without subcategories
+                                const processRun = (runSnap) => {
+                                    const runData = { key: runSnap.key, ...runSnap.val() };
+                                    const fullPendingPath = runSnap.ref.toString().split(database.app.options.databaseURL)[1].substring(1);
+                                    const fullApprovedPath = fullPendingPath.replace('pending_runs', 'runs');
+                                    
+                                    const card = document.createElement('div'); card.className = 'pending-run-card';
+                                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(runData.player)}</p>
+                                        <p><strong>Time:</strong> ${escapeHtml(runData.time)}</p>
+                                        <p><strong>Video:</strong> <a href="${runData.videoUrl}" target="_blank">Link</a></p>
+                                        <div class="pending-run-actions">
+                                            <button class="approve-btn">Approve</button>
+                                            <button class="edit-btn">Edit</button>
+                                            <button class="reject-btn">Reject</button>
+                                        </div>`;
+                                    card.querySelector('.approve-btn').addEventListener('click', () => approveRun(runData, fullPendingPath, fullApprovedPath));
+                                    card.querySelector('.edit-btn').addEventListener('click', () => openEditModal(runData, fullPendingPath));
+                                    card.querySelector('.reject-btn').addEventListener('click', () => deleteRun(fullPendingPath));
+                                    list.appendChild(card);
+                                };
+
+                                if (subCatOrRunSnap.hasChildren() && !subCatOrRunSnap.hasChild('player')) {
+                                    subCatOrRunSnap.forEach(processRun); // This is a subcategory level
+                                } else {
+                                    processRun(subCatOrRunSnap); // This is a run level
+                                }
                             });
                         });
                     });
                 });
             });
         }
-        async function approveRun(runData, pendingPath) {
-            const approvedPath = pendingPath.replace('pending_runs', 'runs');
-            const { key, ...dataToMove } = runData;
+        async function approveRun(runData, pendingPath, approvedPath) {
+            const { key, ...dataToMove } = runData; // We don't need the key inside the data object
             try {
-                await set(ref(database, approvedPath), dataToMove); // Set in the new location
-                await remove(ref(database, pendingPath)); // Remove from old location
+                await set(ref(database, approvedPath), dataToMove);
+                await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
         }
 
-        // --- Utils & Event Listeners ---
         function parseTimeToMs(timeStr) {
             if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
-            timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; });
-            return ms;
+            timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
         }
-        function escapeHtml(unsafe) { return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
+        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
+        
         DOMElements.home.gameSearch.addEventListener('keyup', () => {
             const query = DOMElements.home.gameSearch.value.toLowerCase();
-            document.querySelectorAll('.game-card').forEach(card => {
-                card.style.display = card.dataset.gameName.includes(query) ? 'block' : 'none';
-            });
+            document.querySelectorAll('.game-card').forEach(card => card.style.display = card.dataset.gameName.includes(query) ? '' : 'none');
         });
         DOMElements.leaderboard.levelSelect.addEventListener('change', (e) => { currentSelection.levelId = e.target.value; currentSelection.categoryId = null; currentSelection.subCategoryValues = {}; updateUI(); });
         DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); updateURL(); });
@@ -490,10 +465,10 @@
         DOMElements.mod.loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, DOMElements.mod.emailInput.value, DOMElements.mod.passwordInput.value).catch(e => DOMElements.mod.loginError.textContent = 'Login failed.'));
         DOMElements.mod.logoutBtn.addEventListener('click', () => signOut(auth));
         window.addEventListener('hashchange', handleRouting);
+        window.addEventListener('DOMContentLoaded', handleRouting);
 
-        // --- App Initialization ---
         function init() { fetchGames(); setupAuth(); }
         init();
     </script>
 </body>
-    </html>
+</html>
