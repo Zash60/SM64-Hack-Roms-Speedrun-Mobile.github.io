@@ -44,11 +44,26 @@
         .filters-container { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem; }
         .filter-group { display: flex; flex-direction: column; gap: 0.5rem; }
         .filter-group label { font-size: 0.9rem; color: var(--text-muted-color); }
-        .filter-group select { width: 100%; }
         
         .pills-container { display: flex; flex-wrap: wrap; gap: 8px; }
         .pill { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; user-select: none; }
         .pill.active { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; border-color: var(--primary-color); }
+
+        /* --- Styling for Variable/Subcategory Groups --- */
+        #subcategories-container .filter-group {
+            background-color: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        #subcategories-container .filter-group label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: var(--text-muted-color);
+            margin-bottom: 0.75rem;
+        }
 
         #leaderboard-table-container { width: 100%; overflow-x: auto; }
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
@@ -112,12 +127,12 @@
                         <div id="category-pills" class="pills-container"></div>
                     </div>
 
+                    <div id="subcategories-container"></div>
+
                     <div class="filter-group" id="single-star-container" style="display: none;">
                         <label for="single-star-select">Star</label>
                         <select id="single-star-select"></select>
                     </div>
-                    
-                    <div id="subcategories-container"></div>
                 </div>
 
                 <div class="controls">
@@ -219,7 +234,6 @@
         async function fetchGameDetails(gameId) {
             DOMElements.leaderboard.tableContainer.innerHTML = '<div class="loader">Loading leaderboard...</div>';
             try {
-                // *** ALTERAÇÃO 1: Adicionar "variables" ao embed para buscar a lista principal de variáveis do jogo ***
                 const data = await fetchApi(`${SRC_API_BASE}/games/${gameId}?embed=levels,categories,variables`);
                 currentGameData = data.data;
                 initializeLeaderboardView();
@@ -300,10 +314,8 @@
 
             if (!currentSelection.categoryId) return;
             
-            // *** ALTERAÇÃO 2: Procurar na lista principal de variáveis do jogo em vez de dentro da categoria ***
             const allGameVariables = currentGameData.variables.data || [];
             
-            // Uma variável é aplicável se pertence à categoria atual OU se é global (category === null)
             const applicableVariables = allGameVariables.filter(variable => {
                 return (variable.category === currentSelection.categoryId || variable.category === null) && !variable['is-subcategory'];
             });
@@ -453,7 +465,7 @@
 
         DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); });
 
-        function openSubmitModal() { DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block'; }
+        function openSubmitModal() { DOMElements.modal.runDate.valueAsДsDate = new Date(); DOMElements.modal.container.style.display = 'block'; }
         function closeSubmitModal() { DOMElements.modal.container.style.display = 'none'; DOMElements.modal.playerName.value = ''; DOMElements.modal.runTime.value = ''; DOMElements.modal.runDate.value = ''; }
         DOMElements.leaderboard.openModalBtn.addEventListener('click', openSubmitModal);
         DOMElements.modal.cancelBtn.addEventListener('click', closeSubmitModal);
