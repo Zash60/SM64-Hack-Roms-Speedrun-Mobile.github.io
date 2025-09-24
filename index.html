@@ -364,6 +364,7 @@
             if (!runData.player || !runData.time || !runData.date || !runData.videoUrl) { alert("Please fill all fields."); return; }
             
             try {
+                // *** FIX: Use set for both editing and new submissions, but push for non-editing. ***
                 const runRef = isEditing ? ref(database, path) : push(ref(database, path));
                 await set(runRef, runData);
                 closeSubmitModal();
@@ -405,34 +406,30 @@
                 
                 let pendingRuns = [];
                 snapshot.forEach(gameSnap => {
+                    const gameId = gameSnap.key;
                     gameSnap.forEach(catSnap => {
-                        catSnap.forEach(levelSnap => {
-                            const processRun = (runSnap) => {
-                                const fullPendingPath = runSnap.ref.toString().split(database.app.options.databaseURL)[1].substring(1);
+                        const catId = catSnap.key;
+                        const processNode = (nodeSnap, pathSegments) => {
+                            if (nodeSnap.hasChild('player')) {
+                                const runKey = nodeSnap.key;
+                                const pendingPath = `pending_runs/${pathSegments.join('/')}/${runKey}`;
+                                const approvedPath = `runs/${pathSegments.join('/')}`;
                                 pendingRuns.push({
-                                    key: runSnap.key,
-                                    data: runSnap.val(),
-                                    pendingPath: fullPendingPath
+                                    key: runKey,
+                                    data: nodeSnap.val(),
+                                    pendingPath: pendingPath,
+                                    approvedPath: approvedPath
                                 });
-                            };
-                            if (levelSnap.hasChild('player')) {
-                                processRun(levelSnap); // Path doesn't have the last two levels of nesting
                             } else {
-                                levelSnap.forEach(subCatOrRunSnap => {
-                                    if (subCatOrRunSnap.hasChild('player')) {
-                                        processRun(subCatOrRunSnap);
-                                    } else {
-                                        subCatOrRunSnap.forEach(processRun);
-                                    }
-                                });
+                                nodeSnap.forEach(childSnap => processNode(childSnap, [...pathSegments, childSnap.key]));
                             }
-                        });
+                        };
+                        processNode(catSnap, [gameId, catId]);
                     });
                 });
                 
                 pendingRuns.forEach(runInfo => {
-                    const { key, data, pendingPath } = runInfo;
-                    const approvedPath = pendingPath.replace(/^pending_runs/, 'runs');
+                    const { key, data, pendingPath, approvedPath } = runInfo;
                     const card = document.createElement('div'); card.className = 'pending-run-card';
                     card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(data.player)}</p>
                         <p><strong>Time:</strong> ${escapeHtml(data.time)}</p>
@@ -449,11 +446,11 @@
                 });
             });
         }
-        async function approveRun(runData, pendingPath, approvedPath) {
+        async function approveRun(runData, pendingPath, approvedCollectionPath) {
             try {
-                // Correctly use push to create a new entry in the approved path
-                await set(push(ref(database, approvedPath)), runData);
-                // Remove the old entry from the pending path
+                // *** FIX: Use push() on the collection path to generate a new key in the 'runs' node ***
+                await push(ref(database, approvedCollectionPath), runData);
+                // Then remove the old entry from the 'pending_runs' node
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
         }
@@ -462,7 +459,7 @@
             if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
             timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
         }
-        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
+        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"g, "&quot;").replace(/'/g, "&#039;") : ''; }
         
         DOMElements.home.gameSearch.addEventListener('keyup', () => {
             const query = DOMElements.home.gameSearch.value.toLowerCase();
