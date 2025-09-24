@@ -144,7 +144,6 @@
             const currentCategories = isPerLevel ? levelCategories : fullGameCategories;
             html += `<div class="tabs">${currentCategories.map(c => `<button class="nav-button nav-cat-button ${c.id === selectedCategoryId ? 'active' : ''}" data-cat-id="${c.id}">${c.name}</button>`).join('')}</div>`;
 
-            // <<< FIXED STAR DROPDOWN LOGIC
             if (isPerLevel && selectedCategory?.name.toLowerCase().includes('star')) {
                  const stars = (selectedCategory.rules || "").split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
                  if (stars.length > 0) {
@@ -153,10 +152,10 @@
                  }
             }
 
-            // <<< FIXED SUBCATEGORY VISIBILITY
             gameData.variables.filter(v => v['is-subcategory']).forEach(variable => {
                 if (variable.category && variable.category !== selectedCategoryId) {
-                    return; // Hide if it's for a different category
+                    if (isPerLevel && variable.scope.type !== 'all') return;
+                    if (!isPerLevel && variable.scope.type === 'per-level') return;
                 }
                 const selectedValueId = params.get(variable.id) || variable.values.default;
                 html += `<div class="leaderboard-nav-group"><div class="group-label">${variable.name}</div><div class="tabs">${Object.entries(variable.values.values).map(([valId, {label}]) => `<button class="nav-button nav-var-button ${valId === selectedValueId ? 'active' : ''}" data-var-id="${variable.id}" data-val-id="${valId}">${label}</button>`).join('')}</div></div>`;
@@ -166,11 +165,10 @@
             html += `</div><div id="leaderboard-runs-container"><div class="loader">Loading runs...</div></div>`;
             container.innerHTML = html;
             
-            // Event Listeners
-            document.getElementById('level-selector-btn')?.addEventListener('click', () => { const items = gameData.levels.map(l => ({ id: l.id, name: l.name })); openSelectionModal('Select Level', items, (levelId) => { updateLeaderboardURL({ level: levelId, category: levelCategories[0]?.id }); }); });
+            document.getElementById('level-selector-btn')?.addEventListener('click', () => { const items = gameData.levels.map(l => ({ id: l.id, name: l.name })); openSelectionModal('Select Level', items, (levelId) => { updateLeaderboardURL({ level: levelId, category: levelCategories[0]?.id, star: null }); }); });
             document.getElementById('type-selector-btn')?.addEventListener('click', () => { if (levelCategories.length > 0 && gameData.levels.length > 0) { updateLeaderboardURL({ level: gameData.levels[0].id, category: levelCategories[0].id }); } });
             document.getElementById('star-selector-btn')?.addEventListener('click', () => { const stars = (selectedCategory.rules || "").split('\n').filter(l => l.trim().startsWith('-')).map(l => l.trim().substring(1).trim()); const items = stars.map(s => ({id: s, name: s})); openSelectionModal('Select Star', items, (starName) => { updateLeaderboardURL({ 'star': starName }); }); });
-            document.querySelectorAll('.nav-cat-button').forEach(btn => btn.addEventListener('click', () => { const catId = btn.dataset.catId, cat = gameData.categories.find(c => c.id === catId); if (cat.type === 'per-game') { updateLeaderboardURL({ level: null, category: catId }); } else { updateLeaderboardURL({ category: catId }); } }));
+            document.querySelectorAll('.nav-cat-button').forEach(btn => btn.addEventListener('click', () => { const catId = btn.dataset.catId, cat = gameData.categories.find(c => c.id === catId); if (cat.type === 'per-game') { updateLeaderboardURL({ level: null, category: catId }); } else { updateLeaderboardURL({ category: catId, star: null }); } }));
             document.querySelectorAll('.nav-var-button').forEach(btn => btn.addEventListener('click', () => { updateLeaderboardURL({ [btn.dataset.varId]: btn.dataset.valId }); }));
             document.getElementById('submit-run-btn').addEventListener('click', () => openSubmitModal());
             
