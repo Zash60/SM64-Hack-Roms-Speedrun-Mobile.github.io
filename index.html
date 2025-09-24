@@ -49,7 +49,6 @@
         .pill { background-color: var(--surface-color); border: 1px solid var(--border-color); color: var(--text-muted-color); padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; user-select: none; }
         .pill.active { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; border-color: var(--primary-color); }
 
-        /* --- Styling for Variable/Subcategory Groups --- */
         #subcategories-container .filter-group {
             background-color: var(--surface-color);
             border: 1px solid var(--border-color);
@@ -122,13 +121,10 @@
                     <div class="filter-group">
                         <select id="level-select"></select>
                     </div>
-
                     <div class="filter-group">
                         <div id="category-pills" class="pills-container"></div>
                     </div>
-
                     <div id="subcategories-container"></div>
-
                     <div class="filter-group" id="single-star-container" style="display: none;">
                         <label for="single-star-select">Star</label>
                         <select id="single-star-select"></select>
@@ -314,39 +310,44 @@
 
             if (!currentSelection.categoryId) return;
             
-            const allGameVariables = currentGameData.variables.data || [];
-            
-            const applicableVariables = allGameVariables.filter(variable => {
-                return (variable.category === currentSelection.categoryId || variable.category === null) && !variable['is-subcategory'];
-            });
-
-            if (applicableVariables.length > 0) {
-                applicableVariables.forEach(variable => {
-                    const group = document.createElement('div');
-                    group.className = 'filter-group';
-                    group.innerHTML = `<label>${variable.name}</label>`;
-                    const pillsContainer = document.createElement('div');
-                    pillsContainer.className = 'pills-container';
-
-                    if (!currentSelection.subCategoryValues[variable.id]) {
-                        currentSelection.subCategoryValues[variable.id] = variable.values.default;
-                    }
-                    
-                    for (const [valueId, valueData] of Object.entries(variable.values.values)) {
-                        const pill = document.createElement('div');
-                        pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
-                        pill.textContent = valueData.label;
-                        pill.addEventListener('click', () => { 
-                            currentSelection.subCategoryValues[variable.id] = valueId; 
-                            updateUI(); 
-                        });
-                        pillsContainer.appendChild(pill);
-                    }
-                    group.appendChild(pillsContainer);
-                    subCatContainer.appendChild(group);
+            // Lógica para subcategorias de Full Game (ex: Version)
+            if (currentSelection.levelId === 'full-game') {
+                const allGameVariables = currentGameData.variables.data || [];
+                
+                // *** CORREÇÃO AQUI: Procurar por variáveis que SÃO subcategorias ***
+                const applicableVariables = allGameVariables.filter(variable => {
+                    return (variable.category === currentSelection.categoryId || variable.category === null) && variable['is-subcategory'];
                 });
-            }
 
+                if (applicableVariables.length > 0) {
+                    applicableVariables.forEach(variable => {
+                        const group = document.createElement('div');
+                        group.className = 'filter-group';
+                        group.innerHTML = `<label>${variable.name}</label>`;
+                        const pillsContainer = document.createElement('div');
+                        pillsContainer.className = 'pills-container';
+
+                        if (!currentSelection.subCategoryValues[variable.id]) {
+                            currentSelection.subCategoryValues[variable.id] = variable.values.default;
+                        }
+                        
+                        for (const [valueId, valueData] of Object.entries(variable.values.values)) {
+                            const pill = document.createElement('div');
+                            pill.className = `pill ${valueId === currentSelection.subCategoryValues[variable.id] ? 'active' : ''}`;
+                            pill.textContent = valueData.label;
+                            pill.addEventListener('click', () => { 
+                                currentSelection.subCategoryValues[variable.id] = valueId; 
+                                updateUI(); 
+                            });
+                            pillsContainer.appendChild(pill);
+                        }
+                        group.appendChild(pillsContainer);
+                        subCatContainer.appendChild(group);
+                    });
+                }
+            }
+            
+            // Lógica para estrelas de Levels (Single Star, Stage RTA etc.)
             if (currentSelection.levelId !== 'full-game') {
                 const levelVars = await fetchLevelVariables(currentSelection.levelId);
                 const starVariable = levelVars.find(v => v.category === currentSelection.categoryId && v['is-subcategory']);
@@ -465,7 +466,7 @@
 
         DOMElements.leaderboard.singleStarSelect.addEventListener('change', (e) => { currentSelection.starName = e.target.value; updateLeaderboard(); });
 
-        function openSubmitModal() { DOMElements.modal.runDate.valueAsДsDate = new Date(); DOMElements.modal.container.style.display = 'block'; }
+        function openSubmitModal() { DOMElements.modal.runDate.valueAsDate = new Date(); DOMElements.modal.container.style.display = 'block'; }
         function closeSubmitModal() { DOMElements.modal.container.style.display = 'none'; DOMElements.modal.playerName.value = ''; DOMElements.modal.runTime.value = ''; DOMElements.modal.runDate.value = ''; }
         DOMElements.leaderboard.openModalBtn.addEventListener('click', openSubmitModal);
         DOMElements.modal.cancelBtn.addEventListener('click', closeSubmitModal);
