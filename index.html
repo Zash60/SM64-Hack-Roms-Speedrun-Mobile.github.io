@@ -357,17 +357,21 @@
         }
         async function submitRunToFirebase() {
             const isEditing = !!editingRun.path;
-            const path = isEditing ? editingRun.path : generateFirebasePath('pending_runs');
-            if (!path) { alert("Error: Cannot determine submission path."); return; }
-
             const runData = { player: DOMElements.modal.playerName.value.trim(), time: DOMElements.modal.runTime.value.trim(), videoUrl: DOMElements.modal.videoUrl.value.trim(), date: DOMElements.modal.runDate.value, submittedAt: new Date().toISOString() };
             if (!runData.player || !runData.time || !runData.date || !runData.videoUrl) { alert("Please fill all fields."); return; }
             
             try {
-                const runRef = isEditing ? ref(database, path) : push(ref(database, path));
-                await set(runRef, runData);
+                if (isEditing) {
+                    // *** FIX: Use set() for editing an existing run ***
+                    await set(ref(database, editingRun.path), runData);
+                } else {
+                    // *** Use push() for submitting a new run for approval ***
+                    const path = generateFirebasePath('pending_runs');
+                    if (!path) { alert("Error: Cannot determine submission path."); return; }
+                    await push(ref(database, path), runData);
+                    alert("Run submitted for approval!");
+                }
                 closeSubmitModal();
-                if(!isEditing) alert("Run submitted for approval!");
             } catch (e) { console.error("Error submitting run:", e); alert("Error submitting run."); }
         }
         function deleteRun(path) { if (confirm("Are you sure you want to delete this run?")) { remove(ref(database, path)); } }
@@ -404,25 +408,36 @@
                 if (!snapshot.exists()) { list.innerHTML = '<p>No pending runs.</p>'; return; }
                 
                 let pendingRuns = [];
-                // This complex traversal is necessary because Firebase paths can have variable depth
+                // *** FIX: Rewritten with explicit nested loops for robust path generation ***
                 snapshot.forEach(gameSnap => {
-                    const processNode = (nodeSnap, pathSegments) => {
-                        if (nodeSnap.hasChild('player')) { // Base case: this node is a run object
-                            const runKey = nodeSnap.key;
-                            const runData = nodeSnap.val();
-                            pendingRuns.push({
-                                key: runKey,
-                                data: runData,
-                                pendingPath: `pending_runs/${pathSegments.join('/')}/${runKey}`,
-                                approvedCollectionPath: `runs/${pathSegments.join('/')}`
+                    const gameId = gameSnap.key;
+                    gameSnap.forEach(catSnap => {
+                        const catId = catSnap.key;
+                        catSnap.forEach(levelSnap => {
+                            const levelId = levelSnap.key;
+                            levelSnap.forEach(subCatSnap => {
+                                if (subCatSnap.hasChild('player')) { // Run is at this level
+                                    const runSnap = subCatSnap;
+                                    const runKey = runSnap.key;
+                                    pendingRuns.push({
+                                        key: runKey, data: runSnap.val(),
+                                        pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${runKey}`,
+                                        approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}`
+                                    });
+                                } else { // Run is one level deeper
+                                    const subCatId = subCatSnap.key;
+                                    subCatSnap.forEach(runSnap => {
+                                        const runKey = runSnap.key;
+                                        pendingRuns.push({
+                                            key: runKey, data: runSnap.val(),
+                                            pendingPath: `pending_runs/${gameId}/${catId}/${levelId}/${subCatId}/${runKey}`,
+                                            approvedCollectionPath: `runs/${gameId}/${catId}/${levelId}/${subCatId}`
+                                        });
+                                    });
+                                }
                             });
-                        } else { // Recursive step: go deeper
-                            nodeSnap.forEach(childSnap => {
-                                processNode(childSnap, [...pathSegments, childSnap.key]);
-                            });
-                        }
-                    };
-                    processNode(gameSnap, [gameSnap.key]);
+                        });
+                    });
                 });
                 
                 pendingRuns.forEach(runInfo => {
@@ -445,9 +460,8 @@
         }
         async function approveRun(runData, pendingPath, approvedCollectionPath) {
             try {
-                // FIX: Use push() on the *collection* path to generate a new unique key
+                // *** FIX: Use push() on the collection path to generate a new key in the 'runs' node ***
                 await push(ref(database, approvedCollectionPath), runData);
-                // After successful push, remove the old entry from the pending path
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
         }
@@ -456,11 +470,7 @@
             if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
             timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
         }
-        
-        // *** FIX: Corrected typo in escapeHtml function ***
-        function escapeHtml(unsafe) {
-            return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
-        }
+        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
         
         DOMElements.home.gameSearch.addEventListener('keyup', () => {
             const query = DOMElements.home.gameSearch.value.toLowerCase();
