@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM64 Hacks Speedrun Mobile</title>
-    <!-- <<< FIXED: Added a placeholder favicon to prevent 404 errors in the console -->
     <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
     <style>
         :root {
@@ -41,7 +40,7 @@
         .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
         .nav-button { padding: 0.6rem 1rem; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.2s ease; }
         .nav-button.active { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; border-color: var(--primary-color); }
-        .single-star-selector { width: 100%; padding: 0.75rem 1rem; margin-top: 0.5rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 1rem; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .single-star-selector { width: 100%; padding: 0.75rem 1rem; margin-top: 1rem; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-color); font-size: 1rem; text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .single-star-selector::after { content: '▾'; font-size: 1.5rem; color: var(--text-muted-color); }
         .submit-run-btn-container { margin-top: 1.5rem; }
         .action-button.submit { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.8rem; width: 100%; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; background-color: var(--primary-color); color: var(--bg-color); font-size: 1rem; }
@@ -66,10 +65,6 @@
         .selection-list button:last-child { border-bottom: none; }
         .form-container { max-width: 400px; margin: 2rem auto; padding: 2rem; background-color: var(--surface-color); border-radius: 8px; }
         .form-container h2 { text-align: center; margin-bottom: 1.5rem; }
-        .pending-run { background-color: var(--surface-color); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border-color); }
-        .pending-run p { margin-bottom: 0.5rem; }
-        .pending-run strong { color: var(--primary-color); }
-        .mod-actions button { margin-right: 0.5rem; }
         .loader { text-align: center; font-size: 1.5rem; padding: 2rem; }
     </style>
 </head>
@@ -79,7 +74,7 @@
         <div id="home-page" class="page"><h2>Games in Series: SM64 ROM Hacks</h2><div class="controls"><input type="text" id="search-input" class="search-input" placeholder="Search for a hack..."><select id="sort-select" class="sort-select"><option value="newest">Newest Released</option><option value="oldest">Oldest Released</option><option value="alphabetical">Alphabetical</option></select></div><div id="game-grid" class="game-grid"><div class="loader">Loading games...</div></div></div>
         <div id="leaderboard-page" class="page"></div>
         <div id="login-page" class="page"><div class="form-container"><h2>Moderator Login</h2><form id="login-form"><div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" required></div><div class="form-group"><label for="login-password">Password</label><input type="password" id="login-password" required></div><button type="submit" class="modal-btn btn-primary" style="width: 100%;">Login</button><p id="login-error" style="color: #ef4444; margin-top: 1rem; text-align: center;"></p></form></div></div>
-        <div id="mod-page" class="page"><h2>Pending Submissions</h2><div id="pending-runs-container"><div class="loader">Loading pending runs...</div></div></div>
+        <div id="mod-page" class="page"><h2>Pending Submissions</h2><div id="pending-runs-container"><div class="loader">Loading...</div></div></div>
         <div id="loading-page" class="page"><div class="loader">Loading...</div></div>
     </main>
     <div id="submit-run-modal" class="modal-overlay hidden"><div class="modal-content"><h2 id="modal-title">Submit Run</h2><form id="submit-run-form"><input type="hidden" id="run-id-input"><div class="form-group"><label for="player-name">Player Name</label><input type="text" id="player-name" required></div><div class="form-group"><label for="time">Time (MM:SS.ms)</label><input type="text" id="time" placeholder="e.g., 19:50.123" required></div><div class="form-group"><label for="video-url">Video URL</label><input type="url" id="video-url" required></div><div class="form-group"><label for="run-date">Date</label><input type="date" id="run-date" required></div><div class="modal-actions"><button type="button" id="cancel-run-btn" class="modal-btn btn-secondary">Cancel</button><button type="submit" class="modal-btn btn-primary">Submit</button></div></form></div></div>
@@ -149,11 +144,13 @@
             const currentCategories = isPerLevel ? levelCategories : fullGameCategories;
             html += `<div class="tabs">${currentCategories.map(c => `<button class="nav-button nav-cat-button ${c.id === selectedCategoryId ? 'active' : ''}" data-cat-id="${c.id}">${c.name}</button>`).join('')}</div>`;
 
-            // <<< FIXED: Safety check for category rules
+            // <<< FIXED STAR DROPDOWN LOGIC
             if (isPerLevel && selectedCategory?.name.toLowerCase().includes('star')) {
                  const stars = (selectedCategory.rules || "").split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
-                 const selectedStar = params.get('star') || (stars.length > 0 ? stars[0] : 'Select Star');
-                 html += `<button id="star-selector-btn" class="single-star-selector" data-var-id="star">${selectedStar}</button>`;
+                 if (stars.length > 0) {
+                    const selectedStar = params.get('star') || stars[0];
+                    html += `<button id="star-selector-btn" class="single-star-selector" data-var-id="star">${selectedStar}</button>`;
+                 }
             }
 
             gameData.variables.filter(v => v['is-subcategory']).forEach(variable => {
