@@ -370,7 +370,7 @@
                 if(!isEditing) alert("Run submitted for approval!");
             } catch (e) { console.error(e); alert("Error submitting run."); }
         }
-        function deleteRun(path) { if (confirm("Are you sure?")) { remove(ref(database, path)); } }
+        function deleteRun(path) { if (confirm("Are you sure you want to delete this run?")) { remove(ref(database, path)); } }
         
         function openSubmitModal() {
             editingRun = { key: null, path: null }; DOMElements.modal.title.textContent = "Submit New Run";
@@ -394,7 +394,7 @@
                 DOMElements.mod.loginForm.style.display = user ? 'none' : 'block';
                 DOMElements.mod.modContent.style.display = user ? 'block' : 'none';
                 if (user) { fetchPendingRuns(); }
-                if (document.getElementById('leaderboard-view').classList.contains('active')) { updateLeaderboard(); } // Refresh leaderboard to show/hide mod buttons
+                if (document.getElementById('leaderboard-view').classList.contains('active')) { updateLeaderboard(); }
             });
         }
         function fetchPendingRuns() {
@@ -403,46 +403,57 @@
                 const list = DOMElements.mod.pendingRunsList; list.innerHTML = '';
                 if (!snapshot.exists()) { list.innerHTML = '<p>No pending runs.</p>'; return; }
                 
+                let pendingRuns = [];
                 snapshot.forEach(gameSnap => {
                     gameSnap.forEach(catSnap => {
                         catSnap.forEach(levelSnap => {
-                            levelSnap.forEach(subCatOrRunSnap => {
-                                // Logic to handle paths with and without subcategories
-                                const processRun = (runSnap) => {
-                                    const runData = { key: runSnap.key, ...runSnap.val() };
-                                    const fullPendingPath = runSnap.ref.toString().split(database.app.options.databaseURL)[1].substring(1);
-                                    const fullApprovedPath = fullPendingPath.replace('pending_runs', 'runs');
-                                    
-                                    const card = document.createElement('div'); card.className = 'pending-run-card';
-                                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(runData.player)}</p>
-                                        <p><strong>Time:</strong> ${escapeHtml(runData.time)}</p>
-                                        <p><strong>Video:</strong> <a href="${runData.videoUrl}" target="_blank">Link</a></p>
-                                        <div class="pending-run-actions">
-                                            <button class="approve-btn">Approve</button>
-                                            <button class="edit-btn">Edit</button>
-                                            <button class="reject-btn">Reject</button>
-                                        </div>`;
-                                    card.querySelector('.approve-btn').addEventListener('click', () => approveRun(runData, fullPendingPath, fullApprovedPath));
-                                    card.querySelector('.edit-btn').addEventListener('click', () => openEditModal(runData, fullPendingPath));
-                                    card.querySelector('.reject-btn').addEventListener('click', () => deleteRun(fullPendingPath));
-                                    list.appendChild(card);
-                                };
-
-                                if (subCatOrRunSnap.hasChildren() && !subCatOrRunSnap.hasChild('player')) {
-                                    subCatOrRunSnap.forEach(processRun); // This is a subcategory level
-                                } else {
-                                    processRun(subCatOrRunSnap); // This is a run level
-                                }
-                            });
+                            const processRun = (runSnap) => {
+                                const fullPendingPath = runSnap.ref.toString().split(database.app.options.databaseURL)[1].substring(1);
+                                pendingRuns.push({
+                                    key: runSnap.key,
+                                    data: runSnap.val(),
+                                    pendingPath: fullPendingPath
+                                });
+                            };
+                            if (levelSnap.hasChild('player')) {
+                                processRun(levelSnap); // Path doesn't have the last two levels of nesting
+                            } else {
+                                levelSnap.forEach(subCatOrRunSnap => {
+                                    if (subCatOrRunSnap.hasChild('player')) {
+                                        processRun(subCatOrRunSnap);
+                                    } else {
+                                        subCatOrRunSnap.forEach(processRun);
+                                    }
+                                });
+                            }
                         });
                     });
+                });
+                
+                pendingRuns.forEach(runInfo => {
+                    const { key, data, pendingPath } = runInfo;
+                    const approvedPath = pendingPath.replace(/^pending_runs/, 'runs');
+                    const card = document.createElement('div'); card.className = 'pending-run-card';
+                    card.innerHTML = `<p><strong>Player:</strong> ${escapeHtml(data.player)}</p>
+                        <p><strong>Time:</strong> ${escapeHtml(data.time)}</p>
+                        <p><strong>Video:</strong> <a href="${data.videoUrl}" target="_blank">Link</a></p>
+                        <div class="pending-run-actions">
+                            <button class="approve-btn">Approve</button>
+                            <button class="edit-btn">Edit</button>
+                            <button class="reject-btn">Reject</button>
+                        </div>`;
+                    card.querySelector('.approve-btn').addEventListener('click', () => approveRun(data, pendingPath, approvedPath));
+                    card.querySelector('.edit-btn').addEventListener('click', () => openEditModal({key, ...data}, pendingPath));
+                    card.querySelector('.reject-btn').addEventListener('click', () => deleteRun(pendingPath));
+                    list.appendChild(card);
                 });
             });
         }
         async function approveRun(runData, pendingPath, approvedPath) {
-            const { key, ...dataToMove } = runData; // We don't need the key inside the data object
             try {
-                await set(ref(database, approvedPath), dataToMove);
+                // Correctly use push to create a new entry in the approved path
+                await set(push(ref(database, approvedPath)), runData);
+                // Remove the old entry from the pending path
                 await remove(ref(database, pendingPath));
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
         }
