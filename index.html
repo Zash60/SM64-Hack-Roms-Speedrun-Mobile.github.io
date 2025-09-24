@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM64 Hacks Speedrun Mobile</title>
+    <!-- <<< FIXED: Added a placeholder favicon to prevent 404 errors in the console -->
+    <link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
     <style>
         :root {
             --bg-color: #18181b; --surface-color: #27272a; --surface-light-color: #3f3f46;
@@ -106,38 +108,21 @@
         const apiFetch=async(u)=>{if(apiCache[u])return apiCache[u];try{const r=await fetch(u);if(!r.ok)throw new Error(`API Error: ${r.status}`);const d=await r.json();apiCache[u]=d;return d}catch(e){console.error(`Failed to fetch ${u}:`,e);return null}};
         const navigate=(h)=>{window.location.hash=h};
         
-        // <<< NEW, ROBUST DATA LOADING FUNCTION
-        const ensureGamesLoaded = async () => {
-            if (allGames.length === 0) {
-                const data = await apiFetch(`${SRC_API_BASE}/series/${SERIES_ID}/games?max=250`);
-                if (data) allGames = data.data;
-            }
-        };
-
+        const ensureGamesLoaded=async()=>{if(allGames.length===0){const data=await apiFetch(`${SRC_API_BASE}/series/${SERIES_ID}/games?max=250`);if(data)allGames=data.data}};
         const handleRouteChange=async()=>{const h=window.location.hash.slice(1)||"home",p=h.split('/');document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('active'));document.getElementById('loading-page').classList.add('active');switch(p[0]){case'home':await showHomePage();break;case'game':await showLeaderboardPage(p[1].split('?')[0]);break;case'login':showLoginPage();break;case'mod':if(isMod){await showModPage()}else{navigate('home')}break;default:navigate('home')}document.getElementById('loading-page').classList.remove('active')};
         const showPage=(id)=>{document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active')};
-        
-        const showHomePage = async () => {
-            await ensureGamesLoaded(); // Use the robust loader
-            renderGames(document.getElementById('search-input').value, document.getElementById('sort-select').value);
-            showPage('home-page');
-        };
-
+        const showHomePage=async()=>{await ensureGamesLoaded();renderGames(document.getElementById('search-input').value,document.getElementById('sort-select').value);showPage('home-page')};
         const renderGames=(filter="",sort="newest")=>{const grid=document.getElementById('game-grid');if(!allGames||allGames.length===0){grid.innerHTML=`<p>Could not load games.</p>`;return}let filteredGames=allGames.filter(g=>g.names.international.toLowerCase().includes(filter.toLowerCase()));filteredGames.sort((a,b)=>{const aD=a['release-date'],bD=b['release-date'];if(aD&&!bD)return-1;if(!aD&&bD)return 1;if(!aD&&!bD)return a.names.international.localeCompare(b.names.international);switch(sort){case'oldest':return new Date(aD)-new Date(bD);case'alphabetical':return a.names.international.localeCompare(b.names.international);case'newest':default:return new Date(bD)-new Date(aD)}});grid.innerHTML=filteredGames.map(g=>{let dI='Date Unknown';const rD=g['release-date'];if(rD){const rY=new Date(rD).getFullYear(),rT=timeAgo(rD);dI=`${rY} (${rT})`}return`<a href="#game/${g.abbreviation}" class="game-card"><img src="${g.assets['cover-medium'].uri}" alt="${g.names.international}"><div class="game-card-info"><h3>${g.names.international}</h3><p>${dI}</p></div></a>`}).join('')};
         
         const showLeaderboardPage = async (gameAbbr) => {
             const container = document.getElementById('leaderboard-page');
             container.innerHTML = `<div class="loader">Loading...</div>`;
             showPage('leaderboard-page');
-            
-            await ensureGamesLoaded(); // Use the robust loader
-            
+            await ensureGamesLoaded();
             const foundGame = allGames.find(g => g.abbreviation === gameAbbr);
             if (!foundGame) { container.innerHTML = `<p>Game not found.</p>`; return; }
-
             const [catData, lvlData, varData] = await Promise.all([apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/categories`), apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/levels`), apiFetch(`${SRC_API_BASE}/games/${foundGame.id}/variables`)]);
             if (!catData) { container.innerHTML = `<p>Error loading categories.</p>`; return; }
-            
             const gameData = { id: foundGame.id, name: foundGame.names.international, weblink: foundGame.weblink, categories: catData.data, levels: lvlData?.data || [], variables: varData?.data || [] };
             renderLeaderboard(gameData);
         };
@@ -164,13 +149,13 @@
             const currentCategories = isPerLevel ? levelCategories : fullGameCategories;
             html += `<div class="tabs">${currentCategories.map(c => `<button class="nav-button nav-cat-button ${c.id === selectedCategoryId ? 'active' : ''}" data-cat-id="${c.id}">${c.name}</button>`).join('')}</div>`;
 
+            // <<< FIXED: Safety check for category rules
             if (isPerLevel && selectedCategory?.name.toLowerCase().includes('star')) {
-                 const stars = selectedCategory.rules.split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
+                 const stars = (selectedCategory.rules || "").split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
                  const selectedStar = params.get('star') || (stars.length > 0 ? stars[0] : 'Select Star');
                  html += `<button id="star-selector-btn" class="single-star-selector" data-var-id="star">${selectedStar}</button>`;
             }
 
-            // <<< FIXED SUBCATEGORY VISIBILITY
             gameData.variables.filter(v => v['is-subcategory']).forEach(variable => {
                 if (variable.category && variable.category !== selectedCategoryId) return;
                 const selectedValueId = params.get(variable.id) || variable.values.default;
@@ -182,12 +167,9 @@
             container.innerHTML = html;
             
             // Event Listeners
-            const levelSelectorBtn = document.getElementById('level-selector-btn');
-            if (levelSelectorBtn) { levelSelectorBtn.addEventListener('click', () => { const items = gameData.levels.map(l => ({ id: l.id, name: l.name })); openSelectionModal('Select Level', items, (levelId) => { updateLeaderboardURL({ level: levelId, category: levelCategories[0]?.id }); }); }); }
-            const typeSelectorBtn = document.getElementById('type-selector-btn');
-            if (typeSelectorBtn) { typeSelectorBtn.addEventListener('click', () => { if (levelCategories.length > 0 && gameData.levels.length > 0) { updateLeaderboardURL({ level: gameData.levels[0].id, category: levelCategories[0].id }); } }); }
-            const starSelectorBtn = document.getElementById('star-selector-btn');
-            if (starSelectorBtn) { starSelectorBtn.addEventListener('click', () => { const stars = selectedCategory.rules.split('\n').filter(l => l.trim().startsWith('-')).map(l => l.trim().substring(1).trim()); const items = stars.map(s => ({id: s, name: s})); openSelectionModal('Select Star', items, (starName) => { updateLeaderboardURL({ [starSelectorBtn.dataset.varId]: starName }); }); }); }
+            document.getElementById('level-selector-btn')?.addEventListener('click', () => { const items = gameData.levels.map(l => ({ id: l.id, name: l.name })); openSelectionModal('Select Level', items, (levelId) => { updateLeaderboardURL({ level: levelId, category: levelCategories[0]?.id }); }); });
+            document.getElementById('type-selector-btn')?.addEventListener('click', () => { if (levelCategories.length > 0 && gameData.levels.length > 0) { updateLeaderboardURL({ level: gameData.levels[0].id, category: levelCategories[0].id }); } });
+            document.getElementById('star-selector-btn')?.addEventListener('click', () => { const stars = (selectedCategory.rules || "").split('\n').filter(l => l.trim().startsWith('-')).map(l => l.trim().substring(1).trim()); const items = stars.map(s => ({id: s, name: s})); openSelectionModal('Select Star', items, (starName) => { updateLeaderboardURL({ 'star': starName }); }); });
             document.querySelectorAll('.nav-cat-button').forEach(btn => btn.addEventListener('click', () => { const catId = btn.dataset.catId, cat = gameData.categories.find(c => c.id === catId); if (cat.type === 'per-game') { updateLeaderboardURL({ level: null, category: catId }); } else { updateLeaderboardURL({ category: catId }); } }));
             document.querySelectorAll('.nav-var-button').forEach(btn => btn.addEventListener('click', () => { updateLeaderboardURL({ [btn.dataset.varId]: btn.dataset.valId }); }));
             document.getElementById('submit-run-btn').addEventListener('click', () => openSubmitModal());
