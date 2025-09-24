@@ -301,12 +301,23 @@
 
         function switchView(viewName) { Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); }
         
+        // CORREÇÃO: Função parseDate atualizada para garantir UTC
         function parseDate(dateString) {
             if (!dateString) return null;
             if (String(dateString).match(/^\d{4}$/)) {
-                return new Date(parseInt(dateString), 0, 1);
+                return new Date(Date.UTC(parseInt(dateString), 0, 1));
             }
-            return new Date(dateString);
+            // Se for no formato YYYY-MM-DD, interpretar como UTC
+            if (String(dateString).match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const parts = dateString.split('-');
+                return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+            }
+            // Para outros formatos, tentar criar como UTC
+            const date = new Date(dateString);
+            if (!isNaN(date.getTime())) {
+                return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            }
+            return null;
         }
 
         function sortAndRenderGames(sortType) {
@@ -439,10 +450,14 @@
             table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th>${isMod ? '<th>Actions</th>' : ''}</tr></thead>`;
             const tbody = document.createElement('tbody');
             runs.forEach((run, index) => {
+                // CORREÇÃO: Usar UTC para exibição da data
                 let dateStr = 'Invalid Date';
                 if (run.date) {
                     const parts = run.date.split('-');
-                    if (parts.length === 3) { dateStr = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2])).toLocaleDateString(); }
+                    if (parts.length === 3) { 
+                        dateStr = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]))
+                            .toLocaleDateString(undefined, { timeZone: "UTC" }); 
+                    }
                 }
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(run.player)}</td><td>${escapeHtml(run.time)}</td><td>${dateStr}</td>
@@ -566,30 +581,38 @@
             } catch (e) { console.error("Error approving run:", e); alert("Failed to approve run."); }
         }
         
+        // CORREÇÃO: Função timeAgo atualizada para cálculo correto de meses
         function timeAgo(dateString) {
             if (!dateString) return '';
             const date = parseDate(dateString);
             if (!date || isNaN(date.getTime())) return '';
 
             const now = new Date();
-            if (date > now) {
+            const nowUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+            const dateUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+
+            if (dateUTC > nowUTC) {
                 return `Releases in ${date.getFullYear()}`;
             }
 
-            let yearDiff = now.getFullYear() - date.getFullYear();
-            let monthDiff = now.getMonth() - date.getMonth();
-            if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < date.getDate())) {
+            let yearDiff = now.getUTCFullYear() - date.getUTCFullYear();
+            let monthDiff = now.getUTCMonth() - date.getUTCMonth();
+
+            // Ajuste se o dia do mês atual for menor que o dia do mês da data
+            if (now.getUTCDate() < date.getUTCDate()) {
+                monthDiff--;
+            }
+
+            // Ajuste se a diferença de meses for negativa
+            if (monthDiff < 0) {
                 yearDiff--;
                 monthDiff += 12;
-            }
-            if (now.getDate() < date.getDate() && monthDiff > 0) {
-                 monthDiff--;
             }
 
             if (yearDiff > 0) return `${yearDiff} year${yearDiff > 1 ? 's' : ''} ago`;
             if (monthDiff > 0) return `${monthDiff} month${monthDiff > 1 ? 's' : ''} ago`;
             
-            const seconds = Math.floor((now - date) / 1000);
+            const seconds = Math.floor((nowUTC - dateUTC) / 1000);
             const days = Math.floor(seconds / 86400);
             if (days >= 7) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
             if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
@@ -610,7 +633,7 @@
             if (!timeStr || typeof timeStr !== 'string') return Infinity; let ms = 0;
             timeStr.toLowerCase().split(' ').forEach(p => { if (p.includes('h')) ms += parseFloat(p) * 3600000; else if (p.includes('m') && !p.includes('ms')) ms += parseFloat(p) * 60000; else if (p.includes('ms')) ms += parseFloat(p); else if (p.includes('s')) ms += parseFloat(p) * 1000; }); return ms;
         }
-        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
+        function escapeHtml(unsafe) { return unsafe ? unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : ''; }
         
         DOMElements.home.gameSearch.addEventListener('keyup', () => {
             const query = DOMElements.home.gameSearch.value.toLowerCase();
@@ -640,4 +663,4 @@
         init();
     </script>
 </body>
-</html>
+    </html>
