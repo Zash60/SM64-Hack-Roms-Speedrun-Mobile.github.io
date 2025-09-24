@@ -128,11 +128,8 @@
                         <label for="game-sort">Sort by:</label>
                         <select id="game-sort">
                             <option value="az">Alphabetical (A-Z)</option>
-                            <!-- *** TEXTO ALTERADO AQUI *** -->
                             <option value="newest">Newest Released</option>
                             <option value="oldest">Oldest Released</option>
-                            <option value="newest_added">Newest Added</option>
-                            <option value="oldest_added">Oldest Added</option>
                         </select>
                     </div>
                 </div>
@@ -304,7 +301,6 @@
         
         function sortAndRenderGames(sortType) {
              const sortedGames = [...allGames].sort((a, b) => {
-                // *** LÓGICA ALTERADA AQUI ***
                 if (sortType === 'newest') return new Date(b.released) - new Date(a.released);
                 if (sortType === 'oldest') return new Date(a.released) - new Date(b.released);
                 if (sortType === 'az') return a.names.international.localeCompare(b.names.international);
@@ -324,7 +320,7 @@
                         <img src="${imgSrc}" alt="${game.names.international}" loading="lazy">
                         <div class="game-card-info">
                             <div class="game-card-title">${game.names.international}</div>
-                            <div class="game-card-time">${timeAgo(game.created)}</div>
+                            <div class="game-card-time">${timeAgo(game.released)}</div>
                         </div>
                     </a>`;
                 list.appendChild(card);
@@ -558,12 +554,12 @@
             const months = Math.round(days / 30.44);
             const years = Math.round(days / 365.25);
 
-            if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'} ago`;
-            if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-            if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-            if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
-            if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
-            return `${years} year${years === 1 ? '' : 's'} ago`;
+            if (years > 0) return `${years} year${years > 1 ? 's' : ''} ago`;
+            if (months > 0) return `${months} month${months > 1 ? 's' : ''} ago`;
+            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            if (minutes > 0) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+            return `a few seconds ago`;
         }
 
         function parseTimeToMs(timeStr) {
