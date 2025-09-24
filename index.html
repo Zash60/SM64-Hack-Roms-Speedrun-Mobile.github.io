@@ -35,7 +35,7 @@
         .leaderboard-main-selector.static { cursor: default; }
         .leaderboard-main-selector::after { content: '▾'; font-size: 1.5rem; color: var(--text-muted-color); }
         .leaderboard-main-selector.static::after { content: ''; }
-        .leaderboard-nav-group { margin-bottom: 1.5rem; }
+        .leaderboard-nav-group { margin-top: 1.5rem; }
         .leaderboard-nav-group .group-label { font-size: 0.9rem; font-weight: bold; color: var(--text-muted-color); margin-bottom: 0.75rem; padding-left: 0.25rem; }
         .tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; }
         .nav-button { padding: 0.6rem 1rem; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-color); border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: background-color 0.2s ease; }
@@ -149,12 +149,15 @@
                  const stars = (selectedCategory.rules || "").split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim());
                  if (stars.length > 0) {
                     const selectedStar = params.get('star') || stars[0];
-                    html += `<button id="star-selector-btn" class="single-star-selector" data-var-id="star">${selectedStar}</button>`;
+                    html += `<button id="star-selector-btn" class="single-star-selector">${selectedStar}</button>`;
                  }
             }
 
+            // <<< FIXED SUBCATEGORY VISIBILITY
             gameData.variables.filter(v => v['is-subcategory']).forEach(variable => {
-                if (variable.category && variable.category !== selectedCategoryId) return;
+                if (variable.category && variable.category !== selectedCategoryId) {
+                    return; // Hide if it's for a different category
+                }
                 const selectedValueId = params.get(variable.id) || variable.values.default;
                 html += `<div class="leaderboard-nav-group"><div class="group-label">${variable.name}</div><div class="tabs">${Object.entries(variable.values.values).map(([valId, {label}]) => `<button class="nav-button nav-var-button ${valId === selectedValueId ? 'active' : ''}" data-var-id="${variable.id}" data-val-id="${valId}">${label}</button>`).join('')}</div></div>`;
             });
@@ -181,12 +184,11 @@
         const closeSelectionModal=()=>document.getElementById('selection-modal').classList.add('hidden');
         const openSubmitModal=()=>{document.getElementById('submit-run-form').reset();document.getElementById('run-id-input').value='';document.getElementById('modal-title').textContent="Submit Run";document.getElementById('run-date').valueAsDate=new Date();document.getElementById('submit-run-modal').classList.remove('hidden')};
         const closeSubmitModal=()=>document.getElementById('submit-run-modal').classList.add('hidden');
-        const handleRunSubmit=async(e)=>{e.preventDefault();const pN=document.getElementById('player-name').value,tS=document.getElementById('time').value,vU=document.getElementById('video-url').value,rD=document.getElementById('run-date').value,rI=document.getElementById('run-id-input').value;const tM=parseTimeToMs(tS);if(tM===null){alert("Invalid time format.");return}const rData={player:pN,time:tM,videoUrl:vU,date:rD,submittedAt:new Date().toISOString()};if(rI){alert("Editing not implemented in this flow.");return}rData.dbPath=getFirebasePathForCurrentLeaderboard();try{await push(ref(db,'pendingRuns'),rData);alert("Run submitted!");closeSubmitModal()}catch(err){console.error("Submit error:",err);alert("Failed to submit run.")}};
+        const handleRunSubmit=async(e)=>{e.preventDefault();const pN=document.getElementById('player-name').value,tS=document.getElementById('time').value,vU=document.getElementById('video-url').value,rD=document.getElementById('run-date').value;const tM=parseTimeToMs(tS);if(tM===null){alert("Invalid time format.");return}const rData={player:pN,time:tM,videoUrl:vU,date:rD,submittedAt:new Date().toISOString()};rData.dbPath=getFirebasePathForCurrentLeaderboard();try{await push(ref(db,'pendingRuns'),rData);alert("Run submitted!");closeSubmitModal()}catch(err){console.error("Submit error:",err);alert("Failed to submit run.")}};
         const setupAuth=()=>{onAuthStateChanged(auth,async(user)=>{const aL=document.getElementById('auth-link'),mL=document.getElementById('mod-link');if(user){currentUser=user;const modSnap=await get(child(ref(db),`users/${user.uid}/isMod`));isMod=modSnap.exists()&&modSnap.val();aL.textContent='Logout';aL.href='#';aL.onclick=(e)=>{e.preventDefault();signOut(auth)};if(isMod)mL.classList.remove('hidden')}else{currentUser=null;isMod=false;aL.textContent='Login';aL.href='#login';aL.onclick=null;mL.classList.add('hidden');if(window.location.hash==='#mod')navigate('home')}})};
         const handleLogin=async(e)=>{e.preventDefault();const email=document.getElementById('login-email').value,pass=document.getElementById('login-password').value,errP=document.getElementById('login-error');errP.textContent='';try{await signInWithEmailAndPassword(auth,email,pass);navigate('mod')}catch(err){console.error("Login failed:",err);errP.textContent='Login failed.'}};
         const showLoginPage=()=>{showPage('login-page');document.getElementById('login-error').textContent=''};
         const showModPage=async()=>{/* Mod page functionality can be added back here */};
-        const handleModAction=async(e)=>{/* Mod actions can be added back here */};
         
         window.addEventListener('DOMContentLoaded',()=>{document.getElementById('search-input').addEventListener('input',(e)=>renderGames(e.target.value,document.getElementById('sort-select').value));document.getElementById('sort-select').addEventListener('change',(e)=>renderGames(document.getElementById('search-input').value,e.target.value));document.getElementById('submit-run-form').addEventListener('submit',handleRunSubmit);document.getElementById('cancel-run-btn').addEventListener('click',closeSubmitModal);document.querySelector('#submit-run-modal').addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeSubmitModal()});document.querySelector('#selection-modal').addEventListener('click',(e)=>{if(e.target===e.currentTarget)closeSelectionModal()});document.getElementById('login-form').addEventListener('submit',handleLogin);window.addEventListener('hashchange',handleRouteChange);setupAuth();handleRouteChange()});
     </script>
