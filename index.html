@@ -300,10 +300,20 @@
         function switchView(viewName) { Object.values(DOMElements.views).forEach(v => v.classList.remove('active')); Object.values(DOMElements.nav).forEach(n => n.classList.remove('active')); if (DOMElements.views[viewName]) DOMElements.views[viewName].classList.add('active'); if (DOMElements.nav[viewName]) DOMElements.nav[viewName].classList.add('active'); }
         
         function sortAndRenderGames(sortType) {
-             const sortedGames = [...allGames].sort((a, b) => {
-                if (sortType === 'newest') return new Date(b.released) - new Date(a.released);
-                if (sortType === 'oldest') return new Date(a.released) - new Date(b.released);
-                if (sortType === 'az') return a.names.international.localeCompare(b.names.international);
+            const sortedGames = [...allGames].sort((a, b) => {
+                if (sortType === 'newest') {
+                    const dateA = new Date(a.released);
+                    const dateB = new Date(b.released);
+                    return dateB - dateA;
+                }
+                if (sortType === 'oldest') {
+                    const dateA = new Date(a.released);
+                    const dateB = new Date(b.released);
+                    return dateA - dateB;
+                }
+                if (sortType === 'az') {
+                    return a.names.international.localeCompare(b.names.international);
+                }
                 return 0;
             });
             renderGameList(sortedGames);
