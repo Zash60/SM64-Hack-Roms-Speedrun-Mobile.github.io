@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM64 Hacks Speedrun Mobile</title>
+    <link rel="icon" href="data:,"> <!-- Prevent favicon 404 -->
     <style>
         body { font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 0; padding: 0; }
         header { background: #1f1f1f; padding: 10px; text-align: center; }
@@ -43,10 +44,10 @@
         </div>
     </div>
     <script type="module">
-        // Firebase Imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js"; // Use latest version if needed
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        // Firebase Imports (Updated to latest version 12.3.0)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
         // Firebase Config
         const firebaseConfig = {
@@ -114,7 +115,7 @@
 
         // Relative Time
         function relativeTime(released) {
-            const now = new Date(2025, 8, 25); // Use provided date; in prod use new Date()
+            const now = new Date(); // Use current date
             const diff = now.getFullYear() - released;
             return `${diff} years ago`;
         }
@@ -158,8 +159,10 @@
                 if (currentType === 'fullgame') {
                     renderFullGameLeaderboard(content, gameId);
                 } else if (currentType === 'level') {
-                    const levelId = parts[2];
+                    const levelId = parts[3]; // Fixed: parts[2] is 'level', parts[3] is levelId, parts[4] cat, parts[5] sub
                     currentType = 'level-' + levelId;
+                    currentCat = parts[4];
+                    currentSub = parts[5] || '';
                     renderLevelLeaderboard(content, gameId, levelId);
                 }
             }
@@ -197,7 +200,8 @@
             filtered.forEach(g => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
-                card.innerHTML = `<img src="${g.assets['cover-tiny'].uri || ''}" alt="${g.names.international}">
+                const coverUri = (g.assets['cover-tiny'].uri || '').replace(/^http:/, 'https:'); // Fix mixed content
+                card.innerHTML = `<img src="${coverUri}" alt="${g.names.international}">
                     <div><h3>${g.names.international}</h3><p>${g.released} (${relativeTime(g.released)})</p></div>`;
                 card.onclick = () => navigate(`game/${g.id}/fullgame`);
                 list.appendChild(card);
@@ -225,7 +229,7 @@
             const fullVars = vars.filter(v => v['is-subcategory'] && (v.scope.type === 'full-game' || v.scope.type === 'all'));
             if (fullVars.length) {
                 const selectSub = document.createElement('select');
-                fullVars[0].values.values.forEach((val, id) => { // Assume one var for simplicity
+                Object.entries(fullVars[0].values.values).forEach(([id, val]) => { // Fixed: Use Object.entries for id
                     const opt = document.createElement('option');
                     opt.value = `${fullVars[0].id}-${id}`;
                     opt.text = val.label;
@@ -255,7 +259,7 @@
                 if (l.id === levelId) opt.selected = true;
                 levelSelect.appendChild(opt);
             });
-            levelSelect.onchange = () => navigate(`game/${gameId}/level/${levelSelect.value}/${currentCat || 'default'}`);
+            levelSelect.onchange = () => navigate(`game/${gameId}/level/${levelSelect.value}/${currentCat || ''}/${currentSub || ''}`);
             content.appendChild(levelSelect);
 
             const cats = await fetchGameData(gameId, 'categories');
@@ -268,13 +272,14 @@
                 if (c.id === currentCat) opt.selected = true;
                 catSelect.appendChild(opt);
             });
-            catSelect.onchange = () => navigate(`game/${gameId}/level/${levelId}/${catSelect.value}`);
+            catSelect.onchange = () => navigate(`game/${gameId}/level/${levelId}/${catSelect.value}/${currentSub || ''}`);
             content.appendChild(catSelect);
 
             // For Single Star, show star dropdown (variables for single-level)
-            if (currentCat && levelCats.find(c => c.name.includes('Single Star'))) {
+            const isSingleStar = levelCats.find(c => c.id === currentCat && c.name.includes('Single Star'));
+            if (isSingleStar) {
                 const vars = await fetchGameData(gameId, 'variables');
-                const levelVars = vars.filter(v => v['is-subcategory'] && v.scope.type === 'single-level' && v.scope.level === levelId && v.category === currentCat);
+                const levelVars = vars.filter(v => v['is-subcategory'] && v.scope.type === 'single-level' && v.scope.level === levelId);
                 if (levelVars.length) {
                     const starSelect = document.createElement('select');
                     Object.entries(levelVars[0].values.values).forEach(([id, val]) => {
@@ -306,7 +311,7 @@
                 const runs = [];
                 snapshot.forEach(child => {
                     const run = child.val();
-                    if (run.approved) runs.push(run);
+                    if (run.approved) runs.push({ ...run, key: child.key });
                 });
                 runs.sort((a,b) => a.time - b.time);
                 table.innerHTML = `<tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th></tr>`;
@@ -335,7 +340,7 @@
             const date = document.getElementById('date').value;
             if (!player || !timeStr || !video || !date) return alert('Fill all fields');
             const time = parseTime(timeStr);
-            const run = { gameId: currentGame.id, type: currentType, cat: currentCat, sub: currentSub || 'default', player, time, video, date };
+            const run = { gameId: currentGame.id, type: currentType, cat: currentCat, sub: currentSub || 'default', player, time, video, date, approved: false };
             const newRef = push(ref(db, 'pending_runs'));
             await set(newRef, run);
             closeModal();
@@ -360,8 +365,8 @@
                 table.innerHTML = `<tr><th>Game</th><th>Player</th><th>Time</th><th>Video</th><th>Date</th><th>Actions</th></tr>`;
                 snapshot.forEach(child => {
                     const run = child.val();
-                    const tr = document.createElement('tr');
                     const gameName = games.find(g => g.id === run.gameId)?.names.international || 'Unknown';
+                    const tr = document.createElement('tr');
                     tr.innerHTML = `<td>${gameName}</td><td>${run.player}</td><td>${formatTime(run.time)}</td><td><a href="${run.video}">Link</a></td><td>${run.date}</td>`;
                     const actions = document.createElement('td');
                     const approveBtn = document.createElement('button');
@@ -396,13 +401,14 @@
 
         function editRun(key, run) {
             const newPlayer = prompt('New Player', run.player);
-            const newTime = prompt('New Time (mm:ss.ms)', formatTime(run.time).replace(/m|s|ms/g, ':').slice(0,-1));
+            const newTimeStr = prompt('New Time (mm:ss.ms)', formatTime(run.time).replace(/m |s /g, ':').replace('ms', ''));
             const newVideo = prompt('New Video URL', run.video);
             const newDate = prompt('New Date (YYYY-MM-DD)', run.date);
-            if (newPlayer && newTime && newVideo && newDate) {
+            if (newPlayer && newTimeStr && newVideo && newDate) {
+                const newTime = parseTime(newTimeStr);
                 update(ref(db, `pending_runs/${key}`), {
                     player: newPlayer,
-                    time: parseTime(newTime),
+                    time: newTime,
                     video: newVideo,
                     date: newDate
                 });
@@ -437,6 +443,14 @@
             user = null;
             renderMod(document.getElementById('content'));
         }
+
+        // Make functions global for inline onclick
+        window.navigate = navigate;
+        window.login = login;
+        window.signup = signup;
+        window.logout = logout;
+        window.submitRun = submitRun;
+        window.closeModal = closeModal;
 
         // Init
         auth.onAuthStateChanged(u => {
