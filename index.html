@@ -3,892 +3,628 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Hacks Speedrun Mobile</title>
-    
-    <!-- CSS STYLES -->
+    <title>SM64 Hack Roms Speedrun Mobile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
     <style>
         :root {
-            --bg-color: #18181b;
-            --surface-color: #27272a;
-            --primary-color: #ef4444;
-            --text-color: #e4e4e7;
-            --text-muted: #a1a1aa;
-            --border-color: #3f3f46;
+            --bg-color: #1a1a1a; --surface-color: #2c2c2c; --primary-color: #4a90e2;
+            --text-color: #e0e0e0; --text-secondary-color: #a0a0e0; --border-color: #444;
         }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* --- Main Layout & Pages --- */
-        .page {
-            display: none; /* Hide all pages by default */
-            padding: 1rem;
-            min-height: 100vh;
-        }
-        .page.active {
-            display: block; /* Show only the active page */
-        }
-
-        /* --- Header --- */
-        .header {
-            background-color: var(--surface-color);
-            padding: 0.75rem 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .header a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-        .header-nav a {
-            margin-left: 1rem;
-            font-size: 1rem;
-            font-weight: normal;
-        }
-
-        /* --- UI Components --- */
-        h1, h2 {
-            margin-top: 0;
-        }
-        .input-group {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        input[type="search"], select, input[type="text"], input[type="email"], input[type="password"] {
-            width: 100%;
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.75rem;
-            font-size: 1rem;
-        }
-        button, .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 0.75rem 1rem;
-            font-size: 1rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-secondary {
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-        }
-
-        /* --- Home Page (Game List) --- */
-        .game-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-        }
-        .game-card {
-            background-color: var(--surface-color);
-            border-radius: 8px;
-            overflow: hidden;
-            text-decoration: none;
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-        }
-        .game-card img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-        }
-        .game-card-info {
-            padding: 0.75rem;
-            flex-grow: 1;
-        }
-        .game-card-info h3 {
-            margin: 0 0 0.25rem;
-            font-size: 1rem;
-        }
-        .game-card-info p {
-            margin: 0;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* --- Leaderboard Page --- */
-        .leaderboard-header {
-            margin-bottom: 1.5rem;
-        }
-        .category-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-        .category-tabs .tab {
-            padding: 0.5rem 1rem;
-            background-color: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            cursor: pointer;
-        }
-        .category-tabs .tab.active {
-            background-color: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
-        }
-        .leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .leaderboard-table th, .leaderboard-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .leaderboard-table th {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        .leaderboard-table tr:nth-child(1) td { background-color: #c9b03730; } /* Gold */
-        .leaderboard-table tr:nth-child(2) td { background-color: #d7d7d730; } /* Silver */
-        .leaderboard-table tr:nth-child(3) td { background-color: #ad8a5630; } /* Bronze */
-        
-        /* --- Modals --- */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background-color: var(--surface-color);
-            padding: 1.5rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-        }
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-        .modal-header h2 { margin: 0; }
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-        .modal-body .form-group {
-            margin-bottom: 1rem;
-        }
-        .modal-body label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-muted);
-        }
-
-        /* --- Loader --- */
-        .loader {
-            text-align: center;
-            padding: 2rem;
-            font-size: 1.2rem;
-            color: var(--text-muted);
-        }
+        body { font-family: 'Roboto', sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        a { color: var(--primary-color); text-decoration: none; cursor: pointer; }
+        a:hover { text-decoration: underline; }
+        header { background-color: var(--surface-color); padding: 1rem 0; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 999; }
+        header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
+        header nav a { margin-left: 15px; font-weight: bold; }
+        h1, h2, h3, h4 { font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 0; }
+        h4 { font-size: 1.1em; margin-top: 20px; border-bottom: none; padding-bottom: 4px; border-left: 3px solid var(--primary-color); padding-left: 10px;}
+        h5 { margin-bottom: 5px; color: var(--text-secondary-color); font-size: 0.9em; text-transform: uppercase; }
+        .card { background-color: var(--surface-color); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea, button { font-family: 'Roboto', sans-serif; font-size: 1rem; }
+        input, select, textarea { width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); box-sizing: border-box; }
+        input[type="checkbox"] { width: auto; margin-right: 10px; }
+        select { appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0a0a0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2em; }
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: background-color 0.2s; }
+        .btn:disabled { background-color: #555; cursor: not-allowed; }
+        .btn-sm { padding: 5px 8px; font-size: 0.8em; }
+        .btn-primary { background-color: var(--primary-color); color: #fff; }
+        .btn-success { background-color: #28a745; color: #fff; }
+        .btn-danger { background-color: #dc3545; color: #fff; }
+        .btn-icon { background: none; border: none; color: var(--text-secondary-color); cursor: pointer; padding: 2px 6px; font-size: 1.1em; }
+        .btn-icon:hover { color: var(--primary-color); }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); animation: fadeIn 0.3s; }
+        .modal-content { background-color: var(--surface-color); margin: 5% auto; padding: 20px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; border-radius: 8px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        .page-container { padding: 2rem 0; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+        .game-card { display: block; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; text-align: center; border: 1px solid var(--border-color); transition: transform 0.2s ease; position: relative; }
+        .game-card:hover { transform: translateY(-5px); }
+        .game-card img { width: 100%; height: 80px; object-fit: contain; display: block; background-color: #111; }
+        .game-card-info { padding: 10px; }
+        .game-card-info h3 { margin: 0; font-size: 0.8rem; font-weight: 400; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; padding: 0;}
+        .game-card-year { position: absolute; top: 5px; right: 5px; background-color: rgba(0,0,0,0.7); color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.7em; font-weight: bold; }
+        .leaderboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .leaderboard-nav { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+        .category-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+        .tab { padding: 8px 15px; background-color: #333; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-color); }
+        .tab.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .leaderboard-table th, .leaderboard-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .hack-item-header { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; flex-wrap: wrap; }
+        .hack-manage-details { display: none; width: 100%; padding: 15px; background-color: #222; border-top: 1px solid var(--border-color); margin-top: 10px; border-radius: 0 0 8px 8px; }
+        .admin-list-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid #333; flex-wrap: wrap; }
+        .inline-edit-container { display: flex; align-items: center; gap: 5px; flex-grow: 1; }
+        .inline-edit-container input { width: auto; flex-grow: 1; padding: 4px; font-size: 0.9em; background-color: #111; }
+        .admin-add-form { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+        .admin-add-form input { flex-grow: 1; min-width: 150px; }
+        .admin-add-form button { flex-shrink: 0; }
+        .admin-sub-details { display: none; width: 100%; background-color: #111; padding: 10px; margin-top: 8px; border-radius: 4px; border-left: 2px solid var(--primary-color); }
+        .controls-container { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;}
+        .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid var(--primary-color); width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-
-    <!-- ======== HEADER ======== -->
-    <header class="header">
-        <a href="#">SM64 Hacks</a>
-        <nav class="header-nav">
-            <a href="#/mod" id="mod-link" style="display: none;">Mod</a>
-            <a href="#" id="logout-link" style="display: none;">Logout</a>
-        </nav>
+    <header>
+        <div class="container">
+            <h1>SM64 Hack Roms Speedrun Mobile</h1>
+            <nav><a id="home-link">Home</a><span id="auth-links-container"></span></nav>
+        </div>
     </header>
-
-    <!-- ======== HOME PAGE ======== -->
-    <div id="home-page" class="page">
-        <h1>Games in Series</h1>
-        <div class="input-group">
-            <input type="search" id="search-input" placeholder="Search for a hack...">
-            <select id="sort-select">
-                <option value="newest">Newest Released</option>
-                <option value="oldest">Oldest Released</option>
-                <option value="alpha">Alphabetical</option>
-            </select>
-        </div>
-        <div id="game-list-container" class="game-grid">
-            <div class="loader">Loading games...</div>
-        </div>
-    </div>
-
-    <!-- ======== LEADERBOARD PAGE ======== -->
-    <div id="leaderboard-page" class="page">
-        <div id="leaderboard-content">
-            <div class="loader">Loading leaderboard...</div>
-        </div>
-    </div>
-
-    <!-- ======== LOGIN PAGE ======== -->
-    <div id="login-page" class="page">
-        <h2>Moderator Login</h2>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="login-email">Email</label>
-                <input type="email" id="login-email" required>
+    <main class="container">
+        <div id="page-home" class="page-container">
+            <h2>Games</h2>
+            <div class="controls-container">
+                <div class="form-group" style="flex-grow: 1;"><label for="hack-search-input">Search</label><input type="search" id="hack-search-input"></div>
+                <div class="form-group"><label for="sort-by-select">Sort by</label>
+                    <select id="sort-by-select">
+                        <option value="name_asc">Name</option>
+                        <option value="newest_released">Newest released</option>
+                        <option value="oldest_released">Oldest released</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="login-password">Password</label>
-                <input type="password" id="login-password" required>
-            </div>
-            <button type="submit">Login</button>
-            <p id="login-error" style="color: var(--primary-color); margin-top: 1rem;"></p>
-        </form>
-    </div>
-
-    <!-- ======== MOD PAGE ======== -->
-    <div id="mod-page" class="page">
-        <h2>Pending Runs</h2>
-        <div id="pending-runs-container">
-            <div class="loader">Loading pending runs...</div>
+            <div id="games-grid"></div>
         </div>
-    </div>
-    
-    <!-- ======== SUBMIT RUN MODAL ======== -->
-    <div id="submit-run-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="submit-modal-title">Submit Run</h2>
-                <button class="close-btn" onclick="closeModal('submit-run-modal')">&times;</button>
+        <div id="page-hack-details" class="page-container" style="display: none;">
+            <div class="leaderboard-header">
+                <h2 id="hack-details-title"></h2>
+                <button id="submit-run-btn" class="btn btn-primary">Submit Run</button>
             </div>
-            <div class="modal-body">
-                <form id="submit-run-form">
-                    <input type="hidden" id="run-leaderboard-id">
-                    <input type="hidden" id="run-id"> <!-- For editing -->
-                    <div class="form-group">
-                        <label for="run-player">Player</label>
-                        <input type="text" id="run-player" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="run-time">Time (e.g., 1h 23m 45s 678ms)</label>
-                        <input type="text" id="run-time" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="run-video">Video URL</label>
-                        <input type="url" id="run-video">
-                    </div>
-                    <div class="form-group">
-                        <label for="run-date">Date</label>
-                        <input type="date" id="run-date" required>
-                    </div>
-                    <button type="submit">Submit</button>
+            <div class="leaderboard-nav">
+                <div class="form-group"><label>Leaderboard Type</label><select id="type-select"></select></div>
+                <div id="level-select-container" class="form-group" style="display: none;"><label>Level / Stage</label><select id="level-select"></select></div>
+            </div>
+            <div id="leaderboard-content"></div>
+        </div>
+        <div id="page-admin" class="page-container" style="display: none;">
+            <div id="login-section" style="display:none;">
+                <h2>Moderator Login</h2>
+                <form id="login-form" class="card">
+                    <div class="form-group"><label>Email</label><input type="email" id="email" required></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="password" required></div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                    <p id="login-error" style="color: #e24a4a;"></p>
                 </form>
             </div>
+            <div id="admin-content" style="display: none;">
+                <h2>Admin Panel</h2>
+                <div class="card">
+                    <h3>Add New Hack Rom</h3>
+                    <form id="add-hack-form">
+                        <div class="form-group"><label>Hack Name</label><input type="text" id="add-hack-name" required></div>
+                        <div class="form-group"><label>Release Year</label><input type="number" id="add-hack-year" required></div>
+                        <div class="form-group"><label>Cover Image URL</label><input type="url" id="add-hack-image" placeholder="https://example.com/image.png" required></div>
+                        <button type="submit" class="btn btn-primary">Add Hack</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h3>Synchronization</h3>
+                    <p>Fetch and add new SM64 Hack Roms, including categories and levels, directly from the official speedrun.com series.</p>
+                    <button id="sync-src-btn" class="btn btn-primary">Sync with Speedrun.com</button>
+                    <div class="form-group" style="margin-top: 10px;"><label style="display: inline-flex; align-items: center;"><input type="checkbox" id="force-sync-checkbox"> Force update (deletes all existing data)</label></div>
+                    <div id="sync-status" style="margin-top: 10px;"></div>
+                </div>
+                <div class="card">
+                    <h3>Existing Hack Roms</h3>
+                    <div id="existing-hacks-list"></div>
+                </div>
+                <div class="card">
+                    <h3>Review Pending Runs</h3>
+                    <div id="pending-runs-list"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="submit-run-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span><h3>Submit Run for <span id="submit-run-title"></span></h3>
+            <form id="submit-run-form">
+                <div class="form-group"><label>Player Name</label><input type="text" id="run-player" required></div>
+                <div class="form-group"><label>Time (e.g., 1:23.456)</label><input type="text" id="run-time" required></div>
+                <div class="form-group"><label>Date Achieved</label><input type="date" id="run-date" required></div>
+                <div class="form-group"><label>Video Link</label><input type="url" id="run-video" required></div>
+                <div id="run-submission-filters"></div>
+                <button type="submit" class="btn btn-primary">Submit for Review</button>
+            </form>
         </div>
     </div>
 
+<script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, query, where, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <!-- ======== FIREBASE SDK ======== -->
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, onValue, get, set, remove, push } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+        authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+        databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
+        projectId: "sm64-hack-roms-speedrun-mobile",
+        storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
+        messagingSenderId: "499101981060",
+        appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+    };
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
-            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
-            databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
-            projectId: "sm64-hack-roms-speedrun-mobile",
-            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
-            messagingSenderId: "499101981060",
-            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
-        };
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const auth = getAuth(app);
+    let state = { user: null };
 
+    // Utility Functions
+    function showPage(pageId) { document.querySelectorAll('.page-container').forEach(p => p.style.display = 'none'); document.getElementById(pageId).style.display = 'block'; }
+    function parseTimeToMilliseconds(timeStr) { let t=0;if(timeStr.includes(':')){const parts=timeStr.split(':').reverse();t+=parseFloat(parts[0]||0)*1e3;t+=parseInt(parts[1]||0)*6e4;t+=parseInt(parts[2]||0)*36e5}else{timeStr.match(/(\d+)\s*h/)?.[1]&&(t+=parseInt(timeStr.match(/(\d+)\s*h/)[1])*36e5);timeStr.match(/(\d+)\s*m/)?.[1]&&(t+=parseInt(timeStr.match(/(\d+)\s*m/)[1])*6e4);timeStr.match(/(\d+(\.\d+)?)\s*s/)?.[1]&&(t+=parseFloat(timeStr.match(/(\d+(\.\d+)?)\s*s/)[1].replace(",","."))*1e3);timeStr.match(/(\d+)\s*ms/)?.[1]&&(t+=parseInt(timeStr.match(/(\d+)\s*ms/)[1]))}if(t===0&&!isNaN(parseFloat(timeStr)))t=parseFloat(timeStr)*1e3;return Math.round(t)}
+    function formatTime(ms) { if (isNaN(ms) || ms < 0) return "Invalid Time"; const tS = Math.floor(ms / 1000); const h = Math.floor(tS / 3600); const m = Math.floor((tS % 3600) / 60); const s = tS % 60; const mmm = ms % 1000; const pM = String(m).padStart(2, '0'); const pS = String(s).padStart(2, '0'); const pMMM = String(mmm).padStart(3, '0'); if (h > 0) { return `${h}:${pM}:${pS}.${pMMM}`; } return `${m}:${pS}.${pMMM}`; }
+    function createHTMLElement(tag, className, innerHTML = '') { const el = document.createElement(tag); if (className) el.className = className; el.innerHTML = innerHTML; return el; }
+    function slugify(text) { return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, ''); }
+    // Helper to get docs from a query and map them to objects with their IDs
+    async function getDocsWithId(q) {
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
 
-        // --- CONFIG & GLOBAL STATE ---
-        const API_BASE = 'https://www.speedrun.com/api/v1';
-        const SM64_HACKS_SERIES_ID = '4d7e5m67'; 
-        const CACHE_DURATION = 1000 * 60 * 60 * 24; // 24 hours
-        let allGames = [];
-        let currentGameData = null;
+    // --- Main Logic ---
 
-        // --- UTILITY FUNCTIONS ---
-        const timeAgo = (date) => {
-            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + " years ago";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + " months ago";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + " days ago";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + " hours ago";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + " minutes ago";
-            return Math.floor(seconds) + " seconds ago";
-        };
-
-        const parseTimeToSeconds = (timeStr) => {
-            let totalSeconds = 0;
-            const hMatch = timeStr.match(/(\d+)h/);
-            const mMatch = timeStr.match(/(\d+)m/);
-            const sMatch = timeStr.match(/(\d+(\.\d+)?)s/);
-            const msMatch = timeStr.match(/(\d+)ms/);
-            
-            if (hMatch) totalSeconds += parseInt(hMatch[1]) * 3600;
-            if (mMatch) totalSeconds += parseInt(mMatch[1]) * 60;
-            if (sMatch) totalSeconds += parseFloat(sMatch[1]);
-            if (msMatch) totalSeconds += parseInt(msMatch[1]) / 1000;
-            
-            // Handle simple float format like 123.456
-            if (!hMatch && !mMatch && !sMatch && !msMatch && !isNaN(parseFloat(timeStr))) {
-                return parseFloat(timeStr);
-            }
-
-            return totalSeconds;
-        };
-
-        const formatTime = (totalSeconds) => {
-            if (isNaN(totalSeconds) || totalSeconds === null) return '-';
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = Math.floor(totalSeconds % 60);
-            const milliseconds = Math.round((totalSeconds - Math.floor(totalSeconds)) * 1000);
-
-            let str = '';
-            if (hours > 0) str += `${hours}h `;
-            if (minutes > 0 || hours > 0) str += `${minutes}m `;
-            str += `${seconds}s`;
-            if (milliseconds > 0) str += ` ${milliseconds}ms`;
-            return str.trim();
-        };
-
-        const showPage = (pageId) => {
-            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-            const page = document.getElementById(pageId);
-            if (page) {
-                page.classList.add('active');
-                window.scrollTo(0, 0);
-            }
-        };
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
         
-        const openModal = (modalId) => document.getElementById(modalId).classList.add('active');
-        const closeModal = (modalId) => document.getElementById(modalId).classList.remove('active');
-        window.closeModal = closeModal; // Make it globally accessible for inline onclick
-
-        // --- API & CACHING ---
-        const apiFetch = async (endpoint) => {
-            const cacheKey = `sr_cache_${endpoint}`;
-            const cached = localStorage.getItem(cacheKey);
-            if (cached) {
-                const { timestamp, data } = JSON.parse(cached);
-                if (Date.now() - timestamp < CACHE_DURATION) {
-                    return data;
-                }
-            }
-            try {
-                const response = await fetch(`${API_BASE}${endpoint}`);
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const data = await response.json();
-                localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
-                return data;
-            } catch (error) {
-                console.error(`Failed to fetch ${endpoint}:`, error);
-                return null;
-            }
-        };
-
-        // --- ROUTING ---
-        const router = () => {
-            const hash = window.location.hash || '#/';
-            const [path, ...params] = hash.substring(2).split('/');
-            
-            // Clear any open modals
-            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-            
-            if (path === 'game' && params[0]) {
-                showPage('leaderboard-page');
-                const [gameId, , categoryId, , levelId] = params;
-                renderLeaderboard(gameId, categoryId, levelId);
-            } else if (path === 'mod') {
-                if (auth.currentUser) {
-                    showPage('mod-page');
-                    renderModPage();
-                } else {
-                    showPage('login-page');
-                }
-            } else if (path === 'login') {
-                showPage('login-page');
-            } else {
-                showPage('home-page');
-                if (allGames.length === 0) fetchAndRenderGames();
-            }
-        };
-
-        // --- AUTHENTICATION ---
         onAuthStateChanged(auth, user => {
-            const modLink = document.getElementById('mod-link');
-            const logoutLink = document.getElementById('logout-link');
-            if (user) {
-                modLink.style.display = 'inline';
-                logoutLink.style.display = 'inline';
-            } else {
-                modLink.style.display = 'none';
-                logoutLink.style.display = 'none';
+            state.user = user;
+            updateAuthUI();
+            handleRouteChange();
+        });
+    });
+    
+    function updateAuthUI() {
+        const authLinks = document.getElementById('auth-links-container');
+        authLinks.innerHTML = state.user ? `<a id="admin-link">Admin</a><a id="logout-link">Logout</a>` : `<a id="login-link">Login</a>`;
+        if (state.user) {
+            document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
+            document.getElementById('logout-link').onclick = async (e) => { e.preventDefault(); await signOut(auth); window.location.hash = ''; };
+        } else {
+            document.getElementById('login-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
+        }
+    }
+
+    window.addEventListener('hashchange', handleRouteChange);
+    function handleRouteChange() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#hack/')) showHackDetails(hash.substring(6));
+        else if (hash === '#admin') { showPage('page-admin'); initAdminPage(); }
+        else { showPage('page-home'); if (!document.querySelector('#games-grid .game-card')) fetchAndDisplayHacks(); }
+    }
+
+    async function fetchAndDisplayHacks() {
+        const gamesGrid = document.getElementById('games-grid');
+        gamesGrid.innerHTML = '<div class="loader"></div>';
+        const sortBy = document.getElementById('sort-by-select').value;
+        
+        let q;
+        const hacksRef = collection(db, 'hacks');
+        
+        if (sortBy === 'name_asc') {
+            q = query(hacksRef, orderBy('name', 'asc'));
+        } else if (sortBy === 'newest_released') {
+            q = query(hacksRef, orderBy('year', 'desc'), orderBy('created_at', 'desc'));
+        } else if (sortBy === 'oldest_released') {
+            q = query(hacksRef, orderBy('year', 'asc'), orderBy('created_at', 'asc'));
+        } else {
+             q = query(hacksRef, orderBy('name', 'asc'));
+        }
+
+        try {
+            const hacks = await getDocsWithId(q);
+            gamesGrid.innerHTML = '';
+            if (!hacks || hacks.length === 0) {
+                gamesGrid.innerHTML = '<p>No hack roms found. Run the sync in the Admin Panel.</p>'; return;
+            }
+            hacks.forEach(hack => {
+                const card = createHTMLElement('a', 'game-card', `${hack.year ? `<div class="game-card-year">${hack.year}</div>` : ''}<img src="${hack.imageUrl}" alt="${hack.name}" loading="lazy"><div class="game-card-info"><h3>${hack.name}</h3></div>`);
+                card.href = `#hack/${hack.slug}`;
+                card.onclick = (e) => { e.preventDefault(); window.location.hash = `hack/${hack.slug}`; };
+                gamesGrid.appendChild(card);
+            });
+        } catch (error) {
+            console.error("Error fetching hacks:", error);
+            gamesGrid.innerHTML = `<p style="color: red;"><b>Error loading games.</b><br>Check Firebase setup and Firestore security rules.</p>`;
+        }
+    }
+    
+    document.getElementById('hack-search-input').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.style.display = card.querySelector('h3').textContent.toLowerCase().includes(searchTerm) ? 'block' : 'none';
+        });
+    });
+    document.getElementById('sort-by-select').addEventListener('change', fetchAndDisplayHacks);
+
+    async function showHackDetails(slug) {
+        showPage('page-hack-details');
+        const leaderboardContent = document.getElementById('leaderboard-content');
+        leaderboardContent.innerHTML = '<div class="loader"></div>';
+
+        const q = query(collection(db, 'hacks'), where('slug', '==', slug));
+        const hacks = await getDocsWithId(q);
+        const hack = hacks[0];
+
+        if (!hack) { window.location.hash = ''; return; }
+        leaderboardContent.innerHTML = `<div id="category-tabs-container"><h4>Categories</h4><div class="category-tabs"></div></div><div id="variable-filters"></div><table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th id="actions-header" style="display:none;">Actions</th></tr></thead><tbody></tbody></table>`;
+        state.hack = hack;
+        document.getElementById('hack-details-title').textContent = hack.name;
+        const typeSelect = document.getElementById('type-select');
+        typeSelect.innerHTML = '<option value="fullgame">Full-game</option><option value="level_rta">Level RTA</option><option value="level_singlestar">Single-Star</option>';
+        
+        const levelsQ = query(collection(db, 'levels'), where('hack_id', '==', hack.id), orderBy('order'));
+        const levels = await getDocsWithId(levelsQ);
+        document.getElementById('level-select').innerHTML = levels ? levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('') : '';
+        
+        [document.getElementById('level-select'), typeSelect].forEach(el => el.onchange = renderLeaderboardUI);
+        renderLeaderboardUI();
+    }
+    
+    async function renderLeaderboardUI() {
+        const selectedType = document.getElementById('type-select').value; 
+        const isFullgame = selectedType === 'fullgame';
+        document.getElementById('level-select-container').style.display = isFullgame ? 'none' : 'block';
+        document.getElementById('leaderboard-content').querySelector('#category-tabs-container').style.display = isFullgame ? 'block' : 'none';
+
+        const categoriesQ = query(collection(db, 'categories'), where('hack_id', '==', state.hack.id), where('type', '==', selectedType), orderBy('order'));
+        const categories = await getDocsWithId(categoriesQ);
+
+        if (!categories || categories.length === 0) { document.querySelector('.leaderboard-table tbody').innerHTML = `<tr><td colspan="4">No categories for this type.</td></tr>`; document.getElementById('variable-filters').innerHTML = ''; return; }
+        if (isFullgame) {
+            const tabsContainer = document.querySelector('.category-tabs');
+            tabsContainer.innerHTML = categories.map(c => `<div class="tab" data-id="${c.id}">${c.name}</div>`).join('');
+            tabsContainer.querySelectorAll('.tab').forEach(tab => tab.onclick = () => { tabsContainer.querySelector('.active')?.classList.remove('active'); tab.classList.add('active'); renderVariablesAndRuns(categories.find(c => c.id === tab.dataset.id)); });
+            tabsContainer.querySelector('.tab').click();
+        } else { renderVariablesAndRuns(categories[0]); }
+    }
+    
+    async function renderVariablesAndRuns(category) {
+        state.category = category;
+        const filtersContainer = document.getElementById('variable-filters');
+        filtersContainer.innerHTML = '';
+        
+        if (category.type === 'fullgame') {
+            const variablesQ = query(collection(db, 'variables'), where('hack_id', '==', state.hack.id), orderBy('order'));
+            const variables = await getDocsWithId(variablesQ);
+            
+            for(const v of variables) {
+                const optionsQ = query(collection(db, 'options'), where('variable_id', '==', v.id), orderBy('order'));
+                v.options = await getDocsWithId(optionsQ);
+            }
+
+            if (variables) {
+                filtersContainer.innerHTML = variables.map(v => `
+                    <div class="form-group">
+                        <label>${v.name}</label>
+                        <select data-var-id="${v.id}">${v.options.map(opt => `<option value="${opt.id}">${opt.name}</option>`).join('')}</select>
+                    </div>
+                `).join('');
+            }
+        } else if (category.type === 'level_singlestar') {
+            const levelId = document.getElementById('level-select').value;
+            const starsQ = query(collection(db, 'stars'), where('level_id', '==', levelId), orderBy('order'));
+            const stars = await getDocsWithId(starsQ);
+            if (stars && stars.length > 0) {
+                filtersContainer.innerHTML = `<div class="form-group"><label>Star</label><select data-var-id="star">${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>`;
+            }
+        }
+        
+        document.querySelectorAll('#variable-filters select').forEach(s => s.onchange = fetchAndDisplayLeaderboard);
+        fetchAndDisplayLeaderboard();
+    }
+
+    async function fetchAndDisplayLeaderboard() {
+        const isMod = !!state.user;
+        document.querySelector('#actions-header').style.display = isMod ? '' : 'none';
+        const tbody = document.querySelector('.leaderboard-table tbody');
+        tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}"><div class="loader"></div></td></tr>`;
+        
+        let q = query(collection(db, 'runs'), 
+            where('status', '==', 'approved'),
+            where('category_id', '==', state.category.id),
+            orderBy('timeInMs')
+        );
+        
+        const runs = await getDocsWithId(q);
+
+        const variables = {};
+        document.querySelectorAll('#variable-filters select').forEach(s => { variables[s.dataset.varId] = s.value; });
+        if (state.category.type !== 'fullgame') variables['level'] = document.getElementById('level-select').value;
+
+        const filteredRuns = runs.filter(run => Object.keys(variables).every(key => run.variables && run.variables[key] === variables[key]));
+        
+        tbody.innerHTML = '';
+        if (filteredRuns.length === 0) { tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}">No approved runs for these filters.</td></tr>`; return; }
+        filteredRuns.forEach((run, index) => {
+            const row = tbody.insertRow();
+            row.innerHTML = `<td>${index + 1}</td><td><a href="${run.videoUrl}" target="_blank">${run.playerName}</a></td><td>${formatTime(run.timeInMs)}</td><td>${run.dateAchieved}</td>`;
+            if (isMod) {
+                const actionsCell = row.insertCell();
+                actionsCell.innerHTML = `<button class="btn-danger" style="padding: 2px 6px; font-size: 0.8em;">Del</button>`;
+                actionsCell.querySelector('button').onclick = () => deleteRun(run.id);
             }
         });
-
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+    }
+    
+    function initAdminPage() {
+        document.getElementById('login-section').style.display = state.user ? 'none' : 'block';
+        document.getElementById('admin-content').style.display = state.user ? 'block' : 'none';
+        if (state.user) {
+            loadAdminData();
+            const syncBtn = document.getElementById('sync-src-btn');
+            if (!syncBtn.dataset.listener) { syncBtn.addEventListener('click', syncWithSpeedrunCom); syncBtn.dataset.listener = 'true'; }
+            document.getElementById('add-hack-form').onsubmit = handleAddHack;
+        }
+        document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorEl = document.getElementById('login-error');
-            errorEl.textContent = '';
+            const email = e.target.querySelector('#email').value;
+            const password = e.target.querySelector('#password').value;
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                window.location.hash = '#/mod';
+                document.getElementById('login-error').textContent = '';
             } catch (error) {
-                errorEl.textContent = error.message;
+                document.getElementById('login-error').textContent = error.message;
             }
-        });
+        };
+    }
+    
+    async function handleAddHack(e) {
+        e.preventDefault();
+        const name = document.getElementById('add-hack-name').value;
+        const newHack = { 
+            name, 
+            year: document.getElementById('add-hack-year').value, 
+            imageUrl: document.getElementById('add-hack-image').value, 
+            slug: slugify(name), 
+            created_at: new Date().toISOString() 
+        };
+        try {
+            await addDoc(collection(db, 'hacks'), newHack);
+            alert('Hack added!'); 
+            e.target.reset(); 
+            loadExistingHacksAdmin();
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
 
-        document.getElementById('logout-link').addEventListener('click', async (e) => {
-            e.preventDefault();
-            await signOut(auth);
-            window.location.hash = '#/';
-        });
+    async function fetchAllSRCGames(offset = 0, allGames = []) {
+        const url = `https://www.speedrun.com/api/v1/series/sm64romhacks/games?max=200&offset=${offset}`;
+        const res = await fetch(url);
+        if (res.status === 404) return allGames;
+        if (!res.ok) throw new Error(`API fetch failed with status ${res.status}`);
+        const data = await res.json();
+        if (data.data.length === 0) return allGames;
+        allGames.push(...data.data);
+        if (data.pagination.size === 200) {
+            return fetchAllSRCGames(offset + 200, allGames);
+        }
+        return allGames;
+    }
 
-        // --- HOME PAGE LOGIC ---
-        const fetchAndRenderGames = async () => {
-            const container = document.getElementById('game-list-container');
-            container.innerHTML = `<div class="loader">Loading all 223+ hacks...</div>`;
-            
-            // The API paginates at 200, so we need multiple requests
-            let games = [];
-            let nextUrl = `/series/${SM64_HACKS_SERIES_ID}/games?max=200`;
-            while(nextUrl) {
-                const data = await apiFetch(nextUrl);
-                if (data && data.data) {
-                    games.push(...data.data);
-                    const nextLink = data.pagination.links.find(link => link.rel === 'next');
-                    nextUrl = nextLink ? nextLink.uri.substring(API_BASE.length) : null;
-                } else {
-                    nextUrl = null;
+    async function deleteAllCollectionData(collectionName, statusDiv) {
+        statusDiv.innerHTML = `<div class="loader"></div>Deleting old data from ${collectionName}...`;
+        const collectionRef = collection(db, collectionName);
+        const q = query(collectionRef);
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+    }
+
+    async function syncWithSpeedrunCom() {
+        const statusDiv = document.getElementById('sync-status'), syncBtn = document.getElementById('sync-src-btn'), force = document.getElementById('force-sync-checkbox').checked;
+        syncBtn.disabled = true;
+        statusDiv.innerHTML = '<div class="loader"></div>Starting sync...';
+        if (force && !confirm("This will DELETE ALL DATA. Are you sure?")) { statusDiv.innerHTML = "Cancelled."; syncBtn.disabled = false; return; }
+        try {
+            if (force) {
+                const collectionsToDelete = ['options', 'variables', 'runs', 'stars', 'levels', 'categories', 'hacks'];
+                for (const coll of collectionsToDelete) {
+                    await deleteAllCollectionData(coll, statusDiv);
                 }
             }
-
-            allGames = games.filter(g => g.names.international); // Filter out games with no name
-            renderGameList();
-        };
-
-        const renderGameList = () => {
-            const container = document.getElementById('game-list-container');
-            const searchTerm = document.getElementById('search-input').value.toLowerCase();
-            const sortMethod = document.getElementById('sort-select').value;
-
-            let filteredGames = allGames.filter(game => 
-                game.names.international.toLowerCase().includes(searchTerm)
-            );
-
-            filteredGames.sort((a, b) => {
-                if (sortMethod === 'alpha') {
-                    return a.names.international.localeCompare(b.names.international);
-                } else if (sortMethod === 'oldest') {
-                    return new Date(a.released) - new Date(b.released);
-                } else { // newest
-                    return new Date(b.released) - new Date(a.released);
+            statusDiv.innerHTML = '<div class="loader"></div>Fetching all games from speedrun.com...';
+            const allGames = await fetchAllSRCGames();
+            for (const [i, game] of allGames.entries()) {
+                const gameName = game.names.international;
+                statusDiv.innerHTML = `<div class="loader"></div>(${i + 1}/${allGames.length}) Processing: <strong>${gameName}</strong>...`;
+                if (!force) { 
+                    const existingQ = query(collection(db, 'hacks'), where('srcId', '==', game.id));
+                    const existingSnap = await getDocs(existingQ);
+                    if (!existingSnap.empty) continue;
                 }
-            });
+                const dRes = await fetch(`https://www.speedrun.com/api/v1/games/${game.id}?embed=categories,levels,variables`);
+                if (!dRes.ok) { console.warn(`Could not fetch details for ${gameName}.`); continue; }
+                const details = (await dRes.json()).data;
+                const insertedHackRef = await addDoc(collection(db, 'hacks'), { name: gameName, year: details.released, imageUrl: details.assets['cover-large']?.uri, slug: slugify(gameName), order: i, srcId: details.id, created_at: details.created });
+                const insertedHackId = insertedHackRef.id;
 
-            if (filteredGames.length === 0) {
-                container.innerHTML = `<p>No games found.</p>`;
-                return;
-            }
-            
-            container.innerHTML = filteredGames.map(game => `
-                <a href="#/game/${game.id}" class="game-card">
-                    <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}">
-                    <div class="game-card-info">
-                        <h3>${game.names.international}</h3>
-                        <p>${game.released} (${timeAgo(game.release_date)})</p>
-                    </div>
-                </a>
-            `).join('');
-        };
-        
-        document.getElementById('search-input').addEventListener('input', renderGameList);
-        document.getElementById('sort-select').addEventListener('change', renderGameList);
-
-        // --- LEADERBOARD PAGE LOGIC ---
-        const renderLeaderboard = async (gameId) => {
-            const container = document.getElementById('leaderboard-content');
-            container.innerHTML = `<div class="loader">Loading game data...</div>`;
-
-            const [gameDetails, categories, levels] = await Promise.all([
-                apiFetch(`/games/${gameId}`),
-                apiFetch(`/games/${gameId}/categories`),
-                apiFetch(`/games/${gameId}/levels`),
-            ]);
-            
-            if (!gameDetails || !categories) {
-                container.innerHTML = `<p>Error loading game data.</p>`;
-                return;
-            }
-            
-            const game = gameDetails.data;
-            currentGameData = { game, categories: categories.data, levels: levels.data };
-            
-            // Determine initial state from URL hash
-            const hash = window.location.hash;
-            const params = hash.split('?')[0].split('/');
-            const urlCategoryType = params[3] ? 'level' : 'category';
-            const urlCategoryId = params[3] ? params[5] : params[3];
-
-            // Parse variables from query string
-            const urlVars = new URLSearchParams(hash.split('?')[1]);
-            const selectedVars = {};
-            for(const [key, value] of urlVars.entries()){
-                selectedVars[key] = value;
-            }
-
-            const initialCategory = categories.data.find(c => c.id === urlCategoryId) || 
-                                  levels.data.find(l => l.id === urlCategoryId) ||
-                                  (categories.data.find(c => c.type === 'per-game')) ||
-                                  (categories.data.find(c => c.type === 'per-level'));
-            
-            const initialCategoryType = initialCategory.type === 'per-game' ? 'fullgame' : 'level';
-            
-            updateLeaderboardUI(initialCategoryType, initialCategory.id, selectedVars);
-        };
-        
-        const updateLeaderboardUI = async (type, id, selectedVariables = {}) => {
-            if (!currentGameData) return;
-
-            const { game, categories, levels } = currentGameData;
-            const container = document.getElementById('leaderboard-content');
-            
-            // Find current category/level
-            const currentCat = type === 'fullgame' ? categories.find(c => c.id === id) : levels.find(l => l.id === id);
-            
-            // Find variables for this category
-            const variablesData = await apiFetch(`/categories/${currentCat.id}/variables`);
-            const variables = variablesData.data || [];
-
-            // Special handling for Single Star
-            let singleStarLevels = [];
-            if (currentCat.name.toLowerCase().includes('single star')) {
-                const levelData = levels.find(l => l.name.toLowerCase() === 'single star'); // This is a weak link, assumes naming convention
-                if (levelData) {
-                    const levelDetails = await apiFetch(`/levels/${levelData.id}`);
-                    if(levelDetails.data.rules) {
-                        // A simple parser for markdown lists
-                        singleStarLevels = levelDetails.data.rules.split('\n')
-                           .filter(line => line.trim().startsWith('* '))
-                           .map(line => line.trim().substring(2).trim());
+                const cats = (details.categories?.data || []).map((c, idx) => ({ name: c.name, type: c.type === 'per-level' ? (c.name.toLowerCase().includes('rta') ? 'level_rta' : 'level_singlestar') : 'fullgame', rules: c.rules, order: idx, hack_id: insertedHackId }));
+                if (cats.length) { for (const cat of cats) await addDoc(collection(db, 'categories'), cat); }
+                
+                for (const v of (details.variables?.data || [])) {
+                    if (v.scope.type !== 'full-game' || !v['is-for-all']) continue;
+                    const insertedVarRef = await addDoc(collection(db, 'variables'), { name: v.name, order: i, srcId: v.id, hack_id: insertedHackId });
+                    if (insertedVarRef && v.values.values) {
+                        const opts = Object.entries(v.values.values).map(([id, val], o_idx) => ({ name: val.label, order: o_idx, srcId: id, variable_id: insertedVarRef.id }));
+                        if (opts.length) { for (const opt of opts) await addDoc(collection(db, 'options'), opt); }
+                    }
+                }
+                for (const [l_idx, level] of (details.levels?.data || []).entries()) {
+                    const insertedLevelRef = await addDoc(collection(db, 'levels'), { name: level.name, order: l_idx, srcId: level.id, hack_id: insertedHackId });
+                    if (!insertedLevelRef) { console.warn(`Failed to insert level ${level.name}`); continue; }
+                    const starVar = (details.variables?.data || []).find(v => v.scope.type === 'single-level' && v.scope.level === level.id);
+                    if (starVar?.values.values) {
+                        const stars = Object.entries(starVar.values.values).map(([id, val], s_idx) => ({ name: val.label, order: s_idx, srcId: id, level_id: insertedLevelRef.id }));
+                        if (stars.length) { for (const star of stars) await addDoc(collection(db, 'stars'), star); }
                     }
                 }
             }
-
-            let html = `
-                <div class="leaderboard-header">
-                    <h1>${game.names.international}</h1>
-                    <div class="category-tabs">
-                        ${categories.filter(c => c.type === 'per-game').map(c => `
-                            <div class="tab ${type === 'fullgame' && c.id === id ? 'active' : ''}" onclick="window.handleCategoryChange('fullgame', '${c.id}')">${c.name}</div>
-                        `).join('')}
-                        ${categories.filter(c => c.type === 'per-level').map(c => `
-                            <div class="tab ${type === 'level' && c.id === id ? 'active' : ''}" onclick="window.handleCategoryChange('level', '${c.id}')">${c.name}</div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div id="sub-categories">
-                    ${variables.map(variable => `
-                        <div class="form-group">
-                            <label>${variable.name}</label>
-                            <select onchange="window.handleVariableChange('${variable.id}', this.value)">
-                                ${Object.entries(variable.values.values).map(([valId, val]) => `
-                                    <option value="${valId}" ${selectedVariables[variable.id] === valId ? 'selected' : ''}>${val.label}</option>
-                                `).join('')}
-                            </select>
-                        </div>
-                    `).join('')}
-
-                    ${singleStarLevels.length > 0 ? `
-                        <div class="form-group">
-                             <label>Star</label>
-                             <select id="single-star-select" onchange="window.handleVariableChange('star', this.value)">
-                                ${singleStarLevels.map((starName, index) => `
-                                    <option value="${index}" ${selectedVariables['star'] == index ? 'selected' : ''}>${starName}</option>
-                                `).join('')}
-                             </select>
-                        </div>
-                    ` : ''}
-                </div>
-                
-                <button onclick="window.openSubmitRunModal()">Submit Run</button>
-
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Player</th>
-                            <th>Time</th>
-                            <th>Date</th>
-                            <th>Video</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-runs">
-                        <tr><td colspan="5" class="loader">Loading runs...</td></tr>
-                    </tbody>
-                </table>
-            `;
-            container.innerHTML = html;
-            
-            // After rendering, fetch and display the runs from Firebase
-            loadRunsForLeaderboard(type, id, selectedVariables);
-        };
-        
-        window.handleCategoryChange = (type, id) => {
-            // Reset variables when changing category
-            const newHash = `#/game/${currentGameData.game.id}/${type === 'fullgame' ? 'category' : 'level'}/${id}`;
-            if(window.location.hash !== newHash) window.location.hash = newHash;
-            else updateLeaderboardUI(type, id); // Force update if hash is the same
-        };
-
-        window.handleVariableChange = () => {
-            const currentHash = window.location.hash.split('?')[0];
-            const vars = {};
-
-            // Collect standard variables
-            document.querySelectorAll('#sub-categories select').forEach(select => {
-                const varId = select.onchange.toString().match(/'(.*?)'/)[1];
-                if(varId !== 'star') {
-                    vars[varId] = select.value;
-                }
-            });
-            // Collect single star if present
-            const starSelect = document.getElementById('single-star-select');
-            if (starSelect) {
-                vars['star'] = starSelect.value;
-            }
-            
-            const query = new URLSearchParams(vars).toString();
-            window.location.hash = `${currentHash}?${query}`;
-        };
-        
-        const buildLeaderboardId = (type, categoryId, variables) => {
-            let id = `${currentGameData.game.id}-${categoryId}`;
-            const sortedKeys = Object.keys(variables).sort();
-            sortedKeys.forEach(key => {
-                id += `-${key}-${variables[key]}`;
-            });
-            return id;
-        };
-        
-        const loadRunsForLeaderboard = (type, categoryId, variables) => {
-            const leaderboardId = buildLeaderboardId(type, categoryId, variables);
-            const runsRef = ref(db, `runs/${leaderboardId}`);
-            const tbody = document.getElementById('leaderboard-runs');
-
-            onValue(runsRef, (snapshot) => {
-                const runs = [];
-                snapshot.forEach(childSnapshot => {
-                    runs.push({ id: childSnapshot.key, ...childSnapshot.val() });
-                });
-
-                // Sort by time (seconds)
-                runs.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-
-                if (runs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No runs submitted yet.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = runs.map((run, index) => `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${run.player}</td>
-                        <td>${formatTime(run.timeInSeconds)}</td>
-                        <td>${timeAgo(run.date)}</td>
-                        <td>${run.video ? `<a href="${run.video}" target="_blank">🎥</a>` : ''}</td>
-                    </tr>
-                `).join('');
-            });
-        };
-
-        // --- SUBMIT RUN LOGIC ---
-        window.openSubmitRunModal = () => {
-            // Get current leaderboard state to attach to the submission
-            const hash = window.location.hash;
-            const params = hash.split('?')[0].split('/');
-            const type = params[2] === 'category' ? 'fullgame' : 'level';
-            const categoryId = params[3];
-            
-            const urlVars = new URLSearchParams(hash.split('?')[1]);
-            const variables = {};
-            for(const [key, value] of urlVars.entries()){
-                variables[key] = value;
-            }
-            
-            const leaderboardId = buildLeaderboardId(type, categoryId, variables);
-            document.getElementById('run-leaderboard-id').value = leaderboardId;
-
-            // Clear form
-            document.getElementById('submit-run-form').reset();
-            document.getElementById('run-id').value = '';
-            document.getElementById('submit-modal-title').textContent = 'Submit Run';
-
-            openModal('submit-run-modal');
-        };
-        
-        document.getElementById('submit-run-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const leaderboardId = document.getElementById('run-leaderboard-id').value;
-            const runId = document.getElementById('run-id').value; // For editing
-            
-            const runData = {
-                leaderboardId: leaderboardId,
-                player: document.getElementById('run-player').value,
-                timeRaw: document.getElementById('run-time').value,
-                timeInSeconds: parseTimeToSeconds(document.getElementById('run-time').value),
-                video: document.getElementById('run-video').value,
-                date: document.getElementById('run-date').value,
-                submittedAt: new Date().toISOString(),
-                // Add game/category info for context in mod queue
-                gameName: currentGameData.game.names.international,
-                categoryName: document.querySelector('.category-tabs .tab.active')?.textContent || 'N/A'
+            statusDiv.innerHTML = `<strong style="color: #28a745;">Sync complete!</strong>`;
+            await loadAdminData();
+        } catch (error) { console.error("Sync Error:", error); statusDiv.innerHTML = `<strong style="color: #dc3545;">Sync Error:</strong> ${error.message}`; } 
+        finally { syncBtn.disabled = false; }
+    }
+    
+    async function loadAdminData() { await Promise.all([ loadExistingHacksAdmin(), loadPendingRuns() ]); }
+    async function loadExistingHacksAdmin() {
+        const listContainer = document.getElementById('existing-hacks-list');
+        listContainer.innerHTML = '<div class="loader"></div>';
+        const q = query(collection(db, 'hacks'), orderBy('name'));
+        const hacks = await getDocsWithId(q);
+        listContainer.innerHTML = '';
+        hacks.forEach(hack => {
+            const item = createHTMLElement('div', 'card');
+            item.innerHTML = `<div class="hack-item-header"><span><strong>${hack.name}</strong> (${hack.year || 'N/A'})</span><div><button class="btn btn-primary btn-sm manage-btn">Manage <i class="fa-solid fa-chevron-down"></i></button><button class="btn btn-danger btn-sm delete-btn">Delete</button></div></div><div class="hack-manage-details"></div>`;
+            const detailsDiv = item.querySelector('.hack-manage-details'), manageBtn = item.querySelector('.manage-btn');
+            manageBtn.onclick = () => {
+                const isVisible = detailsDiv.style.display === 'block';
+                detailsDiv.style.display = isVisible ? 'none' : 'block';
+                manageBtn.querySelector('i').className = isVisible ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+                if (!isVisible && detailsDiv.innerHTML === '') loadManagementUIForHack(detailsDiv, hack.id);
             };
-            
-            if (!runData.timeInSeconds) {
-                alert('Invalid time format. Use formats like "1m 23s 456ms" or "83.456".');
-                return;
-            }
-            
-            try {
-                if (runId) { // If editing, update pending run
-                    await set(ref(db, `pending_runs/${runId}`), runData);
-                } else { // New submission
-                    await push(ref(db, 'pending_runs'), runData);
-                }
-                closeModal('submit-run-modal');
-                alert('Run submitted for moderation!');
-            } catch (error) {
-                console.error("Error submitting run:", error);
-                alert('Failed to submit run.');
-            }
+            item.querySelector('.delete-btn').onclick = async () => { if (confirm(`DELETE this hack (${hack.name}) and all its data?`)) { try { await deleteDoc(doc(db, 'hacks', hack.id)); await loadExistingHacksAdmin(); } catch (e) { alert('Failed to delete: ' + e.message); } } };
+            listContainer.appendChild(item);
         });
-
-        // --- MODERATION LOGIC ---
-        const renderModPage = () => {
-            const container = document.getElementById('pending-runs-container');
-            container.innerHTML = `<div class="loader">Loading...</div>`;
-            const pendingRef = ref(db, 'pending_runs');
-
-            onValue(pendingRef, (snapshot) => {
-                const runs = [];
-                snapshot.forEach(childSnapshot => {
-                    runs.push({ id: childSnapshot.key, ...childSnapshot.val() });
-                });
-                
-                runs.sort((a,b) => new Date(b.submittedAt) - new Date(a.submittedAt)); // Newest first
-
-                if (runs.length === 0) {
-                    container.innerHTML = `<p>No pending runs.</p>`;
-                    return;
-                }
-
-                container.innerHTML = runs.map(run => `
-                    <div style="background:var(--surface-color); padding:1rem; border-radius:8px; margin-bottom:1rem;">
-                        <p><strong>${run.player}</strong> - ${formatTime(run.timeInSeconds)}</p>
-                        <p><em>${run.gameName} - ${run.categoryName}</em></p>
-                        <p><small>${run.date} | ${run.video ? `<a href="${run.video}" target="_blank">Video</a>` : 'No Video'}</small></p>
-                        <div style="display:flex; gap:0.5rem; margin-top:1rem;">
-                            <button onclick="window.approveRun('${run.id}')">Approve</button>
-                            <button class="btn-secondary" onclick="window.editRun('${run.id}')">Edit</button>
-                            <button class="btn-secondary" onclick="window.rejectRun('${run.id}')">Reject</button>
-                        </div>
-                    </div>
-                `).join('');
-            });
-        };
+    }
+    async function loadManagementUIForHack(container, hackId) {
+        container.innerHTML = '<h4>Variables</h4><div class="variables-list"></div><h4>Levels</h4><div class="levels-list"></div><h4>Categories</h4><div class="categories-list"></div>';
+        loadAdminItemsInline(container.querySelector('.variables-list'), 'variables', 'Variable Name', 'hack_id', hackId, 'options', 'variable_id');
+        loadAdminItemsInline(container.querySelector('.levels-list'), 'levels', 'Level Name', 'hack_id', hackId, 'stars', 'level_id');
+        loadAdminItemsInline(container.querySelector('.categories-list'), 'categories', 'Category Name', 'hack_id', hackId);
+    }
+    async function loadAdminItemsInline(container, collectionName, placeholder, parentIdColumn, parentId, subCollectionName, subParentIdColumn) {
+        container.innerHTML = '<div class="loader"></div>';
+        const q = query(collection(db, collectionName), where(parentIdColumn, '==', parentId), orderBy('name'));
+        const data = await getDocsWithId(q);
         
-        window.approveRun = async (runId) => {
-            const pendingRunSnapshot = await get(ref(db, `pending_runs/${runId}`));
-            if (!pendingRunSnapshot.exists()) return;
-            
-            const runData = pendingRunSnapshot.val();
-            const leaderboardId = runData.leaderboardId;
-            
-            // Move data from pending to the actual leaderboard
-            await push(ref(db, `runs/${leaderboardId}`), {
-                player: runData.player,
-                timeInSeconds: runData.timeInSeconds,
-                video: runData.video,
-                date: runData.date
-            });
-            
-            // Remove from pending
-            await remove(ref(db, `pending_runs/${runId}`));
-            alert('Run approved!');
+        let formHTML = `<form class="admin-add-form"><input type="text" placeholder="${placeholder}" required>`;
+        if(collectionName === 'categories') formHTML += `<select><option value="fullgame">Full-game</option><option value="level_rta">Level RTA</option><option value="level_singlestar">Single-Star</option></select>`;
+        formHTML += `<button type="submit" class="btn btn-success btn-sm">Add</button></form>`;
+        container.innerHTML = formHTML;
+        container.querySelector('form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = e.target.querySelector('input');
+            const newData = { name: input.value, [parentIdColumn]: parentId, order: 99, created_at: new Date().toISOString() };
+            if(collectionName === 'categories') newData.type = e.target.querySelector('select').value;
+            try {
+                await addDoc(collection(db, collectionName), newData);
+                loadAdminItemsInline(container, collectionName, placeholder, parentIdColumn, parentId, subCollectionName, subParentIdColumn);
+            } catch(error) { alert('Error: ' + error.message); }
+        };
+        data.forEach(itemData => {
+            const itemWrapper = createHTMLElement('div');
+            const itemEl = createHTMLElement('div', 'admin-list-item');
+            itemEl.innerHTML = `<div class="inline-edit-container"><span>${itemData.name}</span><input type="text" value="${itemData.name}" style="display:none;"></div><div><button class="btn-icon save-btn" style="display:none;"><i class="fa fa-save"></i></button><button class="btn-icon settings-btn"><i class="fa fa-gear"></i></button><button class="btn-icon edit-btn"><i class="fa fa-pencil-alt"></i></button><button class="btn-icon delete-btn"><i class="fa fa-trash-alt"></i></button></div>`;
+            const nameSpan = itemEl.querySelector('span'), input = itemEl.querySelector('input'), saveBtn = itemEl.querySelector('.save-btn'), editBtn = itemEl.querySelector('.edit-btn'), settingsBtn = itemEl.querySelector('.settings-btn');
+            if(!subCollectionName) settingsBtn.style.display = 'none';
+            const saveChanges = async () => {
+                const newName = input.value.trim();
+                if(newName && newName !== itemData.name) {
+                    try {
+                        await updateDoc(doc(db, collectionName, itemData.id), { name: newName });
+                        nameSpan.textContent = newName;
+                    } catch (error) { alert('Error: ' + error.message); }
+                }
+                input.style.display = 'none'; nameSpan.style.display = 'inline'; saveBtn.style.display = 'none'; editBtn.style.display = 'inline'; settingsBtn.style.display = subCollectionName ? 'inline' : 'none';
+            };
+            editBtn.onclick = () => { input.style.display = 'inline-block'; nameSpan.style.display = 'none'; saveBtn.style.display = 'inline'; editBtn.style.display = 'none'; settingsBtn.style.display = 'none'; input.focus(); };
+            saveBtn.onclick = saveChanges;
+            input.onkeydown = (e) => { if(e.key === 'Enter') saveChanges(); };
+            itemEl.querySelector('.delete-btn').onclick = async () => { if(confirm(`Delete '${itemData.name}'?`)) { try { await deleteDoc(doc(db, collectionName, itemData.id)); loadAdminItemsInline(container, collectionName, placeholder, parentIdColumn, parentId, subCollectionName, subParentIdColumn); } catch(e){ alert('Error: ' + e.message); } } };
+            const subDetails = createHTMLElement('div', 'admin-sub-details');
+            settingsBtn.onclick = () => {
+                const isVisible = subDetails.style.display === 'block';
+                subDetails.style.display = isVisible ? 'none' : 'block';
+                if (!isVisible && subDetails.innerHTML === '') loadAdminItemsInline(subDetails, subCollectionName, 'Option/Star Name', subParentIdColumn, itemData.id);
+            };
+            itemWrapper.append(itemEl, subDetails);
+            container.appendChild(itemWrapper);
+        });
+    }
+    async function loadPendingRuns() {
+        const listContainer = document.getElementById('pending-runs-list');
+        listContainer.innerHTML = '<div class="loader"></div>';
+        const q = query(collection(db, 'runs'), where('status', '==', 'pending'), orderBy('submittedAt', 'desc'));
+        const runs = await getDocsWithId(q);
+
+        listContainer.innerHTML = runs.length === 0 ? 'No runs pending review.' : '';
+        runs.forEach(run => {
+            const item = createHTMLElement('div', 'card', `<div><strong>${run.hackName} - ${run.categoryName}</strong><br>Player: ${run.playerName} | Time: ${formatTime(run.timeInMs)} | <a href="${run.videoUrl}" target="_blank">Video</a><div style="margin-top:10px;"><button class="btn btn-success approve-btn">Approve</button><button class="btn btn-danger reject-btn">Reject</button></div></div>`);
+            item.querySelector('.approve-btn').onclick = () => updateRunStatus(run.id, 'approved');
+            item.querySelector('.reject-btn').onclick = () => updateRunStatus(run.id, 'rejected');
+            listContainer.appendChild(item);
+        });
+    }
+    async function updateRunStatus(runId, status) { try { await updateDoc(doc(db, 'runs', runId), { status }); loadPendingRuns(); } catch (e) { alert("Failed to update status."); } }
+    async function deleteRun(runId) { if (confirm(`Delete this run?`)) { try { await deleteDoc(doc(db, 'runs', runId)); fetchAndDisplayLeaderboard(); } catch(e) { alert("Failed to delete run."); } } }
+    
+    const submitRunModal = document.getElementById('submit-run-modal');
+    document.getElementById('submit-run-btn').onclick = () => { if (!state.category) { alert('Select a category first.'); return; } document.getElementById('submit-run-title').textContent = `${state.hack.name} - ${state.category.name}`; document.getElementById('run-date').value = new Date().toISOString().split('T')[0]; submitRunModal.style.display = 'block'; };
+    document.querySelector('#submit-run-modal .close-button').onclick = () => submitRunModal.style.display = 'none';
+    
+    document.getElementById('submit-run-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const timeInMs = parseTimeToMilliseconds(document.getElementById('run-time').value);
+        if (isNaN(timeInMs)) return alert('Invalid time format.');
+        const variables = {};
+        document.querySelectorAll('#variable-filters select, #run-submission-filters select').forEach(s => { variables[s.dataset.varId] = s.value; });
+        
+        const newRun = {
+            hack_id: state.hack.id,
+            category_id: state.category.id,
+            hackName: state.hack.name,
+            categoryName: state.category.name,
+            playerName: document.getElementById('run-player').value,
+            timeInMs,
+            dateAchieved: document.getElementById('run-date').value,
+            videoUrl: document.getElementById('run-video').value,
+            variables,
+            status: 'pending',
+            submittedAt: new Date().toISOString()
         };
 
-        window.rejectRun = async (runId) => {
-            if (confirm('Are you sure you want to reject and delete this run?')) {
-                await remove(ref(db, `pending_runs/${runId}`));
-                alert('Run rejected.');
-            }
-        };
-
-        window.editRun = async (runId) => {
-            const pendingRunSnapshot = await get(ref(db, `pending_runs/${runId}`));
-            if (!pendingRunSnapshot.exists()) return;
-
-            const run = pendingRunSnapshot.val();
-
-            // Populate and open the modal for editing
-            document.getElementById('submit-modal-title').textContent = 'Edit Pending Run';
-            document.getElementById('run-leaderboard-id').value = run.leaderboardId;
-            document.getElementById('run-id').value = runId; // Set the ID for update logic
-            document.getElementById('run-player').value = run.player;
-            document.getElementById('run-time').value = run.timeRaw || formatTime(run.timeInSeconds);
-            document.getElementById('run-video').value = run.video;
-            document.getElementById('run-date').value = run.date;
-            
-            openModal('submit-run-modal');
-        };
-
-        // --- APP INITIALIZATION ---
-        window.addEventListener('hashchange', router);
-        window.addEventListener('load', router);
-
-    </script>
+        try {
+            await addDoc(collection(db, 'runs'), newRun);
+            alert('Run submitted for review!');
+            submitRunModal.style.display = 'none';
+            e.target.reset();
+        } catch (error) {
+            alert('Failed to submit run.');
+            console.error(error);
+        }
+    };
+</script>
 </body>
 </html>
