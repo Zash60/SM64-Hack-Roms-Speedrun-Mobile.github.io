@@ -305,7 +305,10 @@
             const container = document.getElementById('game-list-container');
             container.innerHTML = '<div class="loading">Loading games...</div>';
 
-            const data = await fetchWithCache(`${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=200&embed=platforms`);
+            // =========================================================================
+            // CORREÇÃO APLICADA AQUI: URL foi simplificada para máxima compatibilidade
+            // =========================================================================
+            const data = await fetchWithCache('https://www.speedrun.com/api/v1/series/4d7e5m6r/games?max=200');
             
             if (!data || !data.data) {
                 container.innerHTML = 'Failed to load games.';
@@ -374,6 +377,7 @@
             document.getElementById('category-select').innerHTML = '';
             document.getElementById('sub-category-container').innerHTML = '';
             
+            // Fetch game details, categories, and levels in parallel
             const [game, categories, levels] = await Promise.all([
                 fetchWithCache(`${SRC_API_BASE}/games/${gameId}`),
                 fetchWithCache(`${SRC_API_BASE}/games/${gameId}/categories`),
@@ -390,13 +394,14 @@
                 name: game.data.names.international,
                 categories: categories.data,
                 levels: levels.data,
-                variables: {}
+                variables: {} // To store subcategory variables
             };
             
             document.getElementById('leaderboard-game-title').textContent = currentGameData.name;
             
             populateCategorySelector();
             
+            // Check URL for specific category/level to load
             const params = new URLSearchParams(window.location.search);
             const categoryId = params.get('category');
             const levelId = params.get('level');
@@ -414,6 +419,7 @@
             const selector = document.getElementById('category-select');
             selector.innerHTML = '';
             
+            // Full Game categories
             const fullGameGroup = document.createElement('optgroup');
             fullGameGroup.label = 'Full Game';
             currentGameData.categories.filter(c => c.type === 'per-game').forEach(cat => {
@@ -424,6 +430,7 @@
             });
             selector.appendChild(fullGameGroup);
 
+            // Per-Level categories
             if (currentGameData.levels.length > 0) {
                 const levelGroup = document.createElement('optgroup');
                 levelGroup.label = 'Levels';
@@ -444,8 +451,10 @@
             document.getElementById('sub-category-container').innerHTML = '';
 
             if (type === 'category') {
+                // Full game category selected
                 await loadSubcategories(id, null);
             } else if (type === 'level') {
+                // A level is selected, now show its categories (e.g., Single Star, Stage RTA)
                 await loadLevelSubcategories(id);
             }
         }
@@ -455,7 +464,7 @@
             const variablesData = await fetchWithCache(`${SRC_API_BASE}/categories/${categoryId}/variables`);
             
             if (!variablesData || variablesData.data.length === 0) {
-                updateLeaderboardView();
+                updateLeaderboardView(); // No subcategories, load leaderboard directly
                 return;
             }
 
@@ -473,6 +482,7 @@
                 `;
             }).join('');
             
+            // Auto-select first option for each variable
             variablesData.data.forEach(variable => {
                 const firstButton = container.querySelector(`#var-${variable.id} button`);
                 if(firstButton) firstButton.classList.add('active');
@@ -491,6 +501,7 @@
                 return;
             }
 
+            // Display level categories (Single Star, Stage RTA) as buttons
             container.innerHTML = `
                 <div>
                     <strong>Category:</strong>
@@ -512,13 +523,14 @@
 
         async function handleLevelCategorySelection(categoryId, categoryName) {
             const starContainer = document.getElementById('star-selector-container');
-            starContainer.innerHTML = '';
+            starContainer.innerHTML = ''; // Clear previous star selector
             
+            // Special handling for "Single Star"
             if (categoryName.toLowerCase().includes('single star')) {
                 starContainer.innerHTML = '<div class="loading">Loading stars...</div>';
                 const variablesData = await fetchWithCache(`${SRC_API_BASE}/categories/${categoryId}/variables`);
                 if (variablesData && variablesData.data.length > 0) {
-                    const starVariable = variablesData.data[0];
+                    const starVariable = variablesData.data[0]; // Assuming first variable is the list of stars
                     currentGameData.variables[categoryId] = variablesData.data;
 
                     const starOptions = Object.entries(starVariable.values.values).map(([valueId, valueData]) => 
@@ -546,6 +558,7 @@
             const params = new URLSearchParams();
             params.set('game', currentGameData.id);
 
+            // Determine the current context
             const mainSelection = document.getElementById('category-select').value;
             const [type, mainId] = mainSelection.split('_');
 
@@ -577,7 +590,7 @@
                         }
                     }
                 }
-            } else {
+            } else { // Full game
                 params.set('category', mainId);
                 dbPath += `/category_${mainId}`;
                 const category = currentGameData.categories.find(c => c.id === mainId);
@@ -596,10 +609,12 @@
 
             history.replaceState(null, '', `?${params.toString()}`);
             
+            // Set info for submission modal
             document.getElementById('modal-run-info').textContent = runInfoText;
             document.getElementById('submit-run-btn').dataset.dbPath = dbPath;
             document.getElementById('submit-run-btn').dataset.runInfo = runInfoText;
             
+            // Fetch and render from Firebase
             loadRunsFromFirebase(dbPath);
         }
         
@@ -607,6 +622,7 @@
             const container = document.getElementById('leaderboard-container');
             container.innerHTML = '<div class="loading">Loading leaderboard...</div>';
 
+            // Detach previous listener to prevent memory leaks
             if (currentLeaderboardListener) {
                 currentLeaderboardListener();
             }
@@ -646,6 +662,7 @@
         document.getElementById('category-select').addEventListener('change', handleCategoryChange);
         document.getElementById('sub-category-container').addEventListener('click', (e) => {
             if (e.target.matches('.sub-cat-btn')) {
+                // De-select siblings
                 const siblings = e.target.parentElement.querySelectorAll('.sub-cat-btn');
                 siblings.forEach(s => s.classList.remove('active'));
                 e.target.classList.add('active');
@@ -705,11 +722,13 @@
 
         onAuthStateChanged(auth, user => {
             if (user) {
+                // User is signed in
                 modLoginView.style.display = 'none';
                 modPanelView.style.display = 'block';
                 document.getElementById('mod-email').textContent = user.email;
                 loadPendingRuns();
             } else {
+                // User is signed out
                 modLoginView.style.display = 'block';
                 modPanelView.style.display = 'none';
             }
@@ -751,6 +770,7 @@
             });
         }
         
+        // Mod actions event delegation
         document.getElementById('pending-runs-container').addEventListener('click', async e => {
             const runId = e.target.dataset.runId;
             if (!runId) return;
@@ -770,9 +790,9 @@
                         date: runData.date
                     };
                     push(newRunRef, runToApprove).then(() => {
-                        remove(pendingRunRef);
+                        remove(pendingRunRef); // Remove from pending queue
                     });
-                }, { onlyOnce: true });
+                }, { onlyOnce: true }); // Get data once
             }
             
             if (e.target.matches('.reject-btn')) {
@@ -782,6 +802,7 @@
             }
 
             if (e.target.matches('.edit-btn')) {
+                // Placeholder for edit functionality
                 alert("Edit functionality would open a pre-filled modal similar to the submit one.");
             }
         });
