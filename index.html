@@ -94,6 +94,11 @@
         let currentSort = 'alpha';
         const currentYear = new Date().getFullYear();
 
+        // Force HTTPS helper
+        function forceHttps(url) {
+            return url.replace(/^http:/, 'https:');
+        }
+
         // Caching functions
         function cacheData(key, data) {
             localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
@@ -119,8 +124,17 @@
                 const json = await res.json();
                 allGames = allGames.concat(json.data);
                 const nextLink = json.pagination?.links?.find(l => l.rel === 'next');
-                url = nextLink ? nextLink.uri : null;
+                url = nextLink ? forceHttps(nextLink.uri) : null;
             }
+            // Force HTTPS on assets and weblinks
+            allGames.forEach(game => {
+                if (game.assets) {
+                    Object.values(game.assets).forEach(asset => {
+                        if (asset.uri) asset.uri = forceHttps(asset.uri);
+                    });
+                }
+                if (game.weblink) game.weblink = forceHttps(game.weblink);
+            });
             cacheData('allGames', allGames);
             return allGames;
         }
@@ -211,7 +225,7 @@
                 <ul class="game-list">
                     ${list.map(game => `
                         <li>
-                            <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" />
+                            <img src="${forceHttps(game.assets['cover-medium'].uri || '')}" alt="${game.names.international}" />
                             <div>
                                 <h3>${game.names.international}</h3>
                                 <p>Released: ${game.released}</p>
@@ -596,6 +610,7 @@
         window.signOutMod = signOutMod;
         window.showHome = showHome;
         window.openSubmitModal = openSubmitModal;
+        window.forceHttps = forceHttps;
     </script>
 </body>
 </html>
