@@ -27,8 +27,8 @@
     <header>
         <h1>SM64 Hacks Speedrun Mobile</h1>
         <nav>
-            <button onclick="navigate('home')">Home</button>
-            <button onclick="navigate('mod')">Mod</button>
+            <button id="home-btn">Home</button>
+            <button id="mod-btn">Mod</button>
         </nav>
     </header>
     <div id="content"></div>
@@ -39,12 +39,12 @@
             <input id="time" placeholder="Time (mm:ss.ms)" required>
             <input id="video" placeholder="Video URL" required>
             <input id="date" type="date" required>
-            <button onclick="submitRun()">Submit</button>
-            <button onclick="closeModal()">Close</button>
+            <button id="submit-btn">Submit</button>
+            <button id="close-btn">Close</button>
         </div>
     </div>
     <script type="module">
-        // Firebase Imports (Updated to latest version 12.3.0)
+        // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
         import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
@@ -84,7 +84,7 @@
             localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
         }
 
-        // Fetch All Games (Handles Pagination)
+        // Fetch All Games (Handles Pagination and Release Dates)
         async function fetchGames() {
             let cached = getCached('games');
             if (cached) return cached;
@@ -98,6 +98,19 @@
                 if (json.pagination.size < max) break;
                 offset += max;
             }
+            // Fetch full release dates
+            allGames = await Promise.all(allGames.map(async (g) => {
+                const gameKey = `game_${g.id}`;
+                let full = getCached(gameKey);
+                if (!full) {
+                    const res = await fetch(`https://www.speedrun.com/api/v1/games/${g.id}`);
+                    const json = await res.json();
+                    full = json.data;
+                    setCached(gameKey, full);
+                }
+                g.releaseDate = full['release-date'];
+                return g;
+            }));
             setCached('games', allGames);
             return allGames;
         }
@@ -107,17 +120,33 @@
             const key = `game_${gameId}_${type}`;
             let cached = getCached(key);
             if (cached) return cached;
-            const res = await fetch(`https://www.speedrun.com/api/v1/games/${gameId}/${type}`);
+            const url = type ? `https://www.speedrun.com/api/v1/games/${gameId}/${type}` : `https://www.speedrun.com/api/v1/games/${gameId}`;
+            const res = await fetch(url);
             const json = await res.json();
             setCached(key, json.data);
             return json.data;
         }
 
-        // Relative Time
-        function relativeTime(released) {
-            const now = new Date(); // Use current date
-            const diff = now.getFullYear() - released;
-            return `${diff} years ago`;
+        // Relative Time (with months/days for recent)
+        function relativeTime(game) {
+            const now = new Date(2025, 8, 25); // September 25, 2025
+            let release;
+            if (game.releaseDate) {
+                release = new Date(game.releaseDate);
+            } else {
+                release = new Date(game.released, 0, 1); // Fallback to Jan 1
+            }
+            const diffMs = now - release;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const diffMonths = Math.floor(diffDays / 30);
+            const diffYears = Math.floor(diffMonths / 12);
+            if (diffYears >= 1) {
+                return `${diffYears} years ago`;
+            } else if (diffMonths >= 1) {
+                return `${diffMonths} months ago`;
+            } else {
+                return `${diffDays} days ago`;
+            }
         }
 
         // Parse Time to Seconds
@@ -153,15 +182,15 @@
             } else if (parts[0] === 'game') {
                 const gameId = parts[1];
                 currentGame = games.find(g => g.id === gameId);
-                currentType = parts[2]; // fullgame or level
-                currentCat = parts[3];
-                currentSub = parts[4] || '';
                 if (currentType === 'fullgame') {
+                    currentType = parts[2];
+                    currentCat = parts[3];
+                    currentSub = parts[4] || '';
                     renderFullGameLeaderboard(content, gameId);
-                } else if (currentType === 'level') {
-                    const levelId = parts[3]; // Fixed: parts[2] is 'level', parts[3] is levelId, parts[4] cat, parts[5] sub
+                } else if (parts[2] === 'level') {
+                    const levelId = parts[3];
                     currentType = 'level-' + levelId;
-                    currentCat = parts[4];
+                    currentCat = parts[4] || '';
                     currentSub = parts[5] || '';
                     renderLevelLeaderboard(content, gameId, levelId);
                 }
@@ -192,18 +221,25 @@
             const query = document.getElementById('search').value.toLowerCase();
             const sortVal = document.getElementById('sort').value;
             let filtered = games.filter(g => g.names.international.toLowerCase().includes(query));
-            if (sortVal === 'Alphabetical') filtered.sort((a,b) => a.names.international.localeCompare(b.names.international));
-            if (sortVal === 'Most Recent') filtered.sort((a,b) => b.released - a.released);
-            if (sortVal === 'Oldest') filtered.sort((a,b) => a.released - b.released);
+            if (sortVal === 'Alphabetical') {
+                filtered.sort((a, b) => a.names.international.localeCompare(b.names.international));
+            } else {
+                // Sort by full date timestamp
+                filtered.sort((a, b) => {
+                    const dateA = Date.parse(a.releaseDate || `${a.released}-01-01`);
+                    const dateB = Date.parse(b.releaseDate || `${b.released}-01-01`);
+                    return sortVal === 'Most Recent' ? dateB - dateA : dateA - dateB;
+                });
+            }
             const list = document.getElementById('game-list');
             list.innerHTML = '';
             filtered.forEach(g => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
-                const coverUri = (g.assets['cover-tiny'].uri || '').replace(/^http:/, 'https:'); // Fix mixed content
+                const coverUri = (g.assets['cover-tiny'].uri || '').replace(/^http:/, 'https:');
                 card.innerHTML = `<img src="${coverUri}" alt="${g.names.international}">
-                    <div><h3>${g.names.international}</h3><p>${g.released} (${relativeTime(g.released)})</p></div>`;
-                card.onclick = () => navigate(`game/${g.id}/fullgame`);
+                    <div><h3>${g.names.international}</h3><p>${g.releaseDate || g.released} (${relativeTime(g)})</p></div>`;
+                card.addEventListener('click', () => navigate(`game/${g.id}/fullgame`));
                 list.appendChild(card);
             });
         }
@@ -225,11 +261,11 @@
             selectCat.onchange = () => navigate(`game/${gameId}/fullgame/${selectCat.value}`);
             content.appendChild(selectCat);
 
-            // Subcategories (Variables for full-game)
+            // Subcategories
             const fullVars = vars.filter(v => v['is-subcategory'] && (v.scope.type === 'full-game' || v.scope.type === 'all'));
             if (fullVars.length) {
                 const selectSub = document.createElement('select');
-                Object.entries(fullVars[0].values.values).forEach(([id, val]) => { // Fixed: Use Object.entries for id
+                Object.entries(fullVars[0].values.values).forEach(([id, val]) => {
                     const opt = document.createElement('option');
                     opt.value = `${fullVars[0].id}-${id}`;
                     opt.text = val.label;
@@ -243,7 +279,7 @@
             renderLeaderboardTable(content, gameId, 'fullgame', currentCat, currentSub);
             const btn = document.createElement('button');
             btn.textContent = 'Submit Run';
-            btn.onclick = () => openModal('fullgame', currentCat, currentSub);
+            btn.addEventListener('click', () => openModal('fullgame', currentCat, currentSub));
             content.appendChild(btn);
         }
 
@@ -259,7 +295,7 @@
                 if (l.id === levelId) opt.selected = true;
                 levelSelect.appendChild(opt);
             });
-            levelSelect.onchange = () => navigate(`game/${gameId}/level/${levelSelect.value}/${currentCat || ''}/${currentSub || ''}`);
+            levelSelect.onchange = () => navigate(`game/${gameId}/level/${levelSelect.value}/${currentCat}/${currentSub}`);
             content.appendChild(levelSelect);
 
             const cats = await fetchGameData(gameId, 'categories');
@@ -268,14 +304,14 @@
             levelCats.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
-                opt.text = c.name; // e.g., Single Star, Stage RTA
+                opt.text = c.name;
                 if (c.id === currentCat) opt.selected = true;
                 catSelect.appendChild(opt);
             });
-            catSelect.onchange = () => navigate(`game/${gameId}/level/${levelId}/${catSelect.value}/${currentSub || ''}`);
+            catSelect.onchange = () => navigate(`game/${gameId}/level/${levelId}/${catSelect.value}/${currentSub}`);
             content.appendChild(catSelect);
 
-            // For Single Star, show star dropdown (variables for single-level)
+            // Single Star dropdown
             const isSingleStar = levelCats.find(c => c.id === currentCat && c.name.includes('Single Star'));
             if (isSingleStar) {
                 const vars = await fetchGameData(gameId, 'variables');
@@ -297,11 +333,11 @@
             renderLeaderboardTable(content, gameId, `level-${levelId}`, currentCat, currentSub);
             const btn = document.createElement('button');
             btn.textContent = 'Submit Run';
-            btn.onclick = () => openModal(`level-${levelId}`, currentCat, currentSub);
+            btn.addEventListener('click', () => openModal(`level-${levelId}`, currentCat, currentSub));
             content.appendChild(btn);
         }
 
-        // Render Leaderboard Table (Real-time)
+        // Render Leaderboard Table
         function renderLeaderboardTable(content, gameId, type, catId, sub) {
             const table = document.createElement('table');
             table.innerHTML = `<tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th></tr>`;
@@ -311,7 +347,7 @@
                 const runs = [];
                 snapshot.forEach(child => {
                     const run = child.val();
-                    if (run.approved) runs.push({ ...run, key: child.key });
+                    if (run.approved) runs.push(run);
                 });
                 runs.sort((a,b) => a.time - b.time);
                 table.innerHTML = `<tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th></tr>`;
@@ -353,11 +389,14 @@
                 content.innerHTML = `<h2>Mod Login</h2>
                     <input id="email" placeholder="Email">
                     <input id="password" type="password" placeholder="Password">
-                    <button onclick="login()">Login</button>
-                    <button onclick="signup()">Sign Up (For Testing)</button>`;
+                    <button id="login-btn">Login</button>
+                    <button id="signup-btn">Sign Up (For Testing)</button>`;
+                document.getElementById('login-btn').addEventListener('click', login);
+                document.getElementById('signup-btn').addEventListener('click', signup);
                 return;
             }
-            content.innerHTML = `<h2>Moderation Panel</h2><button onclick="logout()">Logout</button>`;
+            content.innerHTML = `<h2>Moderation Panel</h2><button id="logout-btn">Logout</button>`;
+            document.getElementById('logout-btn').addEventListener('click', logout);
             const table = document.createElement('table');
             table.innerHTML = `<tr><th>Game</th><th>Player</th><th>Time</th><th>Video</th><th>Date</th><th>Actions</th></tr>`;
             content.appendChild(table);
@@ -371,19 +410,19 @@
                     const actions = document.createElement('td');
                     const approveBtn = document.createElement('button');
                     approveBtn.textContent = 'Approve';
-                    approveBtn.onclick = () => approveRun(child.key, run);
+                    approveBtn.addEventListener('click', () => approveRun(child.key, run));
                     actions.appendChild(approveBtn);
                     const rejectBtn = document.createElement('button');
                     rejectBtn.textContent = 'Reject';
-                    rejectBtn.onclick = () => remove(ref(db, `pending_runs/${child.key}`));
+                    rejectBtn.addEventListener('click', () => remove(ref(db, `pending_runs/${child.key}`)));
                     actions.appendChild(rejectBtn);
                     const editBtn = document.createElement('button');
                     editBtn.textContent = 'Edit';
-                    editBtn.onclick = () => editRun(child.key, run);
+                    editBtn.addEventListener('click', () => editRun(child.key, run));
                     actions.appendChild(editBtn);
                     const deleteBtn = document.createElement('button');
                     deleteBtn.textContent = 'Delete';
-                    deleteBtn.onclick = () => remove(ref(db, `pending_runs/${child.key}`));
+                    deleteBtn.addEventListener('click', () => remove(ref(db, `pending_runs/${child.key}`)));
                     actions.appendChild(deleteBtn);
                     tr.appendChild(actions);
                     table.appendChild(tr);
@@ -444,20 +483,16 @@
             renderMod(document.getElementById('content'));
         }
 
-        // Make functions global for inline onclick
-        window.navigate = navigate;
-        window.login = login;
-        window.signup = signup;
-        window.logout = logout;
-        window.submitRun = submitRun;
-        window.closeModal = closeModal;
-
         // Init
         auth.onAuthStateChanged(u => {
             user = u;
             if (window.location.hash === '#mod') renderMod(document.getElementById('content'));
         });
         window.onhashchange = renderPage;
+        document.getElementById('home-btn').addEventListener('click', () => navigate('home'));
+        document.getElementById('mod-btn').addEventListener('click', () => navigate('mod'));
+        document.getElementById('submit-btn').addEventListener('click', submitRun);
+        document.getElementById('close-btn').addEventListener('click', closeModal);
         renderPage();
     </script>
 </body>
