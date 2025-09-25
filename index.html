@@ -84,35 +84,48 @@
             localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
         }
 
-        // Fetch All Games (Handles Pagination and Release Dates)
+        // Fetch All Games (Handles Pagination and Rate-Limited Full Data Fetch)
         async function fetchGames() {
             let cached = getCached('games');
             if (cached) return cached;
             let offset = 0;
             const max = 200;
-            let allGames = [];
+            let seriesGames = [];
             while (true) {
                 const res = await fetch(`https://www.speedrun.com/api/v1/series/sm64romhacks/games?offset=${offset}&max=${max}`);
                 const json = await res.json();
-                allGames.push(...json.data);
+                seriesGames.push(...json.data);
                 if (json.pagination.size < max) break;
                 offset += max;
             }
-            // Fetch full release dates
-            allGames = await Promise.all(allGames.map(async (g) => {
+            // Rate-limited fetch for full game data (sequential with delay and retry on 429)
+            for (let i = 0; i < seriesGames.length; i++) {
+                const g = seriesGames[i];
                 const gameKey = `game_${g.id}`;
                 let full = getCached(gameKey);
                 if (!full) {
-                    const res = await fetch(`https://www.speedrun.com/api/v1/games/${g.id}`);
-                    const json = await res.json();
-                    full = json.data;
-                    setCached(gameKey, full);
+                    try {
+                        const res = await fetch(`https://www.speedrun.com/api/v1/games/${g.id}`);
+                        if (res.status === 429) {
+                            console.log('Rate limit hit, waiting 60s...');
+                            await new Promise(r => setTimeout(r, 60000));
+                            i--; // Retry this fetch
+                            continue;
+                        }
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const json = await res.json();
+                        full = json.data;
+                        setCached(gameKey, full);
+                    } catch (e) {
+                        console.error(`Failed to fetch ${g.id}: ${e}`);
+                        full = {}; // Fallback
+                    }
                 }
-                g.releaseDate = full['release-date'];
-                return g;
-            }));
-            setCached('games', allGames);
-            return allGames;
+                g.releaseDate = full['release-date'] || null;
+                await new Promise(r => setTimeout(r, 200)); // 200ms delay to avoid burst
+            }
+            setCached('games', seriesGames);
+            return seriesGames;
         }
 
         // Fetch Game Data (Categories, Levels, Variables)
@@ -120,21 +133,20 @@
             const key = `game_${gameId}_${type}`;
             let cached = getCached(key);
             if (cached) return cached;
-            const url = type ? `https://www.speedrun.com/api/v1/games/${gameId}/${type}` : `https://www.speedrun.com/api/v1/games/${gameId}`;
-            const res = await fetch(url);
+            const res = await fetch(`https://www.speedrun.com/api/v1/games/${gameId}/${type}`);
             const json = await res.json();
             setCached(key, json.data);
             return json.data;
         }
 
-        // Relative Time (with months/days for recent)
+        // Relative Time
         function relativeTime(game) {
             const now = new Date(2025, 8, 25); // September 25, 2025
             let release;
             if (game.releaseDate) {
                 release = new Date(game.releaseDate);
             } else {
-                release = new Date(game.released, 0, 1); // Fallback to Jan 1
+                release = new Date(game.released, 0, 1); // Jan 1
             }
             const diffMs = now - release;
             const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -182,7 +194,7 @@
             } else if (parts[0] === 'game') {
                 const gameId = parts[1];
                 currentGame = games.find(g => g.id === gameId);
-                if (currentType === 'fullgame') {
+                if (parts[2] === 'fullgame') {
                     currentType = parts[2];
                     currentCat = parts[3];
                     currentSub = parts[4] || '';
