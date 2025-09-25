@@ -3,988 +3,599 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SM64 Hacks Speedrun Mobile</title>
+    <title>SM64 ROM Hacks Speedrun Mobile</title>
     <style>
-        /* General Styling & Dark Theme */
-        :root {
-            --bg-color: #1a1a1a;
-            --primary-color: #2c2c2c;
-            --secondary-color: #444;
-            --text-color: #e0e0e0;
-            --accent-color: #007bff;
-            --danger-color: #dc3545;
-            --success-color: #28a745;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            padding: 15px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1, h2 {
-            border-bottom: 2px solid var(--secondary-color);
-            padding-bottom: 10px;
-        }
-        button, input, select {
-            background-color: var(--secondary-color);
-            color: var(--text-color);
-            border: 1px solid #555;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        button {
-            cursor: pointer;
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            transition: background-color 0.2s;
-        }
-        button:hover { background-color: #0056b3; }
-        .btn-danger { background-color: var(--danger-color); border-color: var(--danger-color); }
-        .btn-danger:hover { background-color: #c82333; }
-        .btn-success { background-color: var(--success-color); border-color: var(--success-color); }
-        .btn-success:hover { background-color: #218838; }
-
-        /* Navigation */
-        nav {
-            background-color: var(--primary-color);
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-bottom: 2px solid var(--accent-color);
-        }
-        nav a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-weight: bold;
-            padding: 10px 15px;
-            border-radius: 5px;
-        }
-        nav a.active {
-            background-color: var(--accent-color);
-        }
-
-        /* Pages */
-        .page { display: none; }
-        .page.active { display: block; }
-
-        /* Home Page - Game List */
-        #home-controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        #search-input, #sort-select {
-            flex-grow: 1;
-        }
-        #game-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-        }
-        .game-card {
-            background-color: var(--primary-color);
-            border-radius: 8px;
-            padding: 15px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            border-left: 5px solid var(--secondary-color);
-        }
-        .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            border-left-color: var(--accent-color);
-        }
-        .game-card h3 { margin: 0 0 10px 0; }
-        .game-card p {
-            margin: 5px 0 0 0;
-            font-size: 0.9em;
-            color: #aaa;
-        }
-        
-        /* Leaderboard Page */
-        #leaderboard-header { margin-bottom: 20px; }
-        #leaderboard-tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .tab {
-            padding: 10px 15px;
-            background: var(--secondary-color);
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .tab.active { background: var(--accent-color); }
-        #leaderboard-controls select { margin-top: 10px; display: block; width: 100%; max-width: 400px; }
-        #leaderboard-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        #leaderboard-table th, #leaderboard-table td {
-            padding: 12px;
-            border-bottom: 1px solid var(--secondary-color);
-            text-align: left;
-        }
-        #leaderboard-table th { background-color: var(--primary-color); }
-        #leaderboard-table a { color: var(--accent-color); text-decoration: none; }
-        #leaderboard-table a:hover { text-decoration: underline; }
-
-        /* Mod Page & Modals */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.7);
-        }
-        .modal-content {
-            background-color: var(--primary-color);
-            margin: 10% auto;
-            padding: 20px;
-            border: 1px solid var(--secondary-color);
-            width: 90%;
-            max-width: 500px;
-            border-radius: 8px;
-        }
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group select {
-            width: calc(100% - 22px);
-        }
-        #pending-runs-list .run-item {
-            background-color: var(--primary-color);
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-        }
-        .run-actions button {
-            margin-right: 5px;
-        }
-        .loader {
-            text-align: center;
-            padding: 50px;
-            font-size: 1.5em;
-        }
+        body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
+        nav { background: #111; padding: 10px; display: flex; justify-content: space-around; }
+        nav button { background: #333; color: #fff; border: none; padding: 10px; cursor: pointer; }
+        nav button:hover { background: #555; }
+        #content { padding: 20px; }
+        .game-list ul { list-style: none; padding: 0; }
+        .game-list li { margin: 10px 0; border: 1px solid #333; padding: 10px; display: flex; align-items: center; }
+        .game-list img { width: 64px; height: 64px; margin-right: 10px; }
+        .search-sort { margin-bottom: 20px; }
+        .search-sort input, .search-sort select { margin-right: 10px; padding: 5px; background: #333; color: #fff; border: 1px solid #555; }
+        .leaderboard h1, h2 { margin: 10px 0; }
+        .cats-list ul { list-style: none; padding: 0; }
+        .cats-list li { margin: 5px 0; }
+        .cats-list a { color: #4af; text-decoration: none; }
+        .vars { margin: 10px 0; }
+        .vars label { display: block; margin: 5px 0; }
+        .vars select { padding: 5px; background: #333; color: #fff; border: 1px solid #555; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #111; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; }
+        .modal-content { background: #333; margin: 15% auto; padding: 20px; width: 80%; max-width: 400px; }
+        .modal input, .modal select, .modal textarea { width: 100%; margin: 5px 0; padding: 5px; background: #222; color: #fff; border: 1px solid #555; }
+        .modal button { margin: 5px; padding: 10px; background: #4af; color: #fff; border: none; cursor: pointer; }
+        .flag { width: 24px; height: 18px; }
+        .login-form { max-width: 300px; margin: 50px auto; }
     </style>
 </head>
 <body>
-
-    <nav>
-        <a href="#home" id="nav-home" class="nav-link active">Home</a>
-        <a href="#mod" id="nav-mod" class="nav-link">Mod</a>
-    </nav>
-
-    <div class="container">
-        <!-- Home Page -->
-        <div id="home-page" class="page active">
-            <h1>SM64 ROM Hacks</h1>
-            <div id="home-controls">
-                <input type="text" id="search-input" placeholder="Search for a hack...">
-                <select id="sort-select">
-                    <option value="alpha">Sort Alphabetical (A-Z)</option>
-                    <option value="alpha-rev">Sort Alphabetical (Z-A)</option>
-                    <option value="newest">Sort by Newest</option>
-                    <option value="oldest">Sort by Oldest</option>
-                </select>
-            </div>
-            <div id="game-list" class="loader">Loading games...</div>
-        </div>
-
-        <!-- Leaderboard Page -->
-        <div id="leaderboard-page" class="page">
-            <button id="back-to-home">← Back to Home</button>
-            <div id="leaderboard-header">
-                <h1 id="leaderboard-title">Leaderboard</h1>
-                <button id="submit-run-btn">Submit Run</button>
-            </div>
-            <div id="leaderboard-content" class="loader">Loading leaderboard data...</div>
-        </div>
-
-        <!-- Mod Page -->
-        <div id="mod-page" class="page">
-            <div id="mod-login-view">
-                <h2>Moderator Login</h2>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="mod-email">Email</label>
-                        <input type="email" id="mod-email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="mod-password">Password</label>
-                        <input type="password" id="mod-password" required>
-                    </div>
-                    <button type="submit">Login</button>
-                    <p id="login-error" style="color: var(--danger-color);"></p>
-                </form>
-            </div>
-            <div id="mod-panel-view" style="display: none;">
-                <h2>Moderation Panel <button id="logout-btn" style="float: right;">Logout</button></h2>
-                <h3>Pending Runs</h3>
-                <div id="pending-runs-list">No pending runs.</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Submit Run Modal -->
-    <div id="submit-run-modal" class="modal">
+    <nav id="nav"></nav>
+    <div id="content"></div>
+    <div id="submitModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2 id="submit-modal-title">Submit Run</h2>
-            <form id="submit-run-form">
-                <div class="form-group">
-                    <label for="player-name">Player Name</label>
-                    <input type="text" id="player-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="run-time">Time (HH:MM:SS.ms)</label>
-                    <input type="text" id="run-time" placeholder="e.g., 01:23:45.678" required>
-                </div>
-                <div class="form-group">
-                    <label for="video-url">Video URL</label>
-                    <input type="url" id="video-url" placeholder="https://youtube.com/..." required>
-                </div>
-                <div class="form-group">
-                    <label for="run-date">Date</label>
-                    <input type="date" id="run-date" required>
-                </div>
-                <button type="submit">Submit for Review</button>
+            <h3>Submit Run</h3>
+            <form id="submitForm">
+                <input type="text" id="player" placeholder="Player Name" required>
+                <input type="text" id="time" placeholder="Time (m:ss)" required>
+                <input type="url" id="video" placeholder="Video URL" required>
+                <input type="date" id="date" required>
+                <input type="text" id="country" placeholder="Country Code (e.g. US)" >
+                <div id="modalVars"></div>
+                <button type="submit">Submit</button>
+                <button type="button" onclick="closeModal()">Cancel</button>
             </form>
         </div>
     </div>
-    
-    <!-- Edit Run Modal -->
-    <div id="edit-run-modal" class="modal">
+    <div id="editModal" class="modal">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Edit Run</h2>
-            <form id="edit-run-form">
-                <input type="hidden" id="edit-run-id">
-                <input type="hidden" id="edit-run-type"> <!-- 'pending' or 'approved' -->
-                <div class="form-group">
-                    <label for="edit-player-name">Player Name</label>
-                    <input type="text" id="edit-player-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-run-time">Time (HH:MM:SS.ms)</label>
-                    <input type="text" id="edit-run-time" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-video-url">Video URL</label>
-                    <input type="url" id="edit-video-url" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-run-date">Date</label>
-                    <input type="date" id="edit-run-date" required>
-                </div>
-                <button type="submit">Save Changes</button>
+            <h3>Edit Run</h3>
+            <form id="editForm">
+                <input type="text" id="editPlayer" placeholder="Player Name" required>
+                <input type="text" id="editTime" placeholder="Time (m:ss)" required>
+                <input type="url" id="editVideo" placeholder="Video URL" required>
+                <input type="date" id="editDate" required>
+                <input type="text" id="editCountry" placeholder="Country Code (e.g. US)" >
+                <div id="editModalVars"></div>
+                <input type="hidden" id="editRunId">
+                <button type="submit">Save</button>
+                <button type="button" onclick="closeModal()">Cancel</button>
             </form>
         </div>
     </div>
 
+    <script type="module">
+        // Firebase Initialization
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, remove, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-<script type="module">
-    // -------------------------------------------------------------------
-    // FIREBASE SETUP
-    // -------------------------------------------------------------------
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
+            authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
+            databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
+            projectId: "sm64-hack-roms-speedrun-mobile",
+            storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
+            messagingSenderId: "499101981060",
+            appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
+        };
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
-        authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
-        databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
-        projectId: "sm64-hack-roms-speedrun-mobile",
-        storageBucket: "sm64-hack-roms-speedrun-mobile.firebasestorage.app",
-        messagingSenderId: "499101981060",
-        appId: "1:499101981060:web:209dfe3f20866ef4f865d1"
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
+        // Global variables
+        let games = [];
+        let currentSearch = '';
+        let currentSort = 'alpha';
+        const currentYear = new Date().getFullYear();
 
-    // -------------------------------------------------------------------
-    // GLOBAL STATE & CONSTANTS
-    // -------------------------------------------------------------------
-    const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
-    const SM64_HACKS_SERIES_ID = 'y655jw6e'; // ID for "SM64 ROM Hacks" series
-    
-    let allGames = [];
-    let currentLeaderboard = {
-        game: null,
-        category: null,
-        level: null,
-        subCategory: null,
-        star: null
-    };
-    const apiCache = new Map();
-    let currentRunsUnsubscribe = null;
-
-    // -------------------------------------------------------------------
-    // UI ELEMENTS
-    // -------------------------------------------------------------------
-    const pages = document.querySelectorAll('.page');
-    const navLinks = document.querySelectorAll('.nav-link');
-    const gameListEl = document.getElementById('game-list');
-    const searchInput = document.getElementById('search-input');
-    const sortSelect = document.getElementById('sort-select');
-    const backToHomeBtn = document.getElementById('back-to-home');
-
-    // -------------------------------------------------------------------
-    // ROUTING
-    // -------------------------------------------------------------------
-    function handleRouteChange() {
-        const hash = window.location.hash || '#home';
-        
-        // Hide all pages
-        pages.forEach(p => p.classList.remove('active'));
-        navLinks.forEach(l => l.classList.remove('active'));
-
-        if (hash.startsWith('#game/')) {
-            document.getElementById('leaderboard-page').classList.add('active');
-            const gameAbbrev = hash.split('/')[1];
-            loadLeaderboardPage(gameAbbrev);
-        } else if (hash === '#mod') {
-            document.getElementById('mod-page').classList.add('active');
-            document.getElementById('nav-mod').classList.add('active');
-        } else {
-            document.getElementById('home-page').classList.add('active');
-            document.getElementById('nav-home').classList.add('active');
+        // Caching functions
+        function cacheData(key, data) {
+            localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
         }
-    }
 
-    // -------------------------------------------------------------------
-    // API & CACHING
-    // -------------------------------------------------------------------
-    async function fetchWithCache(url) {
-        if (apiCache.has(url)) {
-            return apiCache.get(url);
-        }
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`API Error: ${response.status}`);
-            const data = await response.json();
-            apiCache.set(url, data);
-            return data;
-        } catch (error) {
-            console.error(`Failed to fetch ${url}:`, error);
+        function getCached(key, maxAge = 3600000) { // 1 hour
+            const str = localStorage.getItem(key);
+            if (!str) return null;
+            const { data, timestamp } = JSON.parse(str);
+            if (Date.now() - timestamp < maxAge) return data;
+            localStorage.removeItem(key);
             return null;
         }
-    }
 
-    // -------------------------------------------------------------------
-    // HOME PAGE LOGIC
-    // -------------------------------------------------------------------
-    async function loadHomePage() {
-        const url = `${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=250&embed=platforms`; // max=250 to get all
-        const result = await fetchWithCache(url);
-        if (result && result.data) {
-            allGames = result.data.map(game => ({
-                id: game.id,
-                abbreviation: game.abbreviation,
-                name: game.names.international,
-                releaseDate: game.released,
-                weblink: game.weblink
-            })).filter(g => g.abbreviation); // Ensure it has an abbreviation
-            
-            // Sort by name initially
-            allGames.sort((a, b) => a.name.localeCompare(b.name));
-            renderGameList();
-        } else {
-            gameListEl.innerHTML = 'Failed to load games. Please try again later.';
-        }
-    }
-
-    function renderGameList() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const sortValue = sortSelect.value;
-
-        let filteredGames = allGames.filter(game => game.name.toLowerCase().includes(searchTerm));
-
-        switch (sortValue) {
-            case 'alpha':
-                filteredGames.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-            case 'alpha-rev':
-                filteredGames.sort((a, b) => b.name.localeCompare(a.name));
-                break;
-            case 'newest':
-                filteredGames.sort((a, b) => (b.releaseDate || 0) - (a.releaseDate || 0));
-                break;
-            case 'oldest':
-                filteredGames.sort((a, b) => (a.releaseDate || 0) - (b.releaseDate || 0));
-                break;
-        }
-
-        if (filteredGames.length === 0) {
-            gameListEl.innerHTML = 'No games found.';
-            return;
-        }
-
-        gameListEl.innerHTML = filteredGames.map(game => `
-            <div class="game-card" data-abbrev="${game.abbreviation}">
-                <h3>${game.name}</h3>
-                ${game.releaseDate ? `<p>Released: ${new Date(game.releaseDate * 1000).getFullYear()} (${getRelativeTime(game.releaseDate * 1000)})</p>` : ''}
-            </div>
-        `).join('');
-    }
-    
-    function getRelativeTime(timestamp) {
-        const seconds = Math.floor((new Date() - timestamp) / 1000);
-        let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " years ago";
-        interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " months ago";
-        interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " days ago";
-        return "Recently";
-    }
-
-    // -------------------------------------------------------------------
-    // LEADERBOARD PAGE LOGIC
-    // -------------------------------------------------------------------
-    async function loadLeaderboardPage(gameAbbrev) {
-        document.getElementById('leaderboard-content').innerHTML = '<div class="loader">Loading leaderboard data...</div>';
-        
-        const gameUrl = `${SRC_API_BASE}/games/${gameAbbrev}?embed=categories,levels,variables`;
-        const gameData = await fetchWithCache(gameUrl);
-
-        if (!gameData || !gameData.data) {
-            document.getElementById('leaderboard-content').innerHTML = 'Error loading game data.';
-            return;
-        }
-
-        currentLeaderboard.game = gameData.data;
-        document.getElementById('leaderboard-title').textContent = currentLeaderboard.game.names.international;
-        renderLeaderboardUI();
-    }
-    
-    function renderLeaderboardUI() {
-        const game = currentLeaderboard.game;
-        const fullGameCategories = game.categories.data.filter(c => c.type === 'per-game');
-        const levelCategories = game.categories.data.filter(c => c.type === 'per-level');
-        
-        let html = '<div id="leaderboard-tabs">';
-        if (fullGameCategories.length > 0) {
-             html += `<div class="tab" data-type="full-game">Full Game</div>`;
-        }
-        if (levelCategories.length > 0 && game.levels.data.length > 0) {
-            html += `<div class="tab" data-type="il">Individual Levels</div>`;
-        }
-        html += '</div><div id="leaderboard-controls"></div><div id="leaderboard-table-container"></div>';
-
-        document.getElementById('leaderboard-content').innerHTML = html;
-        
-        // Add event listeners to new tabs
-        document.querySelectorAll('#leaderboard-tabs .tab').forEach(tab => {
-            tab.addEventListener('click', e => {
-                document.querySelectorAll('#leaderboard-tabs .tab').forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                renderCategoryControls(e.target.dataset.type);
-            });
-        });
-        
-        // Auto-select the first tab
-        const firstTab = document.querySelector('#leaderboard-tabs .tab');
-        if (firstTab) {
-            firstTab.click();
-        } else {
-            document.getElementById('leaderboard-controls').innerHTML = "No categories found for this game.";
-        }
-    }
-
-    function renderCategoryControls(type) {
-        const controlsEl = document.getElementById('leaderboard-controls');
-        const game = currentLeaderboard.game;
-        
-        let html = '';
-        if (type === 'full-game') {
-            const categories = game.categories.data.filter(c => c.type === 'per-game');
-            html = `
-                <select id="category-select">
-                    ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                </select>
-                <div id="sub-category-container"></div>
-            `;
-        } else if (type === 'il') {
-            const categories = game.categories.data.filter(c => c.type === 'per-level');
-            const levels = game.levels.data;
-            html = `
-                <select id="category-select">
-                    ${categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
-                </select>
-                <select id="level-select">
-                    ${levels.map(l => `<option value="${l.id}">${l.name}</option>`).join('')}
-                </select>
-                <div id="star-select-container"></div> <!-- For Single Star -->
-            `;
-        }
-        controlsEl.innerHTML = html;
-        
-        // Attach change listeners
-        controlsEl.querySelector('#category-select').addEventListener('change', updateLeaderboardSelection);
-        if(controlsEl.querySelector('#level-select')) {
-            controlsEl.querySelector('#level-select').addEventListener('change', updateLeaderboardSelection);
-        }
-        
-        // Trigger initial selection
-        updateLeaderboardSelection();
-    }
-
-    async function updateLeaderboardSelection() {
-        const categorySelect = document.getElementById('category-select');
-        if (!categorySelect) return;
-        
-        const categoryId = categorySelect.value;
-        const category = currentLeaderboard.game.categories.data.find(c => c.id === categoryId);
-        currentLeaderboard.category = category;
-
-        const levelSelect = document.getElementById('level-select');
-        currentLeaderboard.level = null;
-        if(levelSelect) {
-            const levelId = levelSelect.value;
-            currentLeaderboard.level = currentLeaderboard.game.levels.data.find(l => l.id === levelId);
-        }
-
-        // Handle subcategories (variables)
-        const subCategoryContainer = document.getElementById('sub-category-container');
-        if (subCategoryContainer) {
-            const applicableVariables = currentLeaderboard.game.variables.data.filter(v => v['is-subcategory'] && (v.category === null || v.category === categoryId));
-            
-            if (applicableVariables.length > 0) {
-                let subCatHtml = '';
-                applicableVariables.forEach(variable => {
-                    const values = Object.entries(variable.values.values);
-                    subCatHtml += `
-                        <label for="var-${variable.id}">${variable.name}</label>
-                        <select class="sub-category-select" id="var-${variable.id}" data-var-id="${variable.id}">
-                            ${values.map(([valId, valData]) => `<option value="${valId}">${valData.label}</option>`).join('')}
-                        </select>
-                    `;
-                });
-                subCategoryContainer.innerHTML = subCatHtml;
-                document.querySelectorAll('.sub-category-select').forEach(sel => sel.addEventListener('change', updateLeaderboardSelection));
-            } else {
-                 subCategoryContainer.innerHTML = '';
+        // Fetch all games with pagination and caching
+        async function fetchAllGames() {
+            const cached = getCached('allGames');
+            if (cached) return cached;
+            let allGames = [];
+            let url = 'https://www.speedrun.com/api/v1/series/sm64romhacks/games';
+            while (url) {
+                const res = await fetch(url);
+                const json = await res.json();
+                allGames = allGames.concat(json.data);
+                const nextLink = json.pagination?.links?.find(l => l.rel === 'next');
+                url = nextLink ? nextLink.uri : null;
             }
-        }
-        
-        const allSubCategorySelects = document.querySelectorAll('.sub-category-select');
-        currentLeaderboard.subCategory = {};
-        if (allSubCategorySelects.length > 0) {
-            allSubCategorySelects.forEach(sel => {
-                currentLeaderboard.subCategory[sel.dataset.varId] = sel.value;
-            });
-        } else {
-            currentLeaderboard.subCategory = null;
+            cacheData('allGames', allGames);
+            return allGames;
         }
 
-        // Handle "Single Star" category
-        const starContainer = document.getElementById('star-select-container');
-        currentLeaderboard.star = null;
-        if(category && (category.name.toLowerCase().includes('single star') || category.name.toLowerCase().includes('star')) && currentLeaderboard.level && starContainer) {
-            // This is a simplification. A real implementation might need a dedicated API call if stars aren't in the level data.
-            // For now, we'll assume stars are not directly available via the base API and require a specific fetch or are hardcoded.
-            // Here we will just add a placeholder. A proper implementation needs to find the stars for a level.
-            // Let's pretend we fetched them.
-            const stars = [ {id:'star1', name:'Star 1'}, {id:'star2', name:'Star 2'}, {id:'star3', name:'Star 3'} ]; // Dummy data
-            starContainer.innerHTML = `
-                <select id="star-select">
-                    ${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
-                </select>
-            `;
-            const starSelect = document.getElementById('star-select');
-            currentLeaderboard.star = starSelect.value;
-            starSelect.addEventListener('change', updateLeaderboardSelection);
-        } else if (starContainer) {
-            starContainer.innerHTML = '';
-        }
-        
-        fetchAndDisplayRuns();
-    }
-    
-    function getFirebasePathForLeaderboard() {
-        const { game, category, level, subCategory, star } = currentLeaderboard;
-        if (!game || !category) return null;
-
-        let path = `runs/${game.abbreviation}/${category.id}`;
-        if (level) path += `/${level.id}`;
-        if (star) path += `/${star}`;
-        
-        if (subCategory) {
-            // Create a consistent key from subcategory values
-            const subCategoryKey = Object.keys(subCategory).sort().map(k => `${k}=${subCategory[k]}`).join('&');
-            path += `/${btoa(subCategoryKey)}`; // btoa to handle special characters
-        }
-        
-        return path;
-    }
-
-    function fetchAndDisplayRuns() {
-        if (currentRunsUnsubscribe) {
-            currentRunsUnsubscribe(); // Detach old listener
-        }
-
-        const path = getFirebasePathForLeaderboard();
-        if (!path) {
-            document.getElementById('leaderboard-table-container').innerHTML = '<p>Select a category to view runs.</p>';
-            return;
-        }
-
-        const runsRef = ref(db, path);
-        document.getElementById('leaderboard-table-container').innerHTML = '<div class="loader">Loading runs...</div>';
-        
-        currentRunsUnsubscribe = onValue(runsRef, (snapshot) => {
-            const runsData = snapshot.val();
-            const runs = runsData ? Object.entries(runsData).map(([id, data]) => ({ id, ...data })) : [];
-            
-            // Sort runs by time (assuming time is stored in seconds)
-            runs.sort((a, b) => a.timeInSeconds - b.timeInSeconds);
-
-            renderLeaderboardTable(runs);
-        });
-    }
-    
-    function renderLeaderboardTable(runs) {
-        const container = document.getElementById('leaderboard-table-container');
-        if (runs.length === 0) {
-            container.innerHTML = '<p>No runs submitted for this category yet. Be the first!</p>';
-            return;
-        }
-        
-        let tableHtml = `
-            <table id="leaderboard-table">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Time</th>
-                        <th>Date</th>
-                        <th>Video</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${runs.map((run, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${escapeHtml(run.player)}</td>
-                            <td>${formatTime(run.timeInSeconds)}</td>
-                            <td>${run.date}</td>
-                            <td><a href="${run.videoUrl}" target="_blank" rel="noopener noreferrer">Watch</a></td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
-        container.innerHTML = tableHtml;
-    }
-    
-    // -------------------------------------------------------------------
-    // MODAL & SUBMISSION LOGIC
-    // -------------------------------------------------------------------
-    const submitModal = document.getElementById('submit-run-modal');
-    const editModal = document.getElementById('edit-run-modal');
-    
-    function openModal(modal) { modal.style.display = 'block'; }
-    function closeModal(modal) { modal.style.display = 'none'; }
-    
-    document.querySelectorAll('.close-btn').forEach(btn => btn.onclick = () => {
-        closeModal(submitModal);
-        closeModal(editModal);
-    });
-    window.onclick = (event) => {
-        if (event.target == submitModal) closeModal(submitModal);
-        if (event.target == editModal) closeModal(editModal);
-    };
-
-    document.getElementById('submit-run-btn').addEventListener('click', () => {
-        const { game, category } = currentLeaderboard;
-        if (!game || !category) {
-            alert('Please select a game and category first.');
-            return;
-        }
-        document.getElementById('submit-modal-title').textContent = `Submit Run for ${game.names.international}`;
-        document.getElementById('submit-run-form').reset();
-        openModal(submitModal);
-    });
-    
-    document.getElementById('submit-run-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const { game, category, level, subCategory, star } = currentLeaderboard;
-        const subCategoryString = subCategory ? Object.keys(subCategory).sort().map(k => `${k}=${subCategory[k]}`).join('&') : 'N/A';
-        
-        const runData = {
-            player: document.getElementById('player-name').value,
-            time: document.getElementById('run-time').value,
-            timeInSeconds: timeToSeconds(document.getElementById('run-time').value),
-            videoUrl: document.getElementById('video-url').value,
-            date: document.getElementById('run-date').value,
-            submittedAt: new Date().toISOString(),
-            // Store context for moderators
-            gameId: game.abbreviation,
-            gameName: game.names.international,
-            category: category.id,
-            categoryName: category.name,
-            level: level ? level.id : null,
-            levelName: level ? level.name : null,
-            subCategory: subCategoryString,
-            star: star ? star : null
-        };
-        
-        push(ref(db, 'pendingRuns'), runData)
-            .then(() => {
-                alert('Run submitted for moderation!');
-                closeModal(submitModal);
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Error submitting run.');
-            });
-    });
-
-    // -------------------------------------------------------------------
-    // MODERATION LOGIC
-    // -------------------------------------------------------------------
-    const modLoginView = document.getElementById('mod-login-view');
-    const modPanelView = document.getElementById('mod-panel-view');
-
-    onAuthStateChanged(auth, user => {
-        if (user) {
-            modLoginView.style.display = 'none';
-            modPanelView.style.display = 'block';
-            loadPendingRuns();
-        } else {
-            modLoginView.style.display = 'block';
-            modPanelView.style.display = 'none';
-        }
-    });
-
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const email = document.getElementById('mod-email').value;
-        const password = document.getElementById('mod-password').value;
-        signInWithEmailAndPassword(auth, email, password)
-            .catch(err => {
-                document.getElementById('login-error').textContent = err.message;
-            });
-    });
-
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-
-    function loadPendingRuns() {
-        const pendingRunsRef = ref(db, 'pendingRuns');
-        onValue(pendingRunsRef, (snapshot) => {
-            const runsListEl = document.getElementById('pending-runs-list');
-            const data = snapshot.val();
+        // Fetch game data (categories, levels) with caching
+        async function getGameData(gameId) {
+            const key = `gameData_${gameId}`;
+            let data = getCached(key);
             if (!data) {
-                runsListEl.innerHTML = 'No pending runs.';
+                const [catRes, levRes] = await Promise.all([
+                    fetch(`https://www.speedrun.com/api/v1/games/${gameId}/categories`),
+                    fetch(`https://www.speedrun.com/api/v1/games/${gameId}/levels`)
+                ]);
+                const cats = await catRes.json();
+                const levels = await levRes.json();
+                data = { categories: cats.data, levels: levels.data };
+                cacheData(key, data);
+            }
+            return data;
+        }
+
+        // Fetch level categories with caching
+        async function getLevelCategories(levelId) {
+            const key = `levelCats_${levelId}`;
+            let data = getCached(key);
+            if (!data) {
+                const res = await fetch(`https://www.speedrun.com/api/v1/levels/${levelId}/categories`);
+                data = await res.json();
+                cacheData(key, data);
+            }
+            return data.data;
+        }
+
+        // Fetch category variables
+        async function getCategoryVariables(gameId, catId) {
+            const key = `catVars_${gameId}_${catId}`;
+            let data = getCached(key);
+            if (!data) {
+                const res = await fetch(`https://www.speedrun.com/api/v1/games/${gameId}/categories/${catId}/variables`);
+                data = await res.json();
+                cacheData(key, data);
+            }
+            return data;
+        }
+
+        // Format time from seconds
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 1000);
+            return `${mins}:${secs.toString().padStart(2, '0')}${ms ? `.${ms.toString().padStart(3, '0')}` : ''}`;
+        }
+
+        // Parse time string to seconds
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':');
+            if (parts.length !== 2) return 0;
+            const mins = parseInt(parts[0], 10);
+            const secPart = parts[1].split('.');
+            const secs = parseInt(secPart[0], 10);
+            const ms = secPart[1] ? parseInt(secPart[1], 10) / 1000 : 0;
+            return mins * 60 + secs + ms;
+        }
+
+        // Render games list for home
+        function renderGames(gamesList, search = '', sort = 'alpha') {
+            let list = [...gamesList];
+            if (search) {
+                list = list.filter(g => g.names.international.toLowerCase().includes(search.toLowerCase()));
+            }
+            if (sort === 'recent') {
+                list.sort((a, b) => b.released - a.released);
+            } else if (sort === 'oldest') {
+                list.sort((a, b) => a.released - b.released);
+            } else {
+                list.sort((a, b) => a.names.international.localeCompare(b.names.international));
+            }
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="search-sort">
+                    <input type="text" id="searchInput" placeholder="Search games" value="${search}" />
+                    <select id="sortSelect">
+                        <option value="alpha" ${sort === 'alpha' ? 'selected' : ''}>Alphabetical</option>
+                        <option value="recent" ${sort === 'recent' ? 'selected' : ''}>Most Recent</option>
+                        <option value="oldest" ${sort === 'oldest' ? 'selected' : ''}>Oldest</option>
+                    </select>
+                </div>
+                <ul class="game-list">
+                    ${list.map(game => `
+                        <li>
+                            <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international}" />
+                            <div>
+                                <h3>${game.names.international}</h3>
+                                <p>Released: ${game.released}</p>
+                                <p>${currentYear - game.released} years ago</p>
+                                <a href="#game/${game.id}">View Leaderboards</a>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            document.getElementById('searchInput').addEventListener('input', (e) => showHome(e.target.value, currentSort));
+            document.getElementById('sortSelect').addEventListener('change', (e) => showHome(currentSearch, e.target.value));
+        }
+
+        // Show home page
+        async function showHome(search = '', sort = 'alpha') {
+            currentSearch = search;
+            currentSort = sort;
+            renderGames(games, search, sort);
+        }
+
+        // Show specific leaderboard
+        async function showSpecificLeaderboard(gameId, catId, levelId, vars) {
+            const content = document.getElementById('content');
+            const game = games.find(g => g.id === gameId);
+            if (!game) return content.innerHTML = '<p>Game not found.</p>';
+
+            const gameData = await getGameData(gameId);
+            let cats;
+            let sectionTitle = 'Full Game';
+            if (levelId) {
+                const levelInfo = gameData.levels.find(l => l.id === levelId);
+                if (!levelInfo) return content.innerHTML = '<p>Level not found.</p>';
+                cats = await getLevelCategories(levelId);
+                sectionTitle = levelInfo.name;
+            } else {
+                cats = gameData.categories.filter(c => c.type === 'per-game');
+            }
+
+            if (!catId) {
+                // Show categories list for section
+                content.innerHTML = `
+                    <h1>${game.names.international}</h1>
+                    <h2>${sectionTitle}</h2>
+                    <ul class="cats-list">
+                        ${cats.map(cat => {
+                            const link = levelId ? `#game/${gameId}?level=${levelId}&cat=${cat.id}` : `#game/${gameId}?cat=${cat.id}`;
+                            return `<li><a href="${link}">${cat.name}</a></li>`;
+                        }).join('')}
+                    </ul>
+                    <button onclick="location.hash = ''">Back to Home</button>
+                `;
                 return;
             }
 
-            runsListEl.innerHTML = Object.entries(data).map(([id, run]) => `
-                <div class="run-item" data-id="${id}">
-                    <p><strong>Game:</strong> ${escapeHtml(run.gameName)}</p>
-                    <p><strong>Category:</strong> ${escapeHtml(run.categoryName)} ${run.levelName ? `(${escapeHtml(run.levelName)})` : ''}</p>
-                    <p><strong>SubCategory:</strong> ${escapeHtml(run.subCategory)}</p>
-                    <p><strong>Player:</strong> ${escapeHtml(run.player)} | <strong>Time:</strong> ${run.time}</p>
-                    <p><strong>Video:</strong> <a href="${run.videoUrl}" target="_blank">Link</a> | <strong>Date:</strong> ${run.date}</p>
-                    <div class="run-actions">
-                        <button class="btn-success approve-btn" data-id="${id}">Approve</button>
-                        <button class="btn-danger reject-btn" data-id="${id}">Reject</button>
-                        <button class="edit-btn" data-id="${id}">Edit</button>
-                    </div>
-                </div>
-            `).join('');
-        });
-    }
-    
-    // Event delegation for mod actions
-    document.getElementById('pending-runs-list').addEventListener('click', (e) => {
-        const runId = e.target.dataset.id;
-        if (!runId) return;
+            // Show leaderboard for specific cat
+            const catVarsData = await getCategoryVariables(gameId, catId);
+            const catVars = catVarsData.data.filter(v => v.scope?.type === 'global'); // Global variables
 
-        if (e.target.classList.contains('approve-btn')) {
-            approveRun(runId);
-        } else if (e.target.classList.contains('reject-btn')) {
-            if (confirm('Are you sure you want to reject this run?')) {
-                rejectRun(runId);
-            }
-        } else if (e.target.classList.contains('edit-btn')) {
-            openEditModal(runId, 'pending');
+            // Render variables dropdowns
+            let varsHtml = '';
+            catVars.forEach(v => {
+                const currentVal = vars[v.id] || '';
+                varsHtml += `
+                    <label>${v.name}:
+                        <select name="${v.id}" id="var_${v.id}">
+                            ${v.values.data.map(val => `<option value="${val.id}" ${currentVal === val.id ? 'selected' : ''}>${val.label}</option>`).join('')}
+                        </select>
+                    </label>
+                `;
+            });
+
+            // Update URL on var change
+            const updateVars = () => {
+                const newVars = { ...vars };
+                catVars.forEach(v => {
+                    const select = document.getElementById(`var_${v.id}`);
+                    if (select) newVars[v.id] = select.value;
+                });
+                const p = new URLSearchParams();
+                if (catId) p.set('cat', catId);
+                if (levelId) p.set('level', levelId);
+                Object.entries(newVars).forEach(([k, v]) => p.set(k, v));
+                location.hash = `#game/${gameId}?${p.toString()}`;
+            };
+            catVars.forEach(v => {
+                const select = document.getElementById(`var_${v.id}`);
+                if (select) select.addEventListener('change', updateVars);
+            });
+
+            const catInfoRes = await fetch(`https://www.speedrun.com/api/v1/games/${gameId}/categories/${catId}`);
+            const catInfo = await catInfoRes.json();
+            const catName = catInfo.data.name;
+
+            const levelName = levelId ? (await (await fetch(`https://www.speedrun.com/api/v1/levels/${levelId}`)).json()).data.name : '';
+
+            content.innerHTML = `
+                <h1>${game.names.international}</h1>
+                <h2>${levelName ? levelName + ' - ' : ''}${catName}</h2>
+                <div class="vars">${varsHtml}</div>
+                <table id="runsTable">
+                    <thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th>Country</th><th>Video</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <button onclick="openSubmitModal('${gameId}', '${catId}', '${levelId || ''}', ${JSON.stringify(vars)})">Submit Run</button>
+                <button onclick="location.hash = ''">Back to Home</button>
+            `;
+
+            // Real-time runs
+            const lbPath = `games/${gameId}/leaderboards/${catId}/${levelId || 'full'}/runs`;
+            const runsRef = ref(db, lbPath);
+            onValue(runsRef, async (snap) => {
+                let runData = snap.val();
+                let runs = runData ? Object.entries(runData).map(([id, r]) => ({ id, ...r })) : [];
+                runs = runs.filter(r => {
+                    for (let [k, v] of Object.entries(vars)) {
+                        if (r.variables?.[k] !== v) return false;
+                    }
+                    return true;
+                }).sort((a, b) => (a.time || Infinity) - (b.time || Infinity));
+                const tbody = document.querySelector('#runsTable tbody');
+                tbody.innerHTML = runs.map((run, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${run.player}</td>
+                        <td>${formatTime(run.time)}</td>
+                        <td>${new Date(run.date).toLocaleDateString()}</td>
+                        <td>${run.country ? `<img class="flag" src="https://flagcdn.com/24x18/${run.country.toLowerCase()}.png" alt="${run.country}" /> ${run.country}` : ''}</td>
+                        <td><a href="${run.video}" target="_blank">Watch</a></td>
+                    </tr>
+                `).join('');
+            }, { onlyOnce: false });
         }
-    });
 
-    async function approveRun(runId) {
-        const pendingRunRef = ref(db, `pendingRuns/${runId}`);
-        onValue(pendingRunRef, (snapshot) => {
-            const runData = snapshot.val();
-            if (!runData) return;
+        // Modal functions
+        function openSubmitModal(gameId, catId, levelId, varsObj) {
+            const modal = document.getElementById('submitModal');
+            const form = document.getElementById('submitForm');
+            const modalVars = document.getElementById('modalVars');
+            const vars = JSON.parse(varsObj); // From stringified
+            let varsHtml = '';
+            // Re-fetch vars for dropdowns in modal (simple, could cache)
+            getCategoryVariables(gameId, catId).then(varData => {
+                const catVars = varData.data.filter(v => v.scope?.type === 'global');
+                catVars.forEach(v => {
+                    const currentVal = vars[v.id] || '';
+                    varsHtml += `
+                        <label>${v.name}:
+                            <select name="${v.id}">
+                                ${v.values.data.map(val => `<option value="${val.id}" ${currentVal === val.id ? 'selected' : ''}>${val.label}</option>`).join('')}
+                            </select>
+                        </label>
+                    `;
+                });
+                modalVars.innerHTML = varsHtml;
+            });
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                const player = document.getElementById('player').value;
+                const timeStr = document.getElementById('time').value;
+                const video = document.getElementById('video').value;
+                const dateStr = document.getElementById('date').value;
+                const country = document.getElementById('country').value;
+                const modalVarsObj = {};
+                modalVars.querySelectorAll('select').forEach(s => modalVarsObj[s.name] = s.value);
+                const run = {
+                    player,
+                    time: parseTime(timeStr),
+                    video,
+                    date: new Date(dateStr).getTime(),
+                    country,
+                    variables: { ...vars, ...modalVarsObj },
+                    submittedAt: Date.now()
+                };
+                // Fetch names
+                const [gameRes, catRes] = await Promise.all([
+                    fetch(`https://www.speedrun.com/api/v1/games/${gameId}`),
+                    fetch(`https://www.speedrun.com/api/v1/games/${gameId}/categories/${catId}`)
+                ]);
+                const gameInfo = await gameRes.json();
+                const catInfo = await catRes.json();
+                run.gameId = gameId;
+                run.catId = catId;
+                run.levelId = levelId || null;
+                run.gameName = gameInfo.data.names.international;
+                run.catName = catInfo.data.name;
+                if (levelId) {
+                    const levRes = await fetch(`https://www.speedrun.com/api/v1/levels/${levelId}`);
+                    const levInfo = await levRes.json();
+                    run.levelName = levInfo.data.name;
+                }
+                // Submit to pending
+                push(ref(db, 'pendingRuns'), run);
+                closeModal();
+                alert('Run submitted for moderation!');
+            };
+            modal.style.display = 'block';
+        }
 
-            // Construct the path for the approved run
-            let approvedPath = `runs/${runData.gameId}/${runData.category}`;
-            if(runData.level) approvedPath += `/${runData.level}`;
-            if(runData.star) approvedPath += `/${runData.star}`;
-            if(runData.subCategory && runData.subCategory !== 'N/A') {
-                 approvedPath += `/${btoa(runData.subCategory)}`;
-            }
+        function closeModal() {
+            document.getElementById('submitModal').style.display = 'none';
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('submitForm').reset();
+            document.getElementById('editForm').reset();
+        }
 
-            const newRunRef = push(ref(db, approvedPath));
-            set(newRunRef, {
-                player: runData.player,
-                time: runData.time,
-                timeInSeconds: runData.timeInSeconds,
-                videoUrl: runData.videoUrl,
-                date: runData.date
-            }).then(() => {
-                remove(pendingRunRef); // Remove from pending queue
-            }).catch(err => console.error("Error approving run: ", err));
-        }, { onlyOnce: true });
-    }
-    
-    function rejectRun(runId) {
-        remove(ref(db, `pendingRuns/${runId}`));
-    }
-
-    function openEditModal(runId, type) {
-        const runRef = ref(db, `${type}Runs/${runId}`);
-        onValue(runRef, (snapshot) => {
-            const run = snapshot.val();
+        // Mod functions
+        async function approve(runId) {
+            const runRef = ref(db, `pendingRuns/${runId}`);
+            const snap = await get(runRef);
+            const run = snap.val();
             if (!run) return;
-            
-            document.getElementById('edit-run-id').value = runId;
-            document.getElementById('edit-run-type').value = type;
-            document.getElementById('edit-player-name').value = run.player;
-            document.getElementById('edit-run-time').value = run.time;
-            document.getElementById('edit-video-url').value = run.videoUrl;
-            document.getElementById('edit-run-date').value = run.date;
-
-            openModal(editModal);
-        }, { onlyOnce: true });
-    }
-    
-    document.getElementById('edit-run-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const runId = document.getElementById('edit-run-id').value;
-        const type = document.getElementById('edit-run-type').value;
-
-        const updatedData = {
-            player: document.getElementById('edit-player-name').value,
-            time: document.getElementById('edit-run-time').value,
-            timeInSeconds: timeToSeconds(document.getElementById('edit-run-time').value),
-            videoUrl: document.getElementById('edit-video-url').value,
-            date: document.getElementById('edit-run-date').value
-        };
-        
-        // We need to preserve the other data in pending runs
-        const runRef = ref(db, `${type}Runs/${runId}`);
-        onValue(runRef, (snapshot) => {
-            const originalData = snapshot.val();
-            set(runRef, { ...originalData, ...updatedData })
-              .then(() => {
-                  alert('Run updated successfully!');
-                  closeModal(editModal);
-              })
-              .catch(err => console.error("Update failed: ", err));
-        }, { onlyOnce: true });
-    });
-
-    // -------------------------------------------------------------------
-    // UTILITY FUNCTIONS
-    // -------------------------------------------------------------------
-    function timeToSeconds(timeStr) {
-        if (!timeStr) return 0;
-        const parts = timeStr.split(':');
-        let seconds = 0;
-        if (parts.length === 3) {
-            seconds += parseInt(parts[0], 10) * 3600;
-            seconds += parseInt(parts[1], 10) * 60;
-            seconds += parseFloat(parts[2]);
-        } else if (parts.length === 2) {
-            seconds += parseInt(parts[0], 10) * 60;
-            seconds += parseFloat(parts[1]);
-        } else {
-            seconds = parseFloat(timeStr);
+            remove(runRef);
+            const lbPath = `games/${run.gameId}/leaderboards/${run.catId}/${run.levelId || 'full'}/runs`;
+            run.verified = true;
+            run.approvedAt = Date.now();
+            push(ref(db, lbPath), run);
         }
-        return seconds;
-    }
-    
-    function formatTime(totalSeconds) {
-        if (isNaN(totalSeconds) || totalSeconds === null) return "00:00.000";
-        const hours = Math.floor(totalSeconds / 3600);
-        totalSeconds %= 3600;
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = (totalSeconds % 60).toFixed(3);
 
-        let timeString = '';
-        if (hours > 0) {
-            timeString += `${String(hours).padStart(2, '0')}:`;
+        async function reject(runId) {
+            remove(ref(db, `pendingRuns/${runId}`));
         }
-        timeString += `${String(minutes).padStart(2, '0')}:${String(seconds).split('.')[0].padStart(2, '0')}.${seconds.split('.')[1]}`;
-        return timeString;
-    }
 
-    function escapeHtml(unsafe) {
-        return unsafe
-             .replace(/&/g, "&amp;")
-             .replace(/</g, "&lt;")
-             .replace(/>/g, "&gt;")
-             .replace(/"/g, "&quot;")
-             .replace(/'/g, "&#039;");
-    }
+        async function deleteRun(runId) {
+            remove(ref(db, `pendingRuns/${runId}`));
+        }
 
-    // -------------------------------------------------------------------
-    // INITIALIZATION
-    // -------------------------------------------------------------------
-    function init() {
-        // Event Listeners
-        searchInput.addEventListener('input', renderGameList);
-        sortSelect.addEventListener('change', renderGameList);
-        gameListEl.addEventListener('click', (e) => {
-            const card = e.target.closest('.game-card');
-            if (card) {
-                window.location.hash = `#game/${card.dataset.abbrev}`;
+        function openEditModal(runId, run) {
+            document.getElementById('editRunId').value = runId;
+            document.getElementById('editPlayer').value = run.player;
+            document.getElementById('editTime').value = formatTime(run.time).split('.')[0]; // Approximate
+            document.getElementById('editVideo').value = run.video;
+            document.getElementById('editDate').value = new Date(run.date).toISOString().split('T')[0];
+            document.getElementById('editCountry').value = run.country || '';
+            // Vars similar to submit, but skip for simplicity or implement
+            const modal = document.getElementById('editModal');
+            document.getElementById('editForm').onsubmit = async (e) => {
+                e.preventDefault();
+                run.player = document.getElementById('editPlayer').value;
+                run.time = parseTime(document.getElementById('editTime').value);
+                run.video = document.getElementById('editVideo').value;
+                run.date = new Date(document.getElementById('editDate').value).getTime();
+                run.country = document.getElementById('editCountry').value;
+                set(ref(db, `pendingRuns/${runId}`), run);
+                closeModal();
+            };
+            modal.style.display = 'block';
+        }
+
+        function showMod() {
+            const content = document.getElementById('content');
+            const user = auth.currentUser;
+            if (!user) {
+                content.innerHTML = `
+                    <div class="login-form">
+                        <h2>Moderator Login</h2>
+                        <form id="loginForm">
+                            <input type="email" id="modEmail" placeholder="Email" required>
+                            <input type="password" id="modPass" placeholder="Password" required>
+                            <button type="submit">Login</button>
+                            <button type="button" onclick="showSignup()">Signup</button>
+                        </form>
+                    </div>
+                `;
+                document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const email = document.getElementById('modEmail').value;
+                    const pass = document.getElementById('modPass').value;
+                    try {
+                        await signInWithEmailAndPassword(auth, email, pass);
+                        showMod();
+                    } catch (e) {
+                        alert('Login failed: ' + e.message);
+                    }
+                });
+                return;
             }
+            // Show pending runs
+            content.innerHTML = '<h2>Pending Runs Queue</h2><table id="pendingTable"><thead><tr><th>Game</th><th>Category</th><th>Level</th><th>Player</th><th>Time</th><th>Date</th><th>Video</th><th>Actions</th></tr></thead><tbody></tbody></table><button onclick="signOutMod()">Logout</button>';
+            const pendingRef = ref(db, 'pendingRuns');
+            onValue(pendingRef, (snap) => {
+                let runs = snap.val() ? Object.entries(snap.val()).map(([id, r]) => ({ id, ...r })) : [];
+                runs.sort((a, b) => b.submittedAt - a.submittedAt);
+                const tbody = document.querySelector('#pendingTable tbody');
+                tbody.innerHTML = runs.map(run => `
+                    <tr>
+                        <td>${run.gameName}</td>
+                        <td>${run.catName}</td>
+                        <td>${run.levelName || ''}</td>
+                        <td>${run.player}</td>
+                        <td>${formatTime(run.time)}</td>
+                        <td>${new Date(run.date).toLocaleDateString()}</td>
+                        <td><a href="${run.video}" target="_blank">Watch</a></td>
+                        <td>
+                            <button onclick="approve('${run.id}')">Approve</button>
+                            <button onclick="reject('${run.id}')">Reject</button>
+                            <button onclick="openEditModal('${run.id}', ${JSON.stringify(run)})">Edit</button>
+                            <button onclick="deleteRun('${run.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            });
+        }
+
+        function showSignup() {
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="login-form">
+                    <h2>Moderator Signup</h2>
+                    <form id="signupForm">
+                        <input type="email" id="signupEmail" placeholder="Email" required>
+                        <input type="password" id="signupPass" placeholder="Password" required>
+                        <button type="submit">Signup</button>
+                        <button type="button" onclick="showMod()">Back to Login</button>
+                    </form>
+                </div>
+            `;
+            document.getElementById('signupForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signupEmail').value;
+                const pass = document.getElementById('signupPass').value;
+                try {
+                    await createUserWithEmailAndPassword(auth, email, pass);
+                    alert('Signup successful! Please login.');
+                    showMod();
+                } catch (e) {
+                    alert('Signup failed: ' + e.message);
+                }
+            });
+        }
+
+        function signOutMod() {
+            signOut(auth);
+            location.hash = '';
+        }
+
+        // Router
+        function router() {
+            const hash = location.hash.slice(1);
+            const [pathPart, queryStr] = hash.split('?');
+            const path = pathPart || '';
+            const params = new URLSearchParams(queryStr || '');
+            const gameId = path.split('/')[1];
+            const catId = params.get('cat') || null;
+            const levelId = params.get('level') || null;
+            const vars = {};
+            for (let [k, v] of params) {
+                if (!['cat', 'level'].includes(k)) vars[k] = v;
+            }
+            document.getElementById('nav').innerHTML = `
+                <button onclick="location.hash=''">Home</button>
+                <button onclick="location.hash='mod'">Mod</button>
+            `;
+            if (path === '' || path === 'home') {
+                showHome(currentSearch, currentSort);
+            } else if (path === 'mod') {
+                showMod();
+            } else if (gameId && path.startsWith('game/')) {
+                if (catId) {
+                    showSpecificLeaderboard(gameId, catId, levelId, vars);
+                } else {
+                    showSpecificLeaderboard(gameId, null, levelId, vars);
+                }
+            }
+        }
+
+        // Init
+        window.addEventListener('load', async () => {
+            games = await fetchAllGames();
+            router();
+            window.addEventListener('hashchange', router);
+            onAuthStateChanged(auth, router);
         });
-        backToHomeBtn.addEventListener('click', () => window.location.hash = '#home');
-        
-        // Initial load
-        window.addEventListener('hashchange', handleRouteChange);
-        handleRouteChange(); // Handle initial page load
-        loadHomePage();
-    }
 
-    // Run the app
-    document.addEventListener('DOMContentLoaded', init);
-
-</script>
+        // Global functions for onclick
+        window.approve = approve;
+        window.reject = reject;
+        window.deleteRun = deleteRun;
+        window.openEditModal = openEditModal;
+        window.closeModal = closeModal;
+        window.showSignup = showSignup;
+        window.signOutMod = signOutMod;
+        window.showHome = showHome;
+        window.openSubmitModal = openSubmitModal;
+    </script>
 </body>
 </html>
