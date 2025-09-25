@@ -406,7 +406,7 @@
     async function handleAddHack(e) {
         e.preventDefault();
         const name = document.getElementById('add-hack-name').value;
-        const newHack = { name, year: document.getElementById('add-hack-year').value, imageUrl: document.getElementById('add-hack-image').value, slug: slugify(name), created_at: new Date().toISOString() };
+        const newHack = { name, year: Number(document.getElementById('add-hack-year').value), imageUrl: document.getElementById('add-hack-image').value, slug: slugify(name), created_at: new Date().toISOString() };
         try {
             await push(ref(db, 'hacks'), newHack);
             alert('Hack added!'); e.target.reset(); loadExistingHacksAdmin();
@@ -426,7 +426,6 @@
             const item = createHTMLElement('div', 'card');
             item.innerHTML = `<div class="hack-item-header"><span><strong>${hack.name}</strong> (${hack.year || 'N/A'})</span><div><button class="btn btn-primary btn-sm manage-btn">Manage <i class="fa-solid fa-chevron-down"></i></button><button class="btn btn-danger btn-sm delete-btn">Delete</button></div></div><div class="hack-manage-details"></div>`;
             const detailsDiv = item.querySelector('.hack-manage-details'), manageBtn = item.querySelector('.manage-btn');
-            // Simplified manage button for brevity
             manageBtn.onclick = () => { detailsDiv.innerHTML = 'Management UI for RTDB needs a specific implementation.'; detailsDiv.style.display = detailsDiv.style.display === 'block' ? 'none' : 'block'; };
             item.querySelector('.delete-btn').onclick = async () => { if (confirm(`DELETE ${hack.name}?`)) { await remove(ref(db, `hacks/${hack.id}`)); loadExistingHacksAdmin(); }};
             listContainer.appendChild(item);
@@ -447,7 +446,7 @@
                 item.querySelector('.reject-btn').onclick = () => updateRunStatus(run.id, 'rejected');
                 listContainer.appendChild(item);
             });
-        }, { onlyOnce: false }); // Explicitly listen for changes
+        }, { onlyOnce: false });
     }
     async function updateRunStatus(runId, status) { await update(ref(db, `runs/${runId}`), { status }); }
     async function deleteRun(runId) { if (confirm(`Delete this run?`)) { await remove(ref(db, `runs/${runId}`)); fetchAndDisplayLeaderboard(); } }
