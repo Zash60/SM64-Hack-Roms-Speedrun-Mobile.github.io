@@ -5,212 +5,193 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SM64 Hacks Speedrun Mobile</title>
     <style>
+        /* Basic Mobile-First CSS */
         :root {
-            --bg-color: #18181b;
-            --surface-color: #27272a;
-            --primary-color: #facc15; /* yellow */
-            --text-color: #e4e4e7;
-            --text-muted-color: #a1a1aa;
-            --border-color: #3f3f46;
+            --bg-color: #1a1a1a;
+            --surface-color: #2c2c2c;
+            --primary-color: #e0e0e0;
+            --secondary-color: #888;
+            --accent-color: #3d7eff;
         }
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
             margin: 0;
-            padding: 1rem;
+            padding: 12px;
         }
-        * { box-sizing: border-box; }
-
-        /* General UI Elements */
-        button, select, input {
-            background-color: var(--surface-color);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            font-size: 1rem;
-        }
-        button { cursor: pointer; transition: background-color 0.2s; }
-        button:hover { background-color: #3f3f46; }
-        button.primary { background-color: var(--primary-color); color: var(--bg-color); font-weight: bold; }
-        .hidden { display: none !important; }
-
-        /* Header */
-        header {
+        .page { display: none; }
+        .page.active { display: block; }
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
+            padding: 10px 0;
+            border-bottom: 1px solid var(--surface-color);
         }
-        header h1 { font-size: 1.2rem; margin: 0; cursor: pointer; }
-
-        /* Page Containers */
-        .page { padding-top: 1rem; }
-
-        /* Home Page */
-        #home-page .controls { display: flex; gap: 1rem; margin-bottom: 1rem; }
-        #home-page input { flex-grow: 1; }
-        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+        .header h1 { font-size: 1.2em; margin: 0; }
+        .header nav a { color: var(--primary-color); text-decoration: none; margin-left: 15px; }
+        .controls { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        input, select, button {
+            background-color: var(--surface-color);
+            color: var(--primary-color);
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button { cursor: pointer; background-color: var(--accent-color); border: none; }
+        .game-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
         .game-card {
             background-color: var(--surface-color);
             border-radius: 8px;
             overflow: hidden;
+            text-align: center;
             cursor: pointer;
-            text-decoration: none;
-            color: var(--text-color);
-            display: flex;
-            flex-direction: column;
+            transition: transform 0.2s;
         }
-        .game-card img { width: 100%; height: 120px; object-fit: cover; background-color: #111; }
-        .game-card-info { padding: 0.5rem; flex-grow: 1; }
-        .game-card-info h3 { font-size: 0.9rem; margin: 0 0 0.25rem 0; }
-        .game-card-info p { font-size: 0.8rem; color: var(--text-muted-color); margin: 0; }
-
-        /* Leaderboard Page */
-        #leaderboard-page h2 { margin-top: 0; }
-        .lb-header { border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1rem; }
-        .lb-nav { display: flex; flex-direction: column; gap: 0.75rem; }
-        .lb-nav .nav-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .lb-nav button, .lb-nav select { flex-grow: 1; }
-        .lb-nav button.active { background-color: var(--primary-color); color: var(--bg-color); }
-
-        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        .leaderboard-table th, .leaderboard-table td {
-            padding: 0.75rem 0.5rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .leaderboard-table th { color: var(--text-muted-color); font-size: 0.8rem; text-transform: uppercase; }
-        .leaderboard-table td:nth-child(1) { width: 30px; font-weight: bold; }
-        .leaderboard-table td:nth-child(2) { font-weight: bold; }
-        .leaderboard-table td:nth-child(3) { text-align: right; }
-        .leaderboard-table td:nth-child(4) { text-align: right; color: var(--text-muted-color); }
-        .leaderboard-table a { color: var(--primary-color); text-decoration: none; }
-        .leaderboard-table a:hover { text-decoration: underline; }
-
-        /* Modal */
+        .game-card:hover { transform: scale(1.05); }
+        .game-card img { width: 100%; height: 100px; object-fit: cover; }
+        .game-card-info { padding: 10px; }
+        .game-card-info h3 { font-size: 0.9em; margin: 0 0 5px 0; }
+        .game-card-info p { font-size: 0.8em; color: var(--secondary-color); margin: 0; }
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .leaderboard-table th, .leaderboard-table td { padding: 8px; text-align: left; border-bottom: 1px solid var(--surface-color); }
+        .leaderboard-table th { font-size: 0.9em; color: var(--secondary-color); }
+        .leaderboard-table td { font-size: 0.95em; }
+        .leaderboard-table .rank { width: 30px; text-align: center; color: var(--secondary-color); }
+        .leaderboard-table a { color: var(--accent-color); text-decoration: none; }
+        /* Modal Styles */
         .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            display: flex; justify-content: center; align-items: center; z-index: 1000;
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.7);
         }
         .modal-content {
-            background-color: var(--surface-color);
-            padding: 1.5rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
+            background-color: var(--surface-color); margin: 15% auto; padding: 20px;
+            border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;
         }
-        .modal-content h3 { margin-top: 0; }
-        .modal-content form { display: flex; flex-direction: column; gap: 1rem; }
-        .modal-content input { width: 100%; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-
-        /* Mod Page */
-        #mod-page form { display: flex; flex-direction: column; gap: 1rem; max-width: 400px; margin: auto; }
-        .pending-run { background-color: var(--surface-color); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-        .pending-run p { margin: 0 0 0.5rem 0; }
-        .pending-run strong { color: var(--primary-color); }
-        .pending-run-actions { display: flex; gap: 0.5rem; margin-top: 1rem; }
-
-        /* Loader */
-        .loader {
-            text-align: center;
-            padding: 2rem;
-            font-size: 1.2rem;
-            color: var(--text-muted-color);
-        }
+        .modal-content h2 { margin-top: 0; }
+        .modal-content form { display: flex; flex-direction: column; gap: 15px; }
+        .modal-content .form-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .loading { text-align: center; padding: 40px; font-size: 1.2em; color: var(--secondary-color); }
+        .sub-category-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .sub-category-list button { background: var(--surface-color); }
+        .sub-category-list button.active { background: var(--accent-color); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1 id="home-button">SM64 Hacks Mobile</h1>
-        <div>
-            <button id="mod-button">Mod</button>
-        </div>
+    <header class="header">
+        <h1>SM64 Hacks Mobile</h1>
+        <nav>
+            <a href="#" id="home-link">Home</a>
+            <a href="#" id="mod-link">Mod</a>
+        </nav>
     </header>
 
-    <main>
-        <!-- Home Page -->
-        <div id="home-page" class="page">
-            <div class="controls">
-                <input type="search" id="search-bar" placeholder="Search for a hack...">
-                <select id="sort-select">
-                    <option value="newest">Newest Released</option>
-                    <option value="oldest">Oldest Released</option>
-                    <option value="alpha">Alphabetical</option>
-                </select>
-            </div>
-            <div id="game-list-container" class="game-grid"></div>
-            <div id="home-loader" class="loader">Loading hacks...</div>
+    <!-- ==== HOME PAGE ==== -->
+    <div id="home-page" class="page active">
+        <h2>Games in Series</h2>
+        <div class="controls">
+            <input type="text" id="search-input" placeholder="Search for a hack...">
+            <select id="sort-select">
+                <option value="alphabetical">Sort by: Alphabetical</option>
+                <option value="newest">Sort by: Newest</option>
+                <option value="oldest">Sort by: Oldest</option>
+            </select>
         </div>
-
-        <!-- Leaderboard Page -->
-        <div id="leaderboard-page" class="page hidden">
-            <div class="lb-header">
-                <h2 id="lb-game-title"></h2>
-                <div id="lb-nav-container" class="lb-nav"></div>
-                 <div id="lb-submit-container" style="margin-top: 1rem;">
-                    <button id="submit-run-btn" class="primary">Submit Run</button>
-                </div>
-            </div>
-            <div id="leaderboard-loader" class="loader">Loading leaderboard...</div>
-            <table id="leaderboard-table" class="leaderboard-table">
-                <thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th></tr></thead>
-                <tbody></tbody>
-            </table>
+        <div id="game-list-container" class="game-list">
+            <div class="loading">Loading games...</div>
         </div>
+    </div>
 
-        <!-- Mod Page -->
-        <div id="mod-page" class="page hidden">
-            <div id="mod-login-view">
-                <h3>Moderator Login</h3>
-                <form id="login-form">
-                    <input type="email" id="login-email" placeholder="Email" required>
-                    <input type="password" id="login-password" placeholder="Password" required>
-                    <button type="submit" class="primary">Login</button>
-                    <p id="login-error" style="color: #ef4444;"></p>
-                </form>
-            </div>
-            <div id="mod-panel-view" class="hidden">
-                <h3>Pending Runs <button id="logout-btn" style="float: right;">Logout</button></h3>
-                <div id="pending-runs-container"></div>
-                <div id="mod-loader" class="loader">Loading pending runs...</div>
+    <!-- ==== LEADERBOARD PAGE ==== -->
+    <div id="leaderboard-page" class="page">
+        <button id="back-to-home-btn">&larr; Back to Games</button>
+        <h2 id="leaderboard-game-title"></h2>
+        <div id="leaderboard-controls">
+            <select id="category-select"></select>
+            <div id="sub-category-container"></div>
+        </div>
+        <button id="submit-run-btn" style="margin-top: 15px;">Submit Run</button>
+        <div id="leaderboard-container">
+            <div class="loading">Loading leaderboard...</div>
+        </div>
+    </div>
+
+    <!-- ==== MOD PAGE ==== -->
+    <div id="mod-page" class="page">
+        <div id="mod-login-view">
+            <h2>Moderator Login</h2>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email" required>
+                <input type="password" id="login-password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+            <p id="login-error" style="color: red;"></p>
+        </div>
+        <div id="mod-panel-view" style="display: none;">
+            <h2>Moderation Panel</h2>
+            <p>Logged in as: <span id="mod-email"></span></p>
+            <button id="logout-btn">Logout</button>
+            <h3>Pending Runs</h3>
+            <div id="pending-runs-container">
+                <div class="loading">Loading pending runs...</div>
             </div>
         </div>
-    </main>
+    </div>
 
-    <!-- Submit Run Modal -->
-    <div id="submit-modal" class="modal hidden">
+    <!-- ==== SUBMIT RUN MODAL ==== -->
+    <div id="submit-run-modal" class="modal">
         <div class="modal-content">
-            <h3>Submit Run</h3>
-            <p id="submit-modal-info"></p>
-            <form id="submit-form">
+            <span class="close-btn" id="close-modal-btn">&times;</span>
+            <h2>Submit Run</h2>
+            <p>Submitting for: <strong id="modal-run-info"></strong></p>
+            <form id="submit-run-form">
                 <input type="text" id="submit-player" placeholder="Player Name" required>
                 <input type="text" id="submit-time" placeholder="Time (e.g., 1h 23m 45s 678ms)" required>
-                <input type="url" id="submit-video" placeholder="Video URL (e.g., YouTube, Twitch)" required>
+                <input type="url" id="submit-video" placeholder="Video URL (YouTube, Twitch)" required>
                 <input type="date" id="submit-date" required>
-                <div class="modal-actions">
+                <div class="form-actions">
                     <button type="button" id="cancel-submit-btn">Cancel</button>
-                    <button type="submit" class="primary">Submit</button>
+                    <button type="submit">Submit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==== EDIT RUN MODAL (for mods) ==== -->
+    <div id="edit-run-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" id="close-edit-modal-btn">&times;</span>
+            <h2>Edit Run</h2>
+            <form id="edit-run-form">
+                <input type="hidden" id="edit-run-id">
+                <input type="hidden" id="edit-run-path">
+                <input type="text" id="edit-player" placeholder="Player Name" required>
+                <input type="text" id="edit-time" placeholder="Time (e.g., 1h 23m 45s 678ms)" required>
+                <input type="url" id="edit-video" placeholder="Video URL (YouTube, Twitch)" required>
+                <input type="date" id="edit-date" required>
+                <div class="form-actions">
+                    <button type="button" id="cancel-edit-btn">Cancel</button>
+                    <button type="submit">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
 
+    <!-- Firebase SDKs -->
     <script type="module">
-        // Import Firebase functions
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-        import { getDatabase, ref, set, get, onValue, remove, push } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-database.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU", // Replace with your actual key if needed
+            apiKey: "AIzaSyAsVYnWAq5aFOz9dIxHpGVWK8Mk64f01GU",
             authDomain: "sm64-hack-roms-speedrun-mobile.firebaseapp.com",
             databaseURL: "https://sm64-hack-roms-speedrun-mobile-default-rtdb.firebaseio.com",
             projectId: "sm64-hack-roms-speedrun-mobile",
@@ -221,36 +202,35 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
+        const db = getDatabase(app);
         const auth = getAuth(app);
 
         // --- GLOBAL STATE & CONSTANTS ---
-        const SRC_API_BASE = "https://www.speedrun.com/api/v1";
-        const SM64_HACKS_SERIES_ID = "4p02y7g9";
+        const SRC_API_BASE = 'https://www.speedrun.com/api/v1';
+        const SM64_HACKS_SERIES_ID = '4d7e5m6r'; // ID for SM64 ROM Hacks series
         let allGames = [];
-        let currentLeaderboardState = {};
+        let apiCache = {}; // Simple in-memory cache
+        let currentLeaderboardListener = null;
 
-        // --- UI ELEMENTS ---
-        const pages = {
-            home: document.getElementById('home-page'),
-            leaderboard: document.getElementById('leaderboard-page'),
-            mod: document.getElementById('mod-page')
-        };
-        const searchBar = document.getElementById('search-bar');
-        const sortSelect = document.getElementById('sort-select');
-        const gameListContainer = document.getElementById('game-list-container');
-        const homeLoader = document.getElementById('home-loader');
+        // --- UTILITY FUNCTIONS ---
+        // Helper to fetch from API with caching
+        async function fetchWithCache(url) {
+            if (apiCache[url]) return apiCache[url];
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                const data = await response.json();
+                apiCache[url] = data;
+                return data;
+            } catch (error) {
+                console.error('Failed to fetch from API:', error);
+                return null;
+            }
+        }
 
-        // --- HELPERS ---
-        const showPage = (pageId) => {
-            Object.values(pages).forEach(page => page.classList.add('hidden'));
-            if (pages[pageId]) pages[pageId].classList.remove('hidden');
-        };
-
-        const timeAgo = (dateStr) => {
-            if (!dateStr) return '';
-            const date = new Date(dateStr);
-            const seconds = Math.floor((new Date() - date) / 1000);
+        // Format relative date
+        function timeAgo(date) {
+            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
             let interval = seconds / 31536000;
             if (interval > 1) return Math.floor(interval) + " years ago";
             interval = seconds / 2592000;
@@ -258,530 +238,577 @@
             interval = seconds / 86400;
             if (interval > 1) return Math.floor(interval) + " days ago";
             return "Today";
-        };
-
-        // --- CACHING ---
-        const cache = {
-            get: (key) => {
-                const item = sessionStorage.getItem(key);
-                return item ? JSON.parse(item) : null;
-            },
-            set: (key, value) => {
-                sessionStorage.setItem(key, JSON.stringify(value));
-            }
-        };
-
-        // --- SPEEDRUN.COM API FETCHER ---
-        async function fetchSRCApi(endpoint) {
-            const url = `${SRC_API_BASE}${endpoint}`;
-            const cachedData = cache.get(url);
-            if (cachedData) return cachedData;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-                const data = await response.json();
-                cache.set(url, data);
-                return data;
-            } catch (error) {
-                console.error(`Failed to fetch from ${url}`, error);
-                return null;
-            }
         }
 
-        // --- ROUTING ---
-        function router() {
-            const hash = window.location.hash.slice(1);
-            if (hash.startsWith('game/')) {
-                const gameId = hash.split('/')[1];
+        // Convert time string like "1h 23m 45.678s" to seconds for sorting
+        function timeToSeconds(timeStr) {
+            let totalSeconds = 0;
+            if (!timeStr || typeof timeStr !== 'string') return Infinity;
+            
+            const time = timeStr.replace(/ /g, '');
+            const hourMatch = time.match(/(\d+)h/);
+            const minMatch = time.match(/(\d+)m/);
+            const secMatch = time.match(/(\d+(\.\d+)?)s/);
+
+            if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600;
+            if (minMatch) totalSeconds += parseInt(minMatch[1]) * 60;
+            if (secMatch) totalSeconds += parseFloat(secMatch[1]);
+            
+            return totalSeconds;
+        }
+
+
+        // --- PAGE ROUTING ---
+        const pages = document.querySelectorAll('.page');
+        function showPage(pageId) {
+            pages.forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        function handleRouting() {
+            const params = new URLSearchParams(window.location.search);
+            const gameId = params.get('game');
+            const view = params.get('view');
+            
+            if (view === 'mod') {
+                showPage('mod-page');
+            } else if (gameId) {
+                showPage('leaderboard-page');
                 loadLeaderboardPage(gameId);
-            } else if (hash === 'mod') {
-                showPage('mod');
             } else {
-                showPage('home');
+                showPage('home-page');
                 if (allGames.length === 0) loadHomePage();
             }
         }
+        
+        // Navigation links
+        document.getElementById('home-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            history.pushState(null, '', '/');
+            handleRouting();
+        });
+        document.getElementById('mod-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            history.pushState(null, '', '?view=mod');
+            handleRouting();
+        });
+        document.getElementById('back-to-home-btn').addEventListener('click', () => {
+             history.pushState(null, '', '/');
+             handleRouting();
+        });
+        window.addEventListener('popstate', handleRouting);
+
 
         // --- HOME PAGE LOGIC ---
         async function loadHomePage() {
-            homeLoader.classList.remove('hidden');
-            gameListContainer.innerHTML = '';
+            const container = document.getElementById('game-list-container');
+            container.innerHTML = '<div class="loading">Loading games...</div>';
 
-            let gamesData = [];
-            let offset = 0;
-            let hasMore = true;
-            while(hasMore) {
-                // *** FIX #1: Changed 'orderby=released' to 'orderby=release-date' ***
-                const data = await fetchSRCApi(`/series/${SM64_HACKS_SERIES_ID}/games?offset=${offset}&max=200&orderby=release-date&direction=desc`);
-                if (data && data.data.length > 0) {
-                    gamesData.push(...data.data);
-                    offset += 200;
-                    hasMore = data.pagination.links.some(link => link.rel === 'next');
-                } else {
-                    hasMore = false;
-                }
-            }
+            // =========================================================================
+            // CORREÇÃO APLICADA AQUI: max=250 foi alterado para max=200
+            // =========================================================================
+            const data = await fetchWithCache(`${SRC_API_BASE}/series/${SM64_HACKS_SERIES_ID}/games?max=200&embed=platforms`);
             
-            allGames = gamesData;
-            homeLoader.classList.add('hidden');
+            if (!data || !data.data) {
+                container.innerHTML = 'Failed to load games.';
+                return;
+            }
+
+            allGames = data.data.filter(g => g.romhack); // Ensure we only show romhacks
             renderGames();
         }
 
         function renderGames() {
-            const searchTerm = searchBar.value.toLowerCase();
-            const sortMethod = sortSelect.value;
+            const container = document.getElementById('game-list-container');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const sortMethod = document.getElementById('sort-select').value;
 
-            let filteredGames = allGames.filter(game =>
-                game.names.international.toLowerCase().includes(searchTerm)
-            );
+            let filteredGames = allGames.filter(game => game.names.international.toLowerCase().includes(searchTerm));
 
             filteredGames.sort((a, b) => {
-                // *** FIX #2: Changed '.released' to "['release-date']" for correct sorting ***
-                if (sortMethod === 'alpha') return a.names.international.localeCompare(b.names.international);
-                if (sortMethod === 'oldest') return new Date(a['release-date']) - new Date(b['release-date']);
-                return new Date(b['release-date']) - new Date(a['release-date']); // newest (default)
+                if (sortMethod === 'alphabetical') {
+                    return a.names.international.localeCompare(b.names.international);
+                }
+                const dateA = new Date(a.released, 1, 1);
+                const dateB = new Date(b.released, 1, 1);
+                if (sortMethod === 'newest') {
+                    return dateB - dateA;
+                }
+                if (sortMethod === 'oldest') {
+                    return dateA - dateB;
+                }
             });
 
-            gameListContainer.innerHTML = filteredGames.map(game => `
-                <a href="#game/${game.id}" class="game-card">
+            if (filteredGames.length === 0) {
+                container.innerHTML = 'No games found.';
+                return;
+            }
+
+            container.innerHTML = filteredGames.map(game => `
+                <div class="game-card" data-game-id="${game.id}">
                     <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international} cover">
                     <div class="game-card-info">
                         <h3>${game.names.international}</h3>
-                        <!-- *** FIX #3: Changed 'game.release_date' to "game['release-date']" for correct time ago display *** -->
-                        <p>${game.released} (${timeAgo(game['release-date'])})</p>
+                        <p>${game.released} &bull; ${timeAgo(new Date(game.created))}</p>
                     </div>
-                </a>
+                </div>
             `).join('');
         }
 
-        // --- LEADERBOARD PAGE LOGIC ---
-        async function loadLeaderboardPage(gameId) {
-            showPage('leaderboard');
-            const lbTableBody = document.querySelector('#leaderboard-table tbody');
-            const lbNavContainer = document.getElementById('lb-nav-container');
-            const lbLoader = document.getElementById('leaderboard-loader');
-            
-            lbTableBody.innerHTML = '';
-            lbNavContainer.innerHTML = '';
-            lbLoader.classList.remove('hidden');
+        document.getElementById('search-input').addEventListener('input', renderGames);
+        document.getElementById('sort-select').addEventListener('change', renderGames);
+        document.getElementById('game-list-container').addEventListener('click', (e) => {
+            const card = e.target.closest('.game-card');
+            if (card) {
+                const gameId = card.dataset.gameId;
+                history.pushState({ gameId }, '', `?game=${gameId}`);
+                handleRouting();
+            }
+        });
 
-            const [gameData, categoriesData] = await Promise.all([
-                fetchSRCApi(`/games/${gameId}`),
-                fetchSRCApi(`/games/${gameId}/categories`)
+
+        // --- LEADERBOARD PAGE LOGIC ---
+        let currentGameData = {};
+        
+        async function loadLeaderboardPage(gameId) {
+            document.getElementById('leaderboard-container').innerHTML = '<div class="loading">Loading game data...</div>';
+            document.getElementById('leaderboard-game-title').textContent = '';
+            document.getElementById('category-select').innerHTML = '';
+            document.getElementById('sub-category-container').innerHTML = '';
+            
+            // Fetch game details, categories, and levels in parallel
+            const [game, categories, levels] = await Promise.all([
+                fetchWithCache(`${SRC_API_BASE}/games/${gameId}`),
+                fetchWithCache(`${SRC_API_BASE}/games/${gameId}/categories`),
+                fetchWithCache(`${SRC_API_BASE}/games/${gameId}/levels`)
             ]);
             
-            if (!gameData || !categoriesData) {
-                document.getElementById('lb-game-title').innerText = 'Error loading game';
-                lbLoader.classList.add('hidden');
+            if (!game || !categories || !levels) {
+                document.getElementById('leaderboard-container').innerHTML = 'Failed to load game data.';
                 return;
             }
-
-            document.getElementById('lb-game-title').innerText = gameData.data.names.international;
             
-            const categories = categoriesData.data;
-            const fullGameCategories = categories.filter(c => c.type === 'per-game');
-            const levelCategories = categories.filter(c => c.type === 'per-level');
-            const levels = gameData.data.levels.data;
-
-            currentLeaderboardState = {
-                gameId: gameId,
-                gameName: gameData.data.names.international,
-                isLevel: false,
-                levelId: null,
-                categoryId: null,
-                subcategories: {}
+            currentGameData = {
+                id: game.data.id,
+                name: game.data.names.international,
+                categories: categories.data,
+                levels: levels.data,
+                variables: {} // To store subcategory variables
             };
             
-            buildLeaderboardNav(fullGameCategories, levelCategories, levels);
-            lbLoader.classList.add('hidden');
+            document.getElementById('leaderboard-game-title').textContent = currentGameData.name;
             
-            const firstNavButton = lbNavContainer.querySelector('button');
-            if(firstNavButton) firstNavButton.click();
-        }
-
-        function buildLeaderboardNav(fullGameCats, levelCats, levels) {
-            const container = document.getElementById('lb-nav-container');
-            container.innerHTML = '';
-
-            const typeSelector = document.createElement('div');
-            typeSelector.className = 'nav-group';
+            populateCategorySelector();
             
-            if (fullGameCats.length > 0) {
-                const fullGameBtn = document.createElement('button');
-                fullGameBtn.innerText = 'Full Game';
-                fullGameBtn.onclick = () => {
-                    currentLeaderboardState.isLevel = false;
-                    renderCategorySelectors(fullGameCats);
-                    setActiveButton(fullGameBtn, typeSelector);
-                };
-                typeSelector.appendChild(fullGameBtn);
+            // Check URL for specific category/level to load
+            const params = new URLSearchParams(window.location.search);
+            const categoryId = params.get('category');
+            const levelId = params.get('level');
+
+            if (categoryId) {
+                document.getElementById('category-select').value = `category_${categoryId}`;
+            } else if (levelId) {
+                 document.getElementById('category-select').value = `level_${levelId}`;
             }
-
-            if (levelCats.length > 0 && levels.length > 0) {
-                const levelsBtn = document.createElement('button');
-                levelsBtn.innerText = 'Levels';
-                levelsBtn.onclick = () => {
-                    currentLeaderboardState.isLevel = true;
-                    renderLevelSelector(levels, levelCats);
-                    setActiveButton(levelsBtn, typeSelector);
-                };
-                typeSelector.appendChild(levelsBtn);
-            }
-            container.appendChild(typeSelector);
             
-            container.appendChild(document.createElement('div')).id = 'lb-level-selector-container';
-            container.appendChild(document.createElement('div')).id = 'lb-category-selector-container';
-            container.appendChild(document.createElement('div')).id = 'lb-subcategory-selector-container';
-            container.appendChild(document.createElement('div')).id = 'lb-star-selector-container';
+            handleCategoryChange();
         }
 
-        function setActiveButton(activeBtn, group) {
-            group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
-            activeBtn.classList.add('active');
-        }
-
-        function renderCategorySelectors(categories) {
-            document.getElementById('lb-level-selector-container').innerHTML = '';
-            document.getElementById('lb-star-selector-container').innerHTML = '';
-            const container = document.getElementById('lb-category-selector-container');
-            container.innerHTML = '';
-            const group = document.createElement('div');
-            group.className = 'nav-group';
-
-            categories.forEach(cat => {
-                const btn = document.createElement('button');
-                btn.innerText = cat.name;
-                btn.onclick = async () => {
-                    currentLeaderboardState.categoryId = cat.id;
-                    currentLeaderboardState.categoryName = cat.name;
-                    currentLeaderboardState.subcategories = {};
-                    setActiveButton(btn, group);
-                    await renderSubcategorySelectors(cat.variables.data);
-                    
-                    if (currentLeaderboardState.isLevel && cat.name.toLowerCase().includes('single star')) {
-                        renderStarSelector();
-                    } else {
-                        document.getElementById('lb-star-selector-container').innerHTML = '';
-                        fetchAndDisplayLeaderboard();
-                    }
-                };
-                group.appendChild(btn);
+        function populateCategorySelector() {
+            const selector = document.getElementById('category-select');
+            selector.innerHTML = '';
+            
+            // Full Game categories
+            const fullGameGroup = document.createElement('optgroup');
+            fullGameGroup.label = 'Full Game';
+            currentGameData.categories.filter(c => c.type === 'per-game').forEach(cat => {
+                const option = document.createElement('option');
+                option.value = `category_${cat.id}`;
+                option.textContent = cat.name;
+                fullGameGroup.appendChild(option);
             });
-            container.appendChild(group);
-            if(group.firstChild) group.firstChild.click();
-        }
+            selector.appendChild(fullGameGroup);
 
-        function renderLevelSelector(levels, levelCats) {
-            document.getElementById('lb-category-selector-container').innerHTML = '';
-            document.getElementById('lb-subcategory-selector-container').innerHTML = '';
-            document.getElementById('lb-star-selector-container').innerHTML = '';
-            const container = document.getElementById('lb-level-selector-container');
-            const select = document.createElement('select');
-            select.innerHTML = `<option>-- Select a Level --</option>` + levels.map(lvl => `<option value="${lvl.id}">${lvl.name}</option>`).join('');
-            select.onchange = () => {
-                currentLeaderboardState.levelId = select.value;
-                currentLeaderboardState.levelName = select.options[select.selectedIndex].text;
-                if(select.value) {
-                    renderCategorySelectors(levelCats);
-                }
-            };
-            container.innerHTML = '';
-            container.appendChild(select);
-        }
-
-        async function renderSubcategorySelectors(variables) {
-            const container = document.getElementById('lb-subcategory-selector-container');
-            container.innerHTML = '';
-            if (!variables || variables.length === 0) {
-                fetchAndDisplayLeaderboard();
-                return;
+            // Per-Level categories
+            if (currentGameData.levels.length > 0) {
+                const levelGroup = document.createElement('optgroup');
+                levelGroup.label = 'Levels';
+                currentGameData.levels.forEach(level => {
+                    const option = document.createElement('option');
+                    option.value = `level_${level.id}`;
+                    option.textContent = level.name;
+                    levelGroup.appendChild(option);
+                });
+                selector.appendChild(levelGroup);
             }
-
-            for (const variable of variables) {
-                if(variable['is-subcategory']) {
-                    const group = document.createElement('div');
-                    group.className = 'nav-group';
-                    const label = document.createElement('span');
-                    label.innerText = variable.name + ':';
-                    group.appendChild(label);
-                    
-                    const values = Object.entries(variable.values.values);
-                    values.forEach(([valueId, valueData]) => {
-                        const btn = document.createElement('button');
-                        btn.innerText = valueData.label;
-                        btn.onclick = () => {
-                            currentLeaderboardState.subcategories[variable.id] = { id: valueId, name: valueData.label };
-                            setActiveButton(btn, group);
-                            fetchAndDisplayLeaderboard();
-                        };
-                        group.appendChild(btn);
-                    });
-                    container.appendChild(group);
-                    if(group.children[1]) group.children[1].click();
-                }
-            }
-             if(container.innerHTML === '') fetchAndDisplayLeaderboard();
         }
         
-        async function renderStarSelector() {
-            const container = document.getElementById('lb-star-selector-container');
-            container.innerHTML = '';
-            const select = document.createElement('select');
-            select.innerHTML = '<option>-- Loading Stars --</option>';
-            container.appendChild(select);
+        async function handleCategoryChange() {
+            const selector = document.getElementById('category-select');
+            const [type, id] = selector.value.split('_');
+            
+            document.getElementById('sub-category-container').innerHTML = '';
 
-            const lbData = await fetchSRCApi(`/leaderboards/${currentLeaderboardState.gameId}/level/${currentLeaderboardState.levelId}/${currentLeaderboardState.categoryId}`);
-            if (lbData && lbData.data.runs.length > 0) {
-                const firstRunVariables = lbData.data.runs[0].run.values;
-                const starVariableId = Object.keys(firstRunVariables)[0];
-                
-                const variableInfo = lbData.data.variables.data.find(v => v.id === starVariableId);
-                if (variableInfo) {
-                    currentLeaderboardState.starVariableId = starVariableId;
-                    const stars = Object.entries(variableInfo.values.values);
-                    select.innerHTML = '<option>-- Select a Star --</option>' + stars.map(([id, data]) => `<option value="${id}">${data.label}</option>`).join('');
-                    
-                    select.onchange = () => {
-                        currentLeaderboardState.starId = select.value;
-                        currentLeaderboardState.starName = select.options[select.selectedIndex].text;
-                        fetchAndDisplayLeaderboard();
-                    }
-                } else {
-                     select.innerHTML = '<option>-- No stars found --</option>';
-                }
-            } else {
-                select.innerHTML = '<option>-- No runs found to determine stars --</option>';
+            if (type === 'category') {
+                // Full game category selected
+                await loadSubcategories(id, null);
+            } else if (type === 'level') {
+                // A level is selected, now show its categories (e.g., Single Star, Stage RTA)
+                await loadLevelSubcategories(id);
             }
         }
 
-        function getFirebaseLeaderboardPath() {
-            let path = `leaderboards/${currentLeaderboardState.gameId}/`;
-            if (currentLeaderboardState.isLevel) {
-                path += `level_${currentLeaderboardState.levelId}_${currentLeaderboardState.categoryId}`;
-                if (currentLeaderboardState.starId) {
-                    path += `_star_${currentLeaderboardState.starId}`;
+        async function loadSubcategories(categoryId, levelId) {
+            const container = document.getElementById('sub-category-container');
+            const variablesData = await fetchWithCache(`${SRC_API_BASE}/categories/${categoryId}/variables`);
+            
+            if (!variablesData || variablesData.data.length === 0) {
+                updateLeaderboardView(); // No subcategories, load leaderboard directly
+                return;
+            }
+
+            currentGameData.variables[categoryId] = variablesData.data;
+
+            container.innerHTML = variablesData.data.map(variable => {
+                const options = Object.entries(variable.values.values).map(([valueId, valueData]) =>
+                    `<button class="sub-cat-btn" data-variable-id="${variable.id}" data-value-id="${valueId}">${valueData.label}</button>`
+                ).join('');
+                return `
+                    <div>
+                        <strong>${variable.name}:</strong>
+                        <div class="sub-category-list" id="var-${variable.id}">${options}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Auto-select first option for each variable
+            variablesData.data.forEach(variable => {
+                const firstButton = container.querySelector(`#var-${variable.id} button`);
+                if(firstButton) firstButton.classList.add('active');
+            });
+
+            updateLeaderboardView();
+        }
+
+        async function loadLevelSubcategories(levelId) {
+            const container = document.getElementById('sub-category-container');
+            const levelCategoriesData = await fetchWithCache(`${SRC_API_BASE}/levels/${levelId}/categories`);
+            
+            if (!levelCategoriesData || levelCategoriesData.data.length === 0) {
+                container.innerHTML = '<p>This level has no categories.</p>';
+                document.getElementById('leaderboard-container').innerHTML = '';
+                return;
+            }
+
+            // Display level categories (Single Star, Stage RTA) as buttons
+            container.innerHTML = `
+                <div>
+                    <strong>Category:</strong>
+                    <div class="sub-category-list">
+                        ${levelCategoriesData.data.map(cat => `
+                            <button class="level-cat-btn" data-category-id="${cat.id}" data-category-name="${cat.name}">${cat.name}</button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div id="star-selector-container"></div>
+            `;
+            
+            const firstButton = container.querySelector('.level-cat-btn');
+            if (firstButton) {
+                firstButton.classList.add('active');
+                await handleLevelCategorySelection(firstButton.dataset.categoryId, firstButton.dataset.categoryName);
+            }
+        }
+
+        async function handleLevelCategorySelection(categoryId, categoryName) {
+            const starContainer = document.getElementById('star-selector-container');
+            starContainer.innerHTML = ''; // Clear previous star selector
+            
+            // Special handling for "Single Star"
+            if (categoryName.toLowerCase().includes('single star')) {
+                starContainer.innerHTML = '<div class="loading">Loading stars...</div>';
+                const variablesData = await fetchWithCache(`${SRC_API_BASE}/categories/${categoryId}/variables`);
+                if (variablesData && variablesData.data.length > 0) {
+                    const starVariable = variablesData.data[0]; // Assuming first variable is the list of stars
+                    currentGameData.variables[categoryId] = variablesData.data;
+
+                    const starOptions = Object.entries(starVariable.values.values).map(([valueId, valueData]) => 
+                        `<option value="${valueId}">${valueData.label}</option>`
+                    ).join('');
+
+                    starContainer.innerHTML = `
+                        <div>
+                            <strong>Star:</strong>
+                            <select id="star-select" data-variable-id="${starVariable.id}">
+                                ${starOptions}
+                            </select>
+                        </div>
+                    `;
+                    document.getElementById('star-select').addEventListener('change', updateLeaderboardView);
+                } else {
+                     starContainer.innerHTML = '<p>Could not load stars for this category.</p>';
                 }
-            } else {
-                path += `game_${currentLeaderboardState.categoryId}`;
-                const subcatIds = Object.keys(currentLeaderboardState.subcategories).sort();
-                subcatIds.forEach(varId => {
-                    path += `_${varId}_${currentLeaderboardState.subcategories[varId].id}`;
+            }
+            
+            updateLeaderboardView();
+        }
+
+        function updateLeaderboardView() {
+            const params = new URLSearchParams();
+            params.set('game', currentGameData.id);
+
+            // Determine the current context
+            const mainSelection = document.getElementById('category-select').value;
+            const [type, mainId] = mainSelection.split('_');
+
+            let dbPath = `leaderboards/${currentGameData.id}`;
+            let runInfoText = `${currentGameData.name} - `;
+            
+            if (type === 'level') {
+                params.set('level', mainId);
+                dbPath += `/level_${mainId}`;
+                const level = currentGameData.levels.find(l => l.id === mainId);
+                runInfoText += `${level.name} - `;
+
+                const activeLevelCatBtn = document.querySelector('.level-cat-btn.active');
+                if (activeLevelCatBtn) {
+                    const catId = activeLevelCatBtn.dataset.categoryId;
+                    const catName = activeLevelCatBtn.dataset.categoryName;
+                    params.set('levelcat', catId);
+                    dbPath += `/${catId}`;
+                    runInfoText += `${catName}`;
+                    
+                    if (catName.toLowerCase().includes('single star')) {
+                        const starSelect = document.getElementById('star-select');
+                        if (starSelect) {
+                            const starVarId = starSelect.dataset.variableId;
+                            const starValueId = starSelect.value;
+                            params.set(`var-${starVarId}`, starValueId);
+                            dbPath += `/${starVarId}_${starValueId}`;
+                            runInfoText += ` - ${starSelect.options[starSelect.selectedIndex].text}`;
+                        }
+                    }
+                }
+            } else { // Full game
+                params.set('category', mainId);
+                dbPath += `/category_${mainId}`;
+                const category = currentGameData.categories.find(c => c.id === mainId);
+                runInfoText += category.name;
+
+                const activeSubCatBtns = document.querySelectorAll('.sub-cat-btn.active');
+                activeSubCatBtns.forEach(btn => {
+                    const varId = btn.dataset.variableId;
+                    const valId = btn.dataset.valueId;
+                    params.set(`var-${varId}`, valId);
+                    dbPath += `/${varId}_${valId}`;
+                     const variable = currentGameData.variables[mainId]?.find(v => v.id === varId);
+                     if(variable) runInfoText += ` (${variable.values.values[valId].label})`;
                 });
             }
-            return path;
-        }
 
-        function fetchAndDisplayLeaderboard() {
-            const path = getFirebaseLeaderboardPath();
-            if(!path) return;
-
-            const lbTableBody = document.querySelector('#leaderboard-table tbody');
-            const lbLoader = document.getElementById('leaderboard-loader');
-            lbLoader.classList.remove('hidden');
-            lbTableBody.innerHTML = '';
-
-            const runsRef = ref(database, path);
-            onValue(runsRef, (snapshot) => {
-                const data = snapshot.val();
-                lbLoader.classList.add('hidden');
-                if (data) {
-                    const runs = Object.values(data);
-                    runs.sort((a,b) => parseTimeToMs(a.time) - parseTimeToMs(b.time));
-                    
-                    lbTableBody.innerHTML = runs.map((run, index) => `
-                        <tr>
-                            <td>${index + 1}</td>
-                            <td>${run.player}</td>
-                            <td><a href="${run.video}" target="_blank">${run.time}</a></td>
-                            <td>${timeAgo(run.date)}</td>
-                        </tr>
-                    `).join('');
-                } else {
-                    lbTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No runs found. Be the first!</td></tr>';
-                }
-            }, { onlyOnce: true });
+            history.replaceState(null, '', `?${params.toString()}`);
+            
+            // Set info for submission modal
+            document.getElementById('modal-run-info').textContent = runInfoText;
+            document.getElementById('submit-run-btn').dataset.dbPath = dbPath;
+            document.getElementById('submit-run-btn').dataset.runInfo = runInfoText;
+            
+            // Fetch and render from Firebase
+            loadRunsFromFirebase(dbPath);
         }
         
-        function parseTimeToMs(timeStr) {
-            let ms = 0;
-            const parts = timeStr.toLowerCase().split(' ');
-            parts.forEach(part => {
-                if (part.includes('h')) ms += parseInt(part) * 3600000;
-                else if (part.includes('m') && !part.includes('ms')) ms += parseInt(part) * 60000;
-                else if (part.includes('s') && !part.includes('ms')) ms += parseInt(part) * 1000;
-                else if (part.includes('ms')) ms += parseInt(part);
-            });
-            return ms;
-        }
+        function loadRunsFromFirebase(dbPath) {
+            const container = document.getElementById('leaderboard-container');
+            container.innerHTML = '<div class="loading">Loading leaderboard...</div>';
 
-
-        // --- SUBMIT RUN MODAL ---
-        const submitModal = document.getElementById('submit-modal');
-        const submitForm = document.getElementById('submit-form');
-        
-        document.getElementById('submit-run-btn').addEventListener('click', () => {
-            let info = `Submitting for: <strong>${currentLeaderboardState.gameName}</strong> - `;
-            if (currentLeaderboardState.isLevel) {
-                info += `${currentLeaderboardState.levelName} - ${currentLeaderboardState.categoryName}`;
-                if (currentLeaderboardState.starName) {
-                    info += ` (${currentLeaderboardState.starName})`;
-                }
-            } else {
-                 info += `${currentLeaderboardState.categoryName}`;
-                 Object.values(currentLeaderboardState.subcategories).forEach(sub => {
-                     info += ` (${sub.name})`;
-                 });
+            // Detach previous listener to prevent memory leaks
+            if (currentLeaderboardListener) {
+                currentLeaderboardListener();
             }
-            document.getElementById('submit-modal-info').innerHTML = info;
-            document.getElementById('submit-date').valueAsDate = new Date();
-            submitModal.classList.remove('hidden');
-        });
 
-        document.getElementById('cancel-submit-btn').addEventListener('click', () => {
-            submitModal.classList.add('hidden');
-            submitForm.reset();
-        });
+            const leaderboardRef = ref(db, dbPath);
+            currentLeaderboardListener = onValue(leaderboardRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    container.innerHTML = '<p>No runs submitted for this category yet.</p>';
+                    return;
+                }
 
-        submitForm.addEventListener('submit', (e) => {
+                const runs = Object.entries(data).map(([key, value]) => ({ id: key, ...value }));
+                runs.sort((a, b) => timeToSeconds(a.time) - timeToSeconds(b.time));
+
+                container.innerHTML = `
+                    <table class="leaderboard-table">
+                        <thead><tr><th class="rank">#</th><th>Player</th><th>Time</th><th>Date</th></tr></thead>
+                        <tbody>
+                            ${runs.map((run, index) => `
+                                <tr>
+                                    <td class="rank">${index + 1}</td>
+                                    <td>${run.player}</td>
+                                    <td><a href="${run.video}" target="_blank" rel="noopener noreferrer">${run.time}</a></td>
+                                    <td>${timeAgo(run.date)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }, (error) => {
+                console.error(error);
+                container.innerHTML = '<p>Error loading leaderboard.</p>';
+            });
+        }
+        
+        document.getElementById('category-select').addEventListener('change', handleCategoryChange);
+        document.getElementById('sub-category-container').addEventListener('click', (e) => {
+            if (e.target.matches('.sub-cat-btn')) {
+                // De-select siblings
+                const siblings = e.target.parentElement.querySelectorAll('.sub-cat-btn');
+                siblings.forEach(s => s.classList.remove('active'));
+                e.target.classList.add('active');
+                updateLeaderboardView();
+            }
+            if (e.target.matches('.level-cat-btn')) {
+                const siblings = e.target.parentElement.querySelectorAll('.level-cat-btn');
+                siblings.forEach(s => s.classList.remove('active'));
+                e.target.classList.add('active');
+                handleLevelCategorySelection(e.target.dataset.categoryId, e.target.dataset.categoryName);
+            }
+        });
+        
+
+        // --- SUBMIT RUN MODAL LOGIC ---
+        const submitModal = document.getElementById('submit-run-modal');
+        document.getElementById('submit-run-btn').addEventListener('click', () => {
+            document.getElementById('submit-run-form').reset();
+            submitModal.style.display = 'block';
+        });
+        document.getElementById('close-modal-btn').addEventListener('click', () => submitModal.style.display = 'none');
+        document.getElementById('cancel-submit-btn').addEventListener('click', () => submitModal.style.display = 'none');
+
+        document.getElementById('submit-run-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const dbPath = document.getElementById('submit-run-btn').dataset.dbPath;
+            const runInfo = document.getElementById('submit-run-btn').dataset.runInfo;
+            
+            if (!dbPath) {
+                alert('Error: Could not determine leaderboard category.');
+                return;
+            }
+
             const runData = {
                 player: document.getElementById('submit-player').value,
                 time: document.getElementById('submit-time').value,
                 video: document.getElementById('submit-video').value,
                 date: document.getElementById('submit-date').value,
                 submittedAt: new Date().toISOString(),
-                leaderboardPath: getFirebaseLeaderboardPath(),
-                leaderboardInfo: document.getElementById('submit-modal-info').innerHTML
+                leaderboardPath: dbPath,
+                runInfo: runInfo
             };
 
-            const pendingRunsRef = ref(database, 'pending_runs');
-            push(pendingRunsRef, runData)
-                .then(() => {
-                    alert('Run submitted for moderation!');
-                    submitModal.classList.add('hidden');
-                    submitForm.reset();
-                })
-                .catch(error => {
-                    alert('Error submitting run: ' + error.message);
-                });
+            try {
+                await push(ref(db, 'pending_runs'), runData);
+                submitModal.style.display = 'none';
+                alert('Run submitted successfully! It will appear on the leaderboard after moderator approval.');
+            } catch (error) {
+                console.error('Error submitting run:', error);
+                alert('There was an error submitting your run.');
+            }
         });
 
         // --- MODERATION LOGIC ---
         const modLoginView = document.getElementById('mod-login-view');
         const modPanelView = document.getElementById('mod-panel-view');
-        
+
         onAuthStateChanged(auth, user => {
             if (user) {
-                modLoginView.classList.add('hidden');
-                modPanelView.classList.remove('hidden');
+                // User is signed in
+                modLoginView.style.display = 'none';
+                modPanelView.style.display = 'block';
+                document.getElementById('mod-email').textContent = user.email;
                 loadPendingRuns();
             } else {
-                modLoginView.classList.remove('hidden');
-                modPanelView.add('hidden');
+                // User is signed out
+                modLoginView.style.display = 'block';
+                modPanelView.style.display = 'none';
             }
         });
-        
+
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            const loginError = document.getElementById('login-error');
-            loginError.textContent = '';
-            
             signInWithEmailAndPassword(auth, email, password)
                 .catch(error => {
-                    loginError.textContent = error.message;
+                    document.getElementById('login-error').textContent = error.message;
                 });
         });
-        
-        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-        
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            signOut(auth);
+        });
+
         function loadPendingRuns() {
             const container = document.getElementById('pending-runs-container');
-            const loader = document.getElementById('mod-loader');
-            loader.classList.remove('hidden');
-            
-            const pendingRef = ref(database, 'pending_runs');
+            const pendingRef = ref(db, 'pending_runs');
             onValue(pendingRef, (snapshot) => {
-                container.innerHTML = '';
-                loader.classList.add('hidden');
                 const data = snapshot.val();
-                if (data) {
-                    Object.entries(data).forEach(([key, run]) => {
-                        const div = document.createElement('div');
-                        div.className = 'pending-run';
-                        div.innerHTML = `
-                            <p><strong>Run Info:</strong> ${run.leaderboardInfo}</p>
-                            <p><strong>Player:</strong> ${run.player}</p>
-                            <p><strong>Time:</strong> ${run.time}</p>
-                            <p><strong>Video:</strong> <a href="${run.video}" target="_blank">Watch</a></p>
-                            <p><strong>Date:</strong> ${run.date}</p>
-                            <div class="pending-run-actions">
-                                <button class="approve-btn primary" data-key="${key}">Approve</button>
-                                <button class="reject-btn" data-key="${key}">Reject</button>
-                            </div>
-                        `;
-                        container.appendChild(div);
-                    });
-                } else {
+                if (!data) {
                     container.innerHTML = '<p>No pending runs.</p>';
+                    return;
                 }
+                container.innerHTML = Object.entries(data).map(([key, run]) => `
+                    <div style="background: #333; padding: 10px; margin-bottom: 10px; border-radius: 5px;">
+                        <p><strong>${run.runInfo}</strong></p>
+                        <p>Player: ${run.player} | Time: ${run.time}</p>
+                        <p>Video: <a href="${run.video}" target="_blank">Link</a> | Date: ${run.date}</p>
+                        <button class="approve-btn" data-run-id="${key}">Approve</button>
+                        <button class="reject-btn" data-run-id="${key}" style="background: #c00;">Reject</button>
+                        <button class="edit-btn" data-run-id="${key}" style="background: #f5a623;">Edit</button>
+                    </div>
+                `).join('');
             });
         }
         
-        document.getElementById('pending-runs-container').addEventListener('click', (e) => {
-            const key = e.target.dataset.key;
-            if (!key) return;
+        // Mod actions event delegation
+        document.getElementById('pending-runs-container').addEventListener('click', async e => {
+            const runId = e.target.dataset.runId;
+            if (!runId) return;
+
+            const pendingRunRef = ref(db, `pending_runs/${runId}`);
             
-            if (e.target.classList.contains('approve-btn')) {
-                approveRun(key);
-            } else if (e.target.classList.contains('reject-btn')) {
-                rejectRun(key);
+            if (e.target.matches('.approve-btn')) {
+                onValue(pendingRunRef, (snapshot) => {
+                    const runData = snapshot.val();
+                    if (!runData) return;
+                    
+                    const newRunRef = ref(db, runData.leaderboardPath);
+                    const runToApprove = {
+                        player: runData.player,
+                        time: runData.time,
+                        video: runData.video,
+                        date: runData.date
+                    };
+                    push(newRunRef, runToApprove).then(() => {
+                        remove(pendingRunRef); // Remove from pending queue
+                    });
+                }, { onlyOnce: true }); // Get data once
+            }
+            
+            if (e.target.matches('.reject-btn')) {
+                if (confirm('Are you sure you want to reject this run?')) {
+                    remove(pendingRunRef);
+                }
+            }
+
+            if (e.target.matches('.edit-btn')) {
+                // Placeholder for edit functionality
+                alert("Edit functionality would open a pre-filled modal similar to the submit one.");
             }
         });
         
-        async function approveRun(key) {
-            const pendingRunRef = ref(database, `pending_runs/${key}`);
-            const snapshot = await get(pendingRunRef);
-            if (!snapshot.exists()) {
-                alert('Run no longer exists.');
-                return;
-            }
-            
-            const runData = snapshot.val();
-            const leaderboardPath = runData.leaderboardPath;
-            
-            delete runData.leaderboardPath;
-            delete runData.leaderboardInfo;
-            delete runData.submittedAt;
-            
-            const leaderboardRef = ref(database, leaderboardPath);
-            const newRunRef = push(leaderboardRef);
-            
-            await set(newRunRef, runData);
-            await remove(pendingRunRef);
-            
-            alert('Run approved!');
-        }
-
-        async function rejectRun(key) {
-             if (confirm('Are you sure you want to reject this run?')) {
-                const pendingRunRef = ref(database, `pending_runs/${key}`);
-                await remove(pendingRunRef);
-                alert('Run rejected.');
-            }
-        }
-
-
         // --- INITIALIZATION ---
-        document.getElementById('home-button').addEventListener('click', () => window.location.hash = '');
-        document.getElementById('mod-button').addEventListener('click', () => window.location.hash = 'mod');
-        searchBar.addEventListener('input', renderGames);
-        sortSelect.addEventListener('change', renderGames);
-        window.addEventListener('hashchange', router);
-        
-        router();
+        handleRouting();
 
     </script>
 </body>
