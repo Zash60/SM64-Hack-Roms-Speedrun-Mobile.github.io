@@ -185,7 +185,6 @@
     function formatTime(ms) { if (isNaN(ms) || ms < 0) return "Invalid Time"; const tS = Math.floor(ms / 1000); const h = Math.floor(tS / 3600); const m = Math.floor((tS % 3600) / 60); const s = tS % 60; const mmm = ms % 1000; const pM = String(m).padStart(2, '0'); const pS = String(s).padStart(2, '0'); const pMMM = String(mmm).padStart(3, '0'); if (h > 0) { return `${h}:${pM}:${pS}.${pMMM}`; } return `${m}:${pS}.${pMMM}`; }
     function createHTMLElement(tag, className, innerHTML = '') { const el = document.createElement(tag); if (className) el.className = className; el.innerHTML = innerHTML; return el; }
     function slugify(text) { return text.toString().toLowerCase().trim().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '').replace(/\-\-+/g, '-').replace(/^-+/, '').replace(/-+$/, ''); }
-    // Helper to get data from RTDB snapshot and convert to an array with IDs
     function snapshotToArray(snapshot) {
         const returnArr = [];
         snapshot.forEach(childSnapshot => {
@@ -243,7 +242,6 @@
             const snapshot = await get(q);
             let hacks = snapshot.exists() ? snapshotToArray(snapshot) : [];
             
-            // Manual sorting for year as RTDB sorts numerically then alphabetically
             if (sortBy === 'newest_released') {
                 hacks.sort((a, b) => (b.year || 0) - (a.year || 0) || (b.created_at || '').localeCompare(a.created_at || ''));
             } else if (sortBy === 'oldest_released') {
@@ -359,7 +357,6 @@
         const tbody = document.querySelector('.leaderboard-table tbody');
         tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}"><div class="loader"></div></td></tr>`;
         
-        // RTDB can only query by one child. We query by category_id and filter by status on the client.
         const runsQ = query(ref(db, 'runs'), orderByChild('category_id'), equalTo(state.category.id));
         const snapshot = await get(runsQ);
         const allRunsForCategory = snapshot.exists() ? snapshotToArray(snapshot) : [];
@@ -416,10 +413,6 @@
         } catch (error) { alert('Error: ' + error.message); }
     }
 
-    async function fetchAllSRCGames(offset = 0, allGames = []) { /* ... unchanged ... */ return [];}
-
-    async function syncWithSpeedrunCom() { /* ... Logic will need significant changes for RTDB, omitted for brevity but would follow a pattern of remove() and push() ... */ alert('Sync function needs to be adapted for Realtime Database.');}
-    
     async function loadAdminData() { await Promise.all([ loadExistingHacksAdmin(), loadPendingRuns() ]); }
 
     async function loadExistingHacksAdmin() {
@@ -433,19 +426,19 @@
             const item = createHTMLElement('div', 'card');
             item.innerHTML = `<div class="hack-item-header"><span><strong>${hack.name}</strong> (${hack.year || 'N/A'})</span><div><button class="btn btn-primary btn-sm manage-btn">Manage <i class="fa-solid fa-chevron-down"></i></button><button class="btn btn-danger btn-sm delete-btn">Delete</button></div></div><div class="hack-manage-details"></div>`;
             const detailsDiv = item.querySelector('.hack-manage-details'), manageBtn = item.querySelector('.manage-btn');
-            manageBtn.onclick = () => { /* ... */ };
+            // Simplified manage button for brevity
+            manageBtn.onclick = () => { detailsDiv.innerHTML = 'Management UI for RTDB needs a specific implementation.'; detailsDiv.style.display = detailsDiv.style.display === 'block' ? 'none' : 'block'; };
             item.querySelector('.delete-btn').onclick = async () => { if (confirm(`DELETE ${hack.name}?`)) { await remove(ref(db, `hacks/${hack.id}`)); loadExistingHacksAdmin(); }};
             listContainer.appendChild(item);
         });
     }
     
-    // Using onValue here for a real-time experience in the admin panel
     async function loadPendingRuns() {
         const listContainer = document.getElementById('pending-runs-list');
-        listContainer.innerHTML = '<div class="loader"></div>';
         const q = query(ref(db, 'runs'), orderByChild('status'), equalTo('pending'));
         
         onValue(q, (snapshot) => {
+            listContainer.innerHTML = '<div class="loader"></div>';
             const runs = snapshot.exists() ? snapshotToArray(snapshot).sort((a,b) => (b.submittedAt || '').localeCompare(a.submittedAt || '')) : [];
             listContainer.innerHTML = runs.length === 0 ? 'No runs pending review.' : '';
             runs.forEach(run => {
@@ -454,13 +447,18 @@
                 item.querySelector('.reject-btn').onclick = () => updateRunStatus(run.id, 'rejected');
                 listContainer.appendChild(item);
             });
-        });
+        }, { onlyOnce: false }); // Explicitly listen for changes
     }
     async function updateRunStatus(runId, status) { await update(ref(db, `runs/${runId}`), { status }); }
     async function deleteRun(runId) { if (confirm(`Delete this run?`)) { await remove(ref(db, `runs/${runId}`)); fetchAndDisplayLeaderboard(); } }
     
     const submitRunModal = document.getElementById('submit-run-modal');
-    document.getElementById('submit-run-btn').onclick = () => { /* ... */ };
+    document.getElementById('submit-run-btn').onclick = () => {
+        if (!state.category) { alert('Select a category first.'); return; }
+        document.getElementById('submit-run-title').textContent = `${state.hack.name} - ${state.category.name}`;
+        document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
+        submitRunModal.style.display = 'block';
+    };
     document.querySelector('#submit-run-modal .close-button').onclick = () => submitRunModal.style.display = 'none';
     
     document.getElementById('submit-run-form').onsubmit = async (e) => {
@@ -470,17 +468,25 @@
         const variables = {};
         document.querySelectorAll('#variable-filters select, #run-submission-filters select').forEach(s => { variables[s.dataset.varId] = s.value; });
         
-        const newRun = { /* ... as before ... */ status: 'pending', submittedAt: new Date().toISOString() };
+        const newRun = {
+            hack_id: state.hack.id,
+            category_id: state.category.id,
+            hackName: state.hack.name,
+            categoryName: state.category.name,
+            playerName: document.getElementById('run-player').value,
+            timeInMs,
+            dateAchieved: document.getElementById('run-date').value,
+            videoUrl: document.getElementById('run-video').value,
+            variables,
+            status: 'pending',
+            submittedAt: new Date().toISOString()
+        };
         await push(ref(db, 'runs'), newRun);
         alert('Run submitted for review!');
         submitRunModal.style.display = 'none';
         e.target.reset();
     };
 
-    // NOTE: syncWithSpeedrunCom function needs a complete rewrite for RTDB.
-    // It's more complex because you can't batch write as easily as Firestore.
-    // It involves many `remove()` and `push()` calls.
-    // The placeholder below prevents errors.
     async function syncWithSpeedrunCom() {
         alert("Sync function needs to be rewritten for Firebase Realtime Database. This is a complex operation.");
     }
