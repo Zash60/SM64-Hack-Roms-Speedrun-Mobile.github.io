@@ -247,8 +247,10 @@
             if (pages[pageId]) pages[pageId].classList.remove('hidden');
         };
 
-        const timeAgo = (date) => {
-            const seconds = Math.floor((new Date() - new Date(date)) / 1000);
+        const timeAgo = (dateStr) => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const seconds = Math.floor((new Date() - date) / 1000);
             let interval = seconds / 31536000;
             if (interval > 1) return Math.floor(interval) + " years ago";
             interval = seconds / 2592000;
@@ -306,12 +308,12 @@
             homeLoader.classList.remove('hidden');
             gameListContainer.innerHTML = '';
 
-            // Fetch all games in the series (handles pagination)
             let gamesData = [];
             let offset = 0;
             let hasMore = true;
             while(hasMore) {
-                const data = await fetchSRCApi(`/series/${SM64_HACKS_SERIES_ID}/games?offset=${offset}&max=200&orderby=released&direction=desc`);
+                // *** FIX #1: Changed 'orderby=released' to 'orderby=release-date' ***
+                const data = await fetchSRCApi(`/series/${SM64_HACKS_SERIES_ID}/games?offset=${offset}&max=200&orderby=release-date&direction=desc`);
                 if (data && data.data.length > 0) {
                     gamesData.push(...data.data);
                     offset += 200;
@@ -335,9 +337,10 @@
             );
 
             filteredGames.sort((a, b) => {
+                // *** FIX #2: Changed '.released' to "['release-date']" for correct sorting ***
                 if (sortMethod === 'alpha') return a.names.international.localeCompare(b.names.international);
-                if (sortMethod === 'oldest') return new Date(a.released) - new Date(b.released);
-                return new Date(b.released) - new Date(a.released); // newest (default)
+                if (sortMethod === 'oldest') return new Date(a['release-date']) - new Date(b['release-date']);
+                return new Date(b['release-date']) - new Date(a['release-date']); // newest (default)
             });
 
             gameListContainer.innerHTML = filteredGames.map(game => `
@@ -345,7 +348,8 @@
                     <img src="${game.assets['cover-medium'].uri}" alt="${game.names.international} cover">
                     <div class="game-card-info">
                         <h3>${game.names.international}</h3>
-                        <p>${game.released} (${timeAgo(game.release_date)})</p>
+                        <!-- *** FIX #3: Changed 'game.release_date' to "game['release-date']" for correct time ago display *** -->
+                        <p>${game.released} (${timeAgo(game['release-date'])})</p>
                     </div>
                 </a>
             `).join('');
@@ -362,7 +366,6 @@
             lbNavContainer.innerHTML = '';
             lbLoader.classList.remove('hidden');
 
-            // Fetch all game-related data concurrently
             const [gameData, categoriesData] = await Promise.all([
                 fetchSRCApi(`/games/${gameId}`),
                 fetchSRCApi(`/games/${gameId}/categories`)
@@ -387,13 +390,12 @@
                 isLevel: false,
                 levelId: null,
                 categoryId: null,
-                subcategories: {} // {variableId: valueId}
+                subcategories: {}
             };
             
             buildLeaderboardNav(fullGameCategories, levelCategories, levels);
             lbLoader.classList.add('hidden');
             
-            // Auto-select first available option
             const firstNavButton = lbNavContainer.querySelector('button');
             if(firstNavButton) firstNavButton.click();
         }
@@ -402,7 +404,6 @@
             const container = document.getElementById('lb-nav-container');
             container.innerHTML = '';
 
-            // --- Full Game vs Levels Selector ---
             const typeSelector = document.createElement('div');
             typeSelector.className = 'nav-group';
             
@@ -429,7 +430,6 @@
             }
             container.appendChild(typeSelector);
             
-             // Create containers for next steps
             container.appendChild(document.createElement('div')).id = 'lb-level-selector-container';
             container.appendChild(document.createElement('div')).id = 'lb-category-selector-container';
             container.appendChild(document.createElement('div')).id = 'lb-subcategory-selector-container';
@@ -455,7 +455,7 @@
                 btn.onclick = async () => {
                     currentLeaderboardState.categoryId = cat.id;
                     currentLeaderboardState.categoryName = cat.name;
-                    currentLeaderboardState.subcategories = {}; // Reset subcategories
+                    currentLeaderboardState.subcategories = {};
                     setActiveButton(btn, group);
                     await renderSubcategorySelectors(cat.variables.data);
                     
@@ -469,7 +469,6 @@
                 group.appendChild(btn);
             });
             container.appendChild(group);
-            // Auto-click the first category
             if(group.firstChild) group.firstChild.click();
         }
 
@@ -495,7 +494,6 @@
             const container = document.getElementById('lb-subcategory-selector-container');
             container.innerHTML = '';
             if (!variables || variables.length === 0) {
-                // If no variables, fetch LB immediately
                 fetchAndDisplayLeaderboard();
                 return;
             }
@@ -520,11 +518,9 @@
                         group.appendChild(btn);
                     });
                     container.appendChild(group);
-                    // Auto-click first subcategory value
                     if(group.children[1]) group.children[1].click();
                 }
             }
-            // If no subcategories were rendered, fetch LB
              if(container.innerHTML === '') fetchAndDisplayLeaderboard();
         }
         
@@ -535,15 +531,11 @@
             select.innerHTML = '<option>-- Loading Stars --</option>';
             container.appendChild(select);
 
-            // This is a creative hack. The SR.c API doesn't expose star names easily.
-            // We fetch the leaderboard for the level category and extract star names from the `values` object.
             const lbData = await fetchSRCApi(`/leaderboards/${currentLeaderboardState.gameId}/level/${currentLeaderboardState.levelId}/${currentLeaderboardState.categoryId}`);
             if (lbData && lbData.data.runs.length > 0) {
-                // The star names are stored as variable values in the first run.
                 const firstRunVariables = lbData.data.runs[0].run.values;
-                const starVariableId = Object.keys(firstRunVariables)[0]; // Assume the first variable is the star list
+                const starVariableId = Object.keys(firstRunVariables)[0];
                 
-                // Find the variable details in the leaderboard data itself
                 const variableInfo = lbData.data.variables.data.find(v => v.id === starVariableId);
                 if (variableInfo) {
                     currentLeaderboardState.starVariableId = starVariableId;
@@ -595,7 +587,6 @@
                 lbLoader.classList.add('hidden');
                 if (data) {
                     const runs = Object.values(data);
-                    // Simple time sort (assumes format is parsable, might need improvement)
                     runs.sort((a,b) => parseTimeToMs(a.time) - parseTimeToMs(b.time));
                     
                     lbTableBody.innerHTML = runs.map((run, index) => `
@@ -609,10 +600,9 @@
                 } else {
                     lbTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No runs found. Be the first!</td></tr>';
                 }
-            }, { onlyOnce: true }); // Use onlyOnce to avoid constant updates while user is browsing
+            }, { onlyOnce: true });
         }
         
-        // Simple time parser
         function parseTimeToMs(timeStr) {
             let ms = 0;
             const parts = timeStr.toLowerCase().split(' ');
@@ -662,7 +652,7 @@
                 date: document.getElementById('submit-date').value,
                 submittedAt: new Date().toISOString(),
                 leaderboardPath: getFirebaseLeaderboardPath(),
-                leaderboardInfo: document.getElementById('submit-modal-info').innerHTML // For mod convenience
+                leaderboardInfo: document.getElementById('submit-modal-info').innerHTML
             };
 
             const pendingRunsRef = ref(database, 'pending_runs');
@@ -688,7 +678,7 @@
                 loadPendingRuns();
             } else {
                 modLoginView.classList.remove('hidden');
-                modPanelView.classList.add('hidden');
+                modPanelView.add('hidden');
             }
         });
         
@@ -762,16 +752,15 @@
             const runData = snapshot.val();
             const leaderboardPath = runData.leaderboardPath;
             
-            // Remove helper properties before saving to final LB
             delete runData.leaderboardPath;
             delete runData.leaderboardInfo;
             delete runData.submittedAt;
             
             const leaderboardRef = ref(database, leaderboardPath);
-            const newRunRef = push(leaderboardRef); // Create a new unique key for the run
+            const newRunRef = push(leaderboardRef);
             
-            await set(newRunRef, runData); // Add run to public leaderboard
-            await remove(pendingRunRef); // Remove from pending queue
+            await set(newRunRef, runData);
+            await remove(pendingRunRef);
             
             alert('Run approved!');
         }
@@ -792,7 +781,6 @@
         sortSelect.addEventListener('change', renderGames);
         window.addEventListener('hashchange', router);
         
-        // Initial load
         router();
 
     </script>
