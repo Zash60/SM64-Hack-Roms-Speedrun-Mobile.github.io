@@ -11,10 +11,20 @@
             --bg-color: #1a1a1a; --surface-color: #2c2c2c; --primary-color: #4a90e2;
             --text-color: #e0e0e0; --text-secondary-color: #a0a0e0; --border-color: #444;
         }
+        /* --- Animações e Transições --- */
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+
         body { font-family: 'Roboto', sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-        a { color: var(--primary-color); text-decoration: none; cursor: pointer; }
-        a:hover { text-decoration: underline; }
+        a { color: var(--primary-color); text-decoration: none; cursor: pointer; transition: color 0.2s ease; }
+        a:hover { color: #8bb9f2; text-decoration: underline; }
         header { background-color: var(--surface-color); padding: 1rem 0; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 999; }
         header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
         header nav a { margin-left: 15px; font-weight: bold; }
@@ -25,26 +35,30 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, select, textarea, button { font-family: 'Roboto', sans-serif; font-size: 1rem; }
-        input, select, textarea { width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); box-sizing: border-box; }
+        input, select, textarea { width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); box-sizing: border-box; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2); outline: none; }
         input[readonly] { background-color: #333; cursor: not-allowed; }
         input[type="checkbox"] { width: auto; margin-right: 10px; }
         select { appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0a0a0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2em; }
-        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: background-color 0.2s; }
-        .btn:disabled { background-color: #555; cursor: not-allowed; }
+        .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: background-color 0.2s ease, transform 0.1s ease; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0px); }
+        .btn:disabled { background-color: #555; cursor: not-allowed; transform: none; }
         .btn-sm { padding: 5px 8px; font-size: 0.8em; }
         .btn-primary { background-color: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background-color: #5a9ee4; }
         .btn-success { background-color: #28a745; color: #fff; }
+        .btn-success:hover { background-color: #32c453; }
         .btn-danger { background-color: #dc3545; color: #fff; }
-        .btn-icon { background: none; border: none; color: var(--text-secondary-color); cursor: pointer; padding: 2px 6px; font-size: 1.1em; }
-        .btn-icon:hover { color: var(--primary-color); }
+        .btn-danger:hover { background-color: #e44d5c; }
+        .btn-icon { background: none; border: none; color: var(--text-secondary-color); cursor: pointer; padding: 2px 6px; font-size: 1.1em; transition: color 0.2s ease; }
+        .btn-icon:hover { color: var(--primary-color); transform: none; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); animation: fadeIn 0.3s; }
-        .modal-content { background-color: var(--surface-color); margin: 5% auto; padding: 20px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; border-radius: 8px; }
-        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
-        .page-container { padding: 2rem 0; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content { background-color: var(--surface-color); margin: 5% auto; padding: 20px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; border-radius: 8px; animation: fadeIn 0.4s ease-out; }
+        .page-container { padding: 2rem 0; animation: fadeIn 0.5s ease-out; }
         .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
-        .game-card { display: block; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; text-align: center; border: 1px solid var(--border-color); transition: transform 0.2s ease; position: relative; }
-        .game-card:hover { transform: translateY(-5px); }
+        .game-card { display: block; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; text-align: center; border: 1px solid var(--border-color); transition: transform 0.2s ease, box-shadow 0.2s ease; animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
+        .game-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.3); }
         .game-card img { width: 100%; height: 80px; object-fit: contain; display: block; background-color: #111; }
         .game-card-info { padding: 10px; }
         .game-card-info h3 { margin: 0; font-size: 0.8rem; font-weight: 400; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; padding: 0;}
@@ -53,8 +67,8 @@
         .leaderboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .leaderboard-nav { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
         .category-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
-        .tab { padding: 8px 15px; background-color: #333; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-color); }
-        .tab.active { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
+        .tab { padding: 8px 15px; background-color: #333; border-radius: 5px; cursor: pointer; border: 1px solid var(--border-color); transition: all 0.2s ease; }
+        .tab.active, .tab:hover { background-color: var(--primary-color); color: white; border-color: var(--primary-color); }
         .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         .leaderboard-table th, .leaderboard-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
         .hack-item-header { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; flex-wrap: wrap; }
@@ -68,7 +82,6 @@
         .admin-sub-details { display: none; width: 100%; background-color: #111; padding: 10px; margin-top: 8px; border-radius: 4px; border-left: 2px solid var(--primary-color); }
         .controls-container { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;}
         .loader { border: 4px solid #f3f3f3; border-radius: 50%; border-top: 4px solid var(--primary-color); width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-top: 10px; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; }
@@ -257,13 +270,8 @@
     // --- Main Logic & Routing ---
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
-        
-        // --- FIX: Add event listeners for the new modal close buttons ---
-        const registerModal = document.getElementById('register-modal');
-        registerModal.querySelector('.close-button').onclick = () => { registerModal.style.display = 'none'; };
-        const loginModal = document.getElementById('login-modal');
-        loginModal.querySelector('.close-button').onclick = () => { loginModal.style.display = 'none'; };
-
+        document.getElementById('register-modal').querySelector('.close-button').onclick = () => { document.getElementById('register-modal').style.display = 'none'; };
+        document.getElementById('login-modal').querySelector('.close-button').onclick = () => { document.getElementById('login-modal').style.display = 'none'; };
         onAuthStateChanged(auth, user => {
             state.user = user;
             updateAuthUI();
@@ -315,9 +323,10 @@
             else if (sortBy === 'oldest_released') { hacks.sort((a, b) => (a.year || 0) - (b.year || 0) || (a.created_at || '').localeCompare(b.created_at || ''));}
             gamesGrid.innerHTML = '';
             if (hacks.length === 0) { gamesGrid.innerHTML = '<p>No hack roms found. Run the sync in the Admin Panel.</p>'; return; }
-            hacks.forEach(hack => {
+            hacks.forEach((hack, index) => {
                 const count = runCounts[hack.id] || 0;
                 const card = createHTMLElement('a', 'game-card', `<div class="game-card-year">${hack.year || ''}</div><img src="${hack.imageUrl}" alt="${hack.name}" loading="lazy"><div class="game-card-info"><h3>${hack.name}</h3></div><div class="game-card-runs"><i class="fas fa-trophy"></i> ${count}</div>`);
+                card.style.animationDelay = `${index * 0.05}s`;
                 card.href = `#hack/${hack.slug}`;
                 card.onclick = (e) => { e.preventDefault(); window.location.hash = `hack/${hack.slug}`; };
                 gamesGrid.appendChild(card);
@@ -592,8 +601,6 @@
     }
 
     // --- Authentication Modals ---
-    const registerModal = document.getElementById('register-modal');
-    registerModal.querySelector('.close-button').onclick = () => { registerModal.style.display = 'none'; };
     document.getElementById('register-form').onsubmit = async (e) => {
         e.preventDefault();
         const username = document.getElementById('register-username').value;
@@ -605,11 +612,9 @@
             await updateProfile(userCredential.user, { displayName: username });
             await set(ref(db, `users/${userCredential.user.uid}`), { username });
             errorP.textContent = '';
-            registerModal.style.display = 'none';
+            document.getElementById('register-modal').style.display = 'none';
         } catch (error) { errorP.textContent = error.message; }
     };
-    const loginModal = document.getElementById('login-modal');
-    loginModal.querySelector('.close-button').onclick = () => { loginModal.style.display = 'none'; };
     document.getElementById('user-login-form').onsubmit = async (e) => {
         e.preventDefault();
         const email = document.getElementById('user-login-email').value;
@@ -618,7 +623,7 @@
         try {
             await signInWithEmailAndPassword(auth, email, password);
             errorP.textContent = '';
-            loginModal.style.display = 'none';
+            document.getElementById('login-modal').style.display = 'none';
         } catch (error) { errorP.textContent = error.message; }
     };
 
@@ -634,12 +639,12 @@
     }
 
     async function openSubmitRunModal() {
-        resetSubmitRunModal();
         if (!state.user) {
             alert("Please login or register to submit a run.");
             document.getElementById('login-modal').style.display = 'block';
             return;
         }
+        resetSubmitRunModal();
         if (!state.hack) return;
 
         document.getElementById('run-player').value = state.user.displayName;
@@ -764,8 +769,9 @@
                     if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
                 }
             }
+            const runRef = push(ref(db, 'runs'));
             const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: state.user.displayName, userId: state.user.uid, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
-            await push(ref(db, 'runs'), newRun);
+            await set(runRef, newRun);
             alert('Run submitted for review!');
         }
         submitRunModal.style.display = 'none';
@@ -875,4 +881,4 @@
     }
 </script>
 </body>
-    </html>
+</html>
