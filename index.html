@@ -26,6 +26,7 @@
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
         input, select, textarea, button { font-family: 'Roboto', sans-serif; font-size: 1rem; }
         input, select, textarea { width: 100%; padding: 10px; background-color: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-color); box-sizing: border-box; }
+        input[readonly] { background-color: #333; cursor: not-allowed; }
         input[type="checkbox"] { width: auto; margin-right: 10px; }
         select { appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a0a0a0%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; padding-right: 2em; }
         .btn { padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-right: 5px; transition: background-color 0.2s; }
@@ -133,12 +134,12 @@
                     <div id="sync-status" style="margin-top: 10px;"></div>
                 </div>
                 <div class="card">
-                    <h3>Existing Hack Roms</h3>
-                    <div id="existing-hacks-list"></div>
-                </div>
-                <div class="card">
                     <h3>Review Pending Runs</h3>
                     <div id="pending-runs-list"></div>
+                </div>
+                <div class="card">
+                    <h3>Existing Hack Roms</h3>
+                    <div id="existing-hacks-list"></div>
                 </div>
             </div>
         </div>
@@ -200,19 +201,10 @@
     function getVideoEmbedUrl(url) {
         if (!url) return null;
         try {
-            if (url.includes('youtube.com/watch?v=')) {
-                const videoId = new URL(url).searchParams.get('v');
-                return `https://www.youtube.com/embed/${videoId}`;
-            }
-            if (url.includes('youtu.be/')) {
-                const videoId = new URL(url).pathname.slice(1);
-                return `https://www.youtube.com/embed/${videoId}`;
-            }
-        } catch (e) {
-            console.error("Invalid video URL", e);
-            return null;
-        }
-        return null; // Return null if not a supported format
+            if (url.includes('youtube.com/watch?v=')) { const videoId = new URL(url).searchParams.get('v'); return `https://www.youtube.com/embed/${videoId}`; }
+            if (url.includes('youtu.be/')) { const videoId = new URL(url).pathname.slice(1); return `https://www.youtube.com/embed/${videoId}`; }
+        } catch (e) { console.error("Invalid video URL", e); return null; }
+        return null;
     }
 
     // --- Main Logic ---
@@ -344,7 +336,7 @@
         const isMod = !!state.user;
         document.querySelector('#actions-header').style.display = isMod ? '' : 'none';
         const tbody = document.querySelector('.leaderboard-table tbody');
-        tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}"><div class="loader"></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isMod ? 6 : 4}"><div class="loader"></div></td></tr>`;
         const runsQ = query(ref(db, 'runs'), orderByChild('category_id'), equalTo(state.category.id));
         const snapshot = await get(runsQ);
         const allRunsForCategory = snapshot.exists() ? snapshotToArray(snapshot) : [];
@@ -354,7 +346,7 @@
         if (state.category.type !== 'fullgame') variables['level'] = document.getElementById('level-select').value;
         const filteredRuns = approvedRuns.filter(run => Object.keys(variables).every(key => run.variables && run.variables[key] === variables[key])).sort((a, b) => a.timeInMs - b.timeInMs);
         tbody.innerHTML = '';
-        if (filteredRuns.length === 0) { tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}">No approved runs for these filters.</td></tr>`; return; }
+        if (filteredRuns.length === 0) { tbody.innerHTML = `<tr><td colspan="${isMod ? 6 : 4}">No approved runs for these filters.</td></tr>`; return; }
         filteredRuns.forEach((run, index) => {
             const row = tbody.insertRow();
             row.innerHTML = `<td>${index + 1}</td><td><a href="${run.videoUrl}" target="_blank">${run.playerName}</a></td><td>${formatTime(run.timeInMs)}</td><td>${run.dateAchieved}</td>`;
@@ -522,7 +514,27 @@
         state.editingRunId = null;
         document.getElementById('modal-action-title').textContent = 'Submit';
         document.getElementById('modal-submit-btn').textContent = 'Submit for Review';
+        document.getElementById('run-submission-filters').innerHTML = '';
         document.getElementById('submit-run-form').reset();
+    }
+    function openSubmitRunModal() {
+        resetSubmitRunModal();
+        if (!state.category) { alert('Select a category first.'); return; }
+        document.getElementById('submit-run-title').textContent = `${state.hack.name} - ${state.category.name}`;
+        document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
+        
+        const submissionFiltersContainer = document.getElementById('run-submission-filters');
+        submissionFiltersContainer.innerHTML = '';
+        const sourceFilters = document.querySelectorAll('#variable-filters .form-group');
+        sourceFilters.forEach(group => {
+            const label = group.querySelector('label').textContent;
+            const select = group.querySelector('select');
+            const selectedOption = select.options[select.selectedIndex];
+            const filterHTML = `<div class="form-group"><label>${label}</label><input type="text" value="${selectedOption.text}" data-var-id="${select.dataset.varId}" data-var-value="${select.value}" readonly></div>`;
+            submissionFiltersContainer.innerHTML += filterHTML;
+        });
+
+        submitRunModal.style.display = 'block';
     }
     function openEditRunModal(run) {
         resetSubmitRunModal();
@@ -536,13 +548,7 @@
         document.getElementById('run-video').value = run.videoUrl;
         submitRunModal.style.display = 'block';
     }
-    document.getElementById('submit-run-btn').onclick = () => {
-        resetSubmitRunModal();
-        if (!state.category) { alert('Select a category first.'); return; }
-        document.getElementById('submit-run-title').textContent = `${state.hack.name} - ${state.category.name}`;
-        document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
-        submitRunModal.style.display = 'block';
-    };
+    document.getElementById('submit-run-btn').onclick = openSubmitRunModal;
     document.querySelector('#submit-run-modal .close-button').onclick = () => { 
         submitRunModal.style.display = 'none';
         resetSubmitRunModal();
@@ -561,7 +567,12 @@
             fetchAndDisplayLeaderboard();
         } else {
             const variables = {};
-            document.querySelectorAll('#variable-filters select, #run-submission-filters select').forEach(s => { variables[s.dataset.varId] = s.value; });
+            document.querySelectorAll('#run-submission-filters input').forEach(input => {
+                variables[input.dataset.varId] = input.dataset.varValue;
+            });
+            if (state.category.type !== 'fullgame') {
+                variables['level'] = document.getElementById('level-select').value;
+            }
             const runRef = push(ref(db, 'runs'));
             const newRun = {
                 hack_id: state.hack.id, category_id: state.category.id, hackName: state.hack.name, categoryName: state.category.name,
@@ -678,4 +689,4 @@
     }
 </script>
 </body>
-</html>
+        </html>
