@@ -49,6 +49,7 @@
         .game-card-info { padding: 10px; }
         .game-card-info h3 { margin: 0; font-size: 0.8rem; font-weight: 400; color: var(--text-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: none; padding: 0;}
         .game-card-year { position: absolute; top: 5px; right: 5px; background-color: rgba(0,0,0,0.7); color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.7em; font-weight: bold; }
+        .game-card-runs { position: absolute; bottom: 5px; left: 5px; background-color: rgba(0,0,0,0.7); color: white; padding: 2px 5px; border-radius: 3px; font-size: 0.7em; }
         .leaderboard-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .leaderboard-nav { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
         .category-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
@@ -70,6 +71,10 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin-top: 10px; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: white; }
+        .status-approved { background-color: #28a745; }
+        .status-pending { background-color: #fd7e14; }
+        .status-rejected { background-color: #dc3545; }
     </style>
 </head>
 <body>
@@ -118,6 +123,14 @@
             <div id="admin-content" style="display: none;">
                 <h2>Admin Panel</h2>
                 <div class="card">
+                    <h3>Review Pending Runs</h3>
+                    <div id="pending-runs-list"></div>
+                </div>
+                <div class="card">
+                    <h3>Existing Hack Roms</h3>
+                    <div id="existing-hacks-list"></div>
+                </div>
+                <div class="card">
                     <h3>Add New Hack Rom</h3>
                     <form id="add-hack-form">
                         <div class="form-group"><label>Hack Name</label><input type="text" id="add-hack-name" required></div>
@@ -133,14 +146,21 @@
                     <div class="form-group" style="margin-top: 10px;"><label style="display: inline-flex; align-items: center;"><input type="checkbox" id="force-sync-checkbox"> Force update (deletes all existing data)</label></div>
                     <div id="sync-status" style="margin-top: 10px;"></div>
                 </div>
-                <div class="card">
-                    <h3>Review Pending Runs</h3>
-                    <div id="pending-runs-list"></div>
-                </div>
-                <div class="card">
-                    <h3>Existing Hack Roms</h3>
-                    <div id="existing-hacks-list"></div>
-                </div>
+            </div>
+        </div>
+        <div id="page-profile" class="page-container" style="display: none;">
+            <h2 id="profile-welcome">Your Runs</h2>
+            <div class="card">
+                <h4>Approved</h4>
+                <div id="profile-runs-approved"></div>
+            </div>
+            <div class="card">
+                <h4>Pending Review</h4>
+                <div id="profile-runs-pending"></div>
+            </div>
+             <div class="card">
+                <h4>Rejected</h4>
+                <div id="profile-runs-rejected"></div>
             </div>
         </div>
     </main>
@@ -152,7 +172,7 @@
             <hr style="border-color: var(--border-color); margin: 15px 0;">
             <form id="submit-run-form">
                 <div id="run-submission-filters"></div>
-                <div class="form-group"><label>Player Name</label><input type="text" id="run-player" required></div>
+                <div class="form-group"><label>Player Name</label><input type="text" id="run-player" required readonly></div>
                 <div class="form-group"><label>Time (e.g., 1:23.456)</label><input type="text" id="run-time" required></div>
                 <div class="form-group"><label>Date Achieved</label><input type="date" id="run-date" required></div>
                 <div class="form-group"><label>Video Link</label><input type="url" id="run-video" required></div>
@@ -160,11 +180,36 @@
             </form>
         </div>
     </div>
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>Register New Account</h3>
+            <form id="register-form">
+                <div class="form-group"><label>Username</label><input type="text" id="register-username" required></div>
+                <div class="form-group"><label>Email</label><input type="email" id="register-email" required></div>
+                <div class="form-group"><label>Password</label><input type="password" id="register-password" required></div>
+                <button type="submit" class="btn btn-primary">Register</button>
+                <p id="register-error" style="color: #e24a4a;"></p>
+            </form>
+        </div>
+    </div>
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>User Login</h3>
+            <form id="user-login-form">
+                <div class="form-group"><label>Email</label><input type="email" id="user-login-email" required></div>
+                <div class="form-group"><label>Password</label><input type="password" id="user-login-password" required></div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p id="user-login-error" style="color: #e24a4a;"></p>
+            </form>
+        </div>
+    </div>
 
 <script type="module">
     // Import Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getDatabase, ref, get, set, push, remove, update, query, orderByChild, equalTo, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     // Your web app's Firebase configuration
@@ -209,7 +254,7 @@
         return null;
     }
 
-    // --- Main Logic ---
+    // --- Main Logic & Routing ---
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
         onAuthStateChanged(auth, user => {
@@ -221,12 +266,16 @@
     
     function updateAuthUI() {
         const authLinks = document.getElementById('auth-links-container');
-        authLinks.innerHTML = state.user ? `<a id="admin-link">Admin</a><a id="logout-link">Logout</a>` : `<a id="login-link">Login</a>`;
         if (state.user) {
+            authLinks.innerHTML = `<a id="profile-link">Profile</a><a id="admin-link">Admin</a><a id="logout-link">Logout</a>`;
+            document.getElementById('profile-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#profile'; };
             document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
             document.getElementById('logout-link').onclick = async (e) => { e.preventDefault(); await signOut(auth); window.location.hash = ''; };
         } else {
-            document.getElementById('login-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
+            authLinks.innerHTML = `<a id="login-link">Login</a><a id="register-link">Register</a><a id="admin-link">Admin</a>`;
+            document.getElementById('login-link').onclick = (e) => { e.preventDefault(); document.getElementById('login-modal').style.display = 'block'; };
+            document.getElementById('register-link').onclick = (e) => { e.preventDefault(); document.getElementById('register-modal').style.display = 'block'; };
+            document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
         }
     }
 
@@ -235,12 +284,19 @@
         const hash = window.location.hash;
         if (hash.startsWith('#hack/')) showHackDetails(hash.substring(6));
         else if (hash === '#admin') { showPage('page-admin'); initAdminPage(); }
+        else if (hash === '#profile') { showProfilePage(); }
         else { showPage('page-home'); if (!document.querySelector('#games-grid .game-card')) fetchAndDisplayHacks(); }
     }
 
     async function fetchAndDisplayHacks() {
         const gamesGrid = document.getElementById('games-grid');
         gamesGrid.innerHTML = '<div class="loader"></div>';
+        const runsSnapshot = await get(ref(db, 'runs'));
+        const runs = runsSnapshot.exists() ? snapshotToArray(runsSnapshot) : [];
+        const runCounts = runs.reduce((acc, run) => {
+            if (run.status === 'approved') { acc[run.hack_id] = (acc[run.hack_id] || 0) + 1; }
+            return acc;
+        }, {});
         const sortBy = document.getElementById('sort-by-select').value;
         let sortKey = 'name';
         if (sortBy === 'newest_released' || sortBy === 'oldest_released') { sortKey = 'year'; }
@@ -253,7 +309,8 @@
             gamesGrid.innerHTML = '';
             if (hacks.length === 0) { gamesGrid.innerHTML = '<p>No hack roms found. Run the sync in the Admin Panel.</p>'; return; }
             hacks.forEach(hack => {
-                const card = createHTMLElement('a', 'game-card', `${hack.year ? `<div class="game-card-year">${hack.year}</div>` : ''}<img src="${hack.imageUrl}" alt="${hack.name}" loading="lazy"><div class="game-card-info"><h3>${hack.name}</h3></div>`);
+                const count = runCounts[hack.id] || 0;
+                const card = createHTMLElement('a', 'game-card', `<div class="game-card-year">${hack.year || ''}</div><img src="${hack.imageUrl}" alt="${hack.name}" loading="lazy"><div class="game-card-info"><h3>${hack.name}</h3></div><div class="game-card-runs"><i class="fas fa-trophy"></i> ${count}</div>`);
                 card.href = `#hack/${hack.slug}`;
                 card.onclick = (e) => { e.preventDefault(); window.location.hash = `hack/${hack.slug}`; };
                 gamesGrid.appendChild(card);
@@ -273,7 +330,6 @@
         leaderboardContent.innerHTML = '<div class="loader"></div>';
         const snapshot = await get(ref(db, `hacks/${slug}`));
         const hack = snapshot.exists() ? { id: snapshot.key, ...snapshot.val() } : null;
-
         if (!hack) { window.location.hash = ''; return; }
         leaderboardContent.innerHTML = `<div id="category-tabs-container"><h4>Categories</h4><div class="category-tabs"></div></div><div id="variable-filters"></div><table class="leaderboard-table"><thead><tr><th>#</th><th>Player</th><th>Time</th><th>Date</th><th id="actions-header" style="display:none;">Actions</th></tr></thead><tbody></tbody></table>`;
         state.hack = hack;
@@ -309,13 +365,11 @@
         state.category = category;
         const filtersContainer = document.getElementById('variable-filters');
         filtersContainer.innerHTML = '';
-        
         if (category.type === 'fullgame') {
             const variablesQ = query(ref(db, 'variables'), orderByChild('hack_id'), equalTo(state.hack.id));
             const variablesSnapshot = await get(variablesQ);
             const allVariables = variablesSnapshot.exists() ? snapshotToArray(variablesSnapshot) : [];
             const relevantVariables = allVariables.filter(v => !v.category_id || v.category_id === category.id).sort((a,b) => a.order - b.order);
-
             for(const v of relevantVariables) {
                 const optionsQ = query(ref(db, 'options'), orderByChild('variable_id'), equalTo(v.id));
                 const optionsSnapshot = await get(optionsQ);
@@ -329,7 +383,6 @@
             const stars = starsSnapshot.exists() ? snapshotToArray(starsSnapshot).sort((a,b) => a.order - b.order) : [];
             if (stars.length > 0) { filtersContainer.innerHTML = `<div class="form-group"><label>Star</label><select data-var-id="star">${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>`;}
         }
-        
         document.querySelectorAll('#variable-filters select').forEach(s => s.onchange = fetchAndDisplayLeaderboard);
         fetchAndDisplayLeaderboard();
     }
@@ -473,7 +526,7 @@
         try {
             const deleteUpdates = {};
             deleteUpdates[`/hacks/${hackId}`] = null;
-            const childPaths = ['categories', 'levels', 'variables', 'runs'];
+            const childPaths = ['categories', 'levels', 'variables', 'runs', 'options', 'stars'];
             for (const path of childPaths) {
                 const q = query(ref(db, path), orderByChild('hack_id'), equalTo(hackId));
                 const snapshot = await get(q);
@@ -483,7 +536,7 @@
             }
             await update(ref(db), deleteUpdates);
             alert(`'${hackName}' and all its data have been deleted.`);
-            loadExistingHacksAdmin();
+            loadAdminData();
         } catch (error) {
             alert('An error occurred during deletion: ' + error.message);
             console.error("Deletion error:", error);
@@ -512,7 +565,6 @@
     
     // --- Run Submission & Editing ---
     const submitRunModal = document.getElementById('submit-run-modal');
-    
     function resetSubmitRunModal() {
         state.editingRunId = null;
         document.getElementById('modal-action-title').textContent = 'Submit';
@@ -524,8 +576,10 @@
 
     async function openSubmitRunModal() {
         resetSubmitRunModal();
+        if (!state.user) { alert("Please login or register to submit a run."); document.getElementById('login-modal').style.display = 'block'; return; }
         if (!state.hack) return;
 
+        document.getElementById('run-player').value = state.user.displayName;
         const filtersContainer = document.getElementById('run-submission-filters');
         document.getElementById('submit-run-hack-name').textContent = state.hack.name;
         filtersContainer.innerHTML = '<div class="loader"></div>';
@@ -580,7 +634,6 @@
         const variablesSnapshot = await get(variablesQ);
         const allVariables = variablesSnapshot.exists() ? snapshotToArray(variablesSnapshot) : [];
         const relevantVariables = allVariables.filter(v => !v.category_id || v.category_id === categoryId).sort((a,b) => a.order - b.order);
-
         let html = '';
         for(const v of relevantVariables) {
             const optionsQ = query(ref(db, 'options'), orderByChild('variable_id'), equalTo(v.id));
@@ -598,9 +651,7 @@
         const stars = starsSnapshot.exists() ? snapshotToArray(starsSnapshot).sort((a,b) => a.order - b.order) : [];
         if (stars.length > 0) {
             container.innerHTML = `<div class="form-group"><label>Star</label><select data-var-id="star">${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>`;
-        } else {
-            container.innerHTML = '';
-        }
+        } else { container.innerHTML = ''; }
     }
 
     function openEditRunModal(run) {
@@ -624,7 +675,6 @@
         e.preventDefault();
         const timeInMs = parseTimeToMilliseconds(document.getElementById('run-time').value);
         if (isNaN(timeInMs)) return alert('Invalid time format.');
-        
         if (state.editingRunId) {
             const updatedRunData = { playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value };
             await update(ref(db, `runs/${state.editingRunId}`), updatedRunData);
@@ -634,7 +684,6 @@
             const variables = {};
             let categoryId, categoryName;
             const leaderboardType = document.getElementById('type-select').value;
-            
             if (leaderboardType === 'fullgame') {
                 const categorySelect = document.getElementById('modal-category-select');
                 categoryId = categorySelect.value;
@@ -644,9 +693,7 @@
                 const mainCategoryQ = query(ref(db, 'categories'), orderByChild('hack_id'), equalTo(state.hack.id));
                 const catSnapshot = await get(mainCategoryQ);
                 const category = snapshotToArray(catSnapshot).find(c => c.type === leaderboardType);
-                categoryId = category.id;
-                categoryName = category.name;
-
+                categoryId = category.id; categoryName = category.name;
                 const levelId = document.getElementById('modal-level-select').value;
                 variables['level'] = levelId;
                 if (leaderboardType === 'level_singlestar') {
@@ -654,9 +701,8 @@
                     if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
                 }
             }
-
             const runRef = push(ref(db, 'runs'));
-            const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
+            const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: state.user.displayName, userId: state.user.uid, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
             await set(runRef, newRun);
             alert('Run submitted for review!');
         }
@@ -767,4 +813,4 @@
     }
 </script>
 </body>
-</html>
+    </html>
