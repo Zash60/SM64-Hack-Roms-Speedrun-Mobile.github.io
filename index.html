@@ -195,7 +195,7 @@
         return returnArr;
     }
 
-    // --- Main Logic (Core App Flow) ---
+    // --- Main Logic ---
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
         onAuthStateChanged(auth, user => {
@@ -346,7 +346,7 @@
         });
     }
 
-    // --- Admin Panel Logic ---
+    // --- Admin Panel ---
     function initAdminPage() {
         document.getElementById('login-section').style.display = state.user ? 'none' : 'block';
         document.getElementById('admin-content').style.display = state.user ? 'block' : 'none';
@@ -493,7 +493,7 @@
     async function updateRunStatus(runId, status) { await update(ref(db, `runs/${runId}`), { status }); }
     async function deleteRun(runId) { if (confirm(`Delete this run?`)) { await remove(ref(db, `runs/${runId}`)); fetchAndDisplayLeaderboard(); } }
     
-    // --- Run Submission Logic ---
+    // --- Run Submission ---
     const submitRunModal = document.getElementById('submit-run-modal');
     document.getElementById('submit-run-btn').onclick = () => {
         if (!state.category) { alert('Select a category first.'); return; }
@@ -521,20 +521,6 @@
     };
 
     // --- Sync Logic ---
-    async function fetchAllSRCGames(offset = 0, allGames = []) {
-        const url = `https://www.speedrun.com/api/v1/series/sm64romhacks/games?max=200&offset=${offset}`;
-        try {
-            const res = await fetch(url);
-            if (res.status === 404) return allGames;
-            if (!res.ok) throw new Error(`API fetch failed: ${res.status}`);
-            const data = await res.json();
-            if (data.data.length === 0) return allGames;
-            allGames.push(...data.data);
-            if (data.pagination.size === 200) { return fetchAllSRCGames(offset + 200, allGames); }
-            return allGames;
-        } catch (error) { console.error("Failed to fetch games from SRC:", error); throw error; }
-    }
-
     async function syncWithSpeedrunCom() {
         const statusDiv = document.getElementById('sync-status'), syncBtn = document.getElementById('sync-src-btn'), force = document.getElementById('force-sync-checkbox').checked;
         syncBtn.disabled = true;
@@ -576,7 +562,7 @@
                 }
 
                 for (const v of (details.variables?.data || [])) {
-                    if (!v['is-subcategory']) continue; // <-- THE FIX IS HERE!
+                    if (!v['is-subcategory']) continue;
                     
                     const varId = slugify(`${hackId}-${v.name}`);
                     const varData = { name: v.name, order: i, srcId: v.id, hack_id: hackId };
