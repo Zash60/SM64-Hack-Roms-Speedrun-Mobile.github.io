@@ -257,6 +257,13 @@
     // --- Main Logic & Routing ---
     document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
+        
+        // --- FIX: Add event listeners for the new modal close buttons ---
+        const registerModal = document.getElementById('register-modal');
+        registerModal.querySelector('.close-button').onclick = () => { registerModal.style.display = 'none'; };
+        const loginModal = document.getElementById('login-modal');
+        loginModal.querySelector('.close-button').onclick = () => { loginModal.style.display = 'none'; };
+
         onAuthStateChanged(auth, user => {
             state.user = user;
             updateAuthUI();
@@ -563,6 +570,58 @@
     async function updateRunStatus(runId, status) { await update(ref(db, `runs/${runId}`), { status }); }
     async function deleteRun(runId) { if (confirm(`Delete this run?`)) { await remove(ref(db, `runs/${runId}`)); fetchAndDisplayLeaderboard(); } }
     
+    // --- Profile Dashboard ---
+    async function showProfilePage() {
+        showPage('page-profile');
+        if (!state.user) { window.location.hash = ''; return; }
+        document.getElementById('profile-welcome').textContent = `Welcome, ${state.user.displayName}`;
+        const containers = { approved: document.getElementById('profile-runs-approved'), pending: document.getElementById('profile-runs-pending'), rejected: document.getElementById('profile-runs-rejected') };
+        Object.values(containers).forEach(c => c.innerHTML = '<div class="loader"></div>');
+        const q = query(ref(db, 'runs'), orderByChild('userId'), equalTo(state.user.uid));
+        const snapshot = await get(q);
+        const userRuns = snapshot.exists() ? snapshotToArray(snapshot).sort((a,b) => (b.submittedAt || '').localeCompare(a.submittedAt || '')) : [];
+        Object.values(containers).forEach(c => c.innerHTML = 'No runs in this category.');
+        userRuns.forEach(run => {
+            const container = containers[run.status];
+            if (container) {
+                if (container.innerHTML.startsWith('No runs')) container.innerHTML = '';
+                const item = createHTMLElement('div', 'admin-list-item', `<span><strong><a href="#hack/${run.hack_id}">${run.hackName}</a></strong> - ${run.categoryName} (${formatTime(run.timeInMs)})</span><span class="status-badge status-${run.status}">${run.status}</span>`);
+                container.appendChild(item);
+            }
+        });
+    }
+
+    // --- Authentication Modals ---
+    const registerModal = document.getElementById('register-modal');
+    registerModal.querySelector('.close-button').onclick = () => { registerModal.style.display = 'none'; };
+    document.getElementById('register-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const errorP = document.getElementById('register-error');
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: username });
+            await set(ref(db, `users/${userCredential.user.uid}`), { username });
+            errorP.textContent = '';
+            registerModal.style.display = 'none';
+        } catch (error) { errorP.textContent = error.message; }
+    };
+    const loginModal = document.getElementById('login-modal');
+    loginModal.querySelector('.close-button').onclick = () => { loginModal.style.display = 'none'; };
+    document.getElementById('user-login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('user-login-email').value;
+        const password = document.getElementById('user-login-password').value;
+        const errorP = document.getElementById('user-login-error');
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            errorP.textContent = '';
+            loginModal.style.display = 'none';
+        } catch (error) { errorP.textContent = error.message; }
+    };
+
     // --- Run Submission & Editing ---
     const submitRunModal = document.getElementById('submit-run-modal');
     function resetSubmitRunModal() {
@@ -576,7 +635,11 @@
 
     async function openSubmitRunModal() {
         resetSubmitRunModal();
-        if (!state.user) { alert("Please login or register to submit a run."); document.getElementById('login-modal').style.display = 'block'; return; }
+        if (!state.user) {
+            alert("Please login or register to submit a run.");
+            document.getElementById('login-modal').style.display = 'block';
+            return;
+        }
         if (!state.hack) return;
 
         document.getElementById('run-player').value = state.user.displayName;
@@ -701,9 +764,8 @@
                     if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
                 }
             }
-            const runRef = push(ref(db, 'runs'));
             const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: state.user.displayName, userId: state.user.uid, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
-            await set(runRef, newRun);
+            await push(ref(db, 'runs'), newRun);
             alert('Run submitted for review!');
         }
         submitRunModal.style.display = 'none';
