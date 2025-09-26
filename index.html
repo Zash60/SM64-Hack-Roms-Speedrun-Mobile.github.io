@@ -346,7 +346,7 @@
         });
     }
 
-    // --- Admin Panel ---
+    // --- Admin Panel Logic ---
     function initAdminPage() {
         document.getElementById('login-section').style.display = state.user ? 'none' : 'block';
         document.getElementById('admin-content').style.display = state.user ? 'block' : 'none';
@@ -521,6 +521,20 @@
     };
 
     // --- Sync Logic ---
+    async function fetchAllSRCGames(offset = 0, allGames = []) {
+        const url = `https://www.speedrun.com/api/v1/series/sm64romhacks/games?max=200&offset=${offset}`;
+        try {
+            const res = await fetch(url);
+            if (res.status === 404) return allGames;
+            if (!res.ok) throw new Error(`API fetch failed: ${res.status}`);
+            const data = await res.json();
+            if (data.data.length === 0) return allGames;
+            allGames.push(...data.data);
+            if (data.pagination.size === 200) { return fetchAllSRCGames(offset + 200, allGames); }
+            return allGames;
+        } catch (error) { console.error("Failed to fetch games from SRC:", error); throw error; }
+    }
+
     async function syncWithSpeedrunCom() {
         const statusDiv = document.getElementById('sync-status'), syncBtn = document.getElementById('sync-src-btn'), force = document.getElementById('force-sync-checkbox').checked;
         syncBtn.disabled = true;
@@ -562,11 +576,13 @@
                 }
 
                 for (const v of (details.variables?.data || [])) {
+                    // This is the crucial fix: only import variables that are explicitly marked as a subcategory.
                     if (!v['is-subcategory']) continue;
                     
                     const varId = slugify(`${hackId}-${v.name}`);
                     const varData = { name: v.name, order: i, srcId: v.id, hack_id: hackId };
                     
+                    // Check if this subcategory is tied to a specific main category
                     if (v.scope.type === 'single-category' && srcCategoryToSlugMap.has(v.scope.category)) {
                         varData.category_id = srcCategoryToSlugMap.get(v.scope.category);
                     }
