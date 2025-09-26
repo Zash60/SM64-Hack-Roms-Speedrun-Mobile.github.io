@@ -147,13 +147,15 @@
     <div id="submit-run-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <h3><span id="modal-action-title">Submit</span> Run for <span id="submit-run-title"></span></h3>
+            <h3><span id="modal-action-title">Submit</span> Run for <span id="submit-run-hack-name"></span></h3>
+            <div id="submit-run-category-name"></div>
+            <hr style="border-color: var(--border-color); margin: 15px 0;">
             <form id="submit-run-form">
+                <div id="run-submission-filters"></div>
                 <div class="form-group"><label>Player Name</label><input type="text" id="run-player" required></div>
                 <div class="form-group"><label>Time (e.g., 1:23.456)</label><input type="text" id="run-time" required></div>
                 <div class="form-group"><label>Date Achieved</label><input type="date" id="run-date" required></div>
                 <div class="form-group"><label>Video Link</label><input type="url" id="run-video" required></div>
-                <div id="run-submission-filters"></div>
                 <button type="submit" class="btn btn-primary" id="modal-submit-btn">Submit for Review</button>
             </form>
         </div>
@@ -336,7 +338,7 @@
         const isMod = !!state.user;
         document.querySelector('#actions-header').style.display = isMod ? '' : 'none';
         const tbody = document.querySelector('.leaderboard-table tbody');
-        tbody.innerHTML = `<tr><td colspan="${isMod ? 6 : 4}"><div class="loader"></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}"><div class="loader"></div></td></tr>`;
         const runsQ = query(ref(db, 'runs'), orderByChild('category_id'), equalTo(state.category.id));
         const snapshot = await get(runsQ);
         const allRunsForCategory = snapshot.exists() ? snapshotToArray(snapshot) : [];
@@ -346,7 +348,7 @@
         if (state.category.type !== 'fullgame') variables['level'] = document.getElementById('level-select').value;
         const filteredRuns = approvedRuns.filter(run => Object.keys(variables).every(key => run.variables && run.variables[key] === variables[key])).sort((a, b) => a.timeInMs - b.timeInMs);
         tbody.innerHTML = '';
-        if (filteredRuns.length === 0) { tbody.innerHTML = `<tr><td colspan="${isMod ? 6 : 4}">No approved runs for these filters.</td></tr>`; return; }
+        if (filteredRuns.length === 0) { tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}">No approved runs for these filters.</td></tr>`; return; }
         filteredRuns.forEach((run, index) => {
             const row = tbody.insertRow();
             row.innerHTML = `<td>${index + 1}</td><td><a href="${run.videoUrl}" target="_blank">${run.playerName}</a></td><td>${formatTime(run.timeInMs)}</td><td>${run.dateAchieved}</td>`;
@@ -510,37 +512,103 @@
     
     // --- Run Submission & Editing ---
     const submitRunModal = document.getElementById('submit-run-modal');
+    
     function resetSubmitRunModal() {
         state.editingRunId = null;
         document.getElementById('modal-action-title').textContent = 'Submit';
         document.getElementById('modal-submit-btn').textContent = 'Submit for Review';
         document.getElementById('run-submission-filters').innerHTML = '';
+        document.getElementById('submit-run-category-name').innerHTML = '';
         document.getElementById('submit-run-form').reset();
     }
-    function openSubmitRunModal() {
-        resetSubmitRunModal();
-        if (!state.category) { alert('Select a category first.'); return; }
-        document.getElementById('submit-run-title').textContent = `${state.hack.name} - ${state.category.name}`;
-        document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
-        
-        const submissionFiltersContainer = document.getElementById('run-submission-filters');
-        submissionFiltersContainer.innerHTML = '';
-        const sourceFilters = document.querySelectorAll('#variable-filters .form-group');
-        sourceFilters.forEach(group => {
-            const label = group.querySelector('label').textContent;
-            const select = group.querySelector('select');
-            const selectedOption = select.options[select.selectedIndex];
-            const filterHTML = `<div class="form-group"><label>${label}</label><input type="text" value="${selectedOption.text}" data-var-id="${select.dataset.varId}" data-var-value="${select.value}" readonly></div>`;
-            submissionFiltersContainer.innerHTML += filterHTML;
-        });
 
-        submitRunModal.style.display = 'block';
+    async function openSubmitRunModal() {
+        resetSubmitRunModal();
+        if (!state.hack) return;
+
+        const filtersContainer = document.getElementById('run-submission-filters');
+        document.getElementById('submit-run-hack-name').textContent = state.hack.name;
+        filtersContainer.innerHTML = '<div class="loader"></div>';
+        
+        const currentLeaderboardType = document.getElementById('type-select').value;
+        const currentCategoryId = state.category?.id;
+        const currentLevelId = document.getElementById('level-select').value;
+
+        try {
+            switch(currentLeaderboardType) {
+                case 'fullgame': {
+                    const categoriesQ = query(ref(db, 'categories'), orderByChild('hack_id'), equalTo(state.hack.id));
+                    const catSnapshot = await get(categoriesQ);
+                    const allCategories = catSnapshot.exists() ? snapshotToArray(catSnapshot) : [];
+                    const fullGameCategories = allCategories.filter(c => c.type === 'fullgame').sort((a,b) => a.order - b.order);
+                    
+                    filtersContainer.innerHTML = `<div class="form-group"><label>Category</label><select id="modal-category-select">${fullGameCategories.map(c => `<option value="${c.id}" ${c.id === currentCategoryId ? 'selected' : ''}>${c.name}</option>`).join('')}</select></div><div id="modal-subcategories-container"></div>`;
+
+                    const categorySelect = document.getElementById('modal-category-select');
+                    const renderSubcategories = async () => renderSubcategoriesInModal(categorySelect.value, document.getElementById('modal-subcategories-container'));
+                    categorySelect.onchange = renderSubcategories;
+                    await renderSubcategories();
+                    break;
+                }
+                case 'level_rta':
+                case 'level_singlestar': {
+                    const levelsQ = query(ref(db, 'levels'), orderByChild('hack_id'), equalTo(state.hack.id));
+                    const levelSnapshot = await get(levelsQ);
+                    const levels = levelSnapshot.exists() ? snapshotToArray(levelSnapshot).sort((a,b) => a.order - b.order) : [];
+                    filtersContainer.innerHTML = `<div class="form-group"><label>Level</label><select id="modal-level-select">${levels.map(l => `<option value="${l.id}" ${l.id === currentLevelId ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div><div id="modal-stars-container"></div>`;
+                    
+                    if (currentLeaderboardType === 'level_singlestar') {
+                        const levelSelect = document.getElementById('modal-level-select');
+                        const renderStars = async () => renderStarsInModal(levelSelect.value, document.getElementById('modal-stars-container'));
+                        levelSelect.onchange = renderStars;
+                        await renderStars();
+                    }
+                    break;
+                }
+            }
+            document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
+            submitRunModal.style.display = 'block';
+        } catch (error) {
+            console.error("Error building submission modal:", error);
+            filtersContainer.innerHTML = '<p style="color:red;">Could not load submission options.</p>';
+        }
     }
+
+    async function renderSubcategoriesInModal(categoryId, container) {
+        container.innerHTML = '<div class="loader"></div>';
+        const variablesQ = query(ref(db, 'variables'), orderByChild('hack_id'), equalTo(state.hack.id));
+        const variablesSnapshot = await get(variablesQ);
+        const allVariables = variablesSnapshot.exists() ? snapshotToArray(variablesSnapshot) : [];
+        const relevantVariables = allVariables.filter(v => !v.category_id || v.category_id === categoryId).sort((a,b) => a.order - b.order);
+
+        let html = '';
+        for(const v of relevantVariables) {
+            const optionsQ = query(ref(db, 'options'), orderByChild('variable_id'), equalTo(v.id));
+            const optionsSnapshot = await get(optionsQ);
+            const options = optionsSnapshot.exists() ? snapshotToArray(optionsSnapshot).sort((a,b) => a.order - b.order) : [];
+            html += `<div class="form-group"><label>${v.name}</label><select data-var-id="${v.id}">${options.map(opt => `<option value="${opt.id}">${opt.name}</option>`).join('')}</select></div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    async function renderStarsInModal(levelId, container) {
+        container.innerHTML = '<div class="loader"></div>';
+        const starsQ = query(ref(db, 'stars'), orderByChild('level_id'), equalTo(levelId));
+        const starsSnapshot = await get(starsQ);
+        const stars = starsSnapshot.exists() ? snapshotToArray(starsSnapshot).sort((a,b) => a.order - b.order) : [];
+        if (stars.length > 0) {
+            container.innerHTML = `<div class="form-group"><label>Star</label><select data-var-id="star">${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>`;
+        } else {
+            container.innerHTML = '';
+        }
+    }
+
     function openEditRunModal(run) {
         resetSubmitRunModal();
         state.editingRunId = run.id;
         document.getElementById('modal-action-title').textContent = 'Edit';
-        document.getElementById('submit-run-title').textContent = `${run.hackName} - ${run.categoryName}`;
+        document.getElementById('submit-run-hack-name').textContent = run.hackName;
+        document.getElementById('submit-run-category-name').innerHTML = `<h4>${run.categoryName}</h4>`;
         document.getElementById('modal-submit-btn').textContent = 'Save Changes';
         document.getElementById('run-player').value = run.playerName;
         document.getElementById('run-time').value = formatTime(run.timeInMs);
@@ -548,37 +616,47 @@
         document.getElementById('run-video').value = run.videoUrl;
         submitRunModal.style.display = 'block';
     }
+
     document.getElementById('submit-run-btn').onclick = openSubmitRunModal;
-    document.querySelector('#submit-run-modal .close-button').onclick = () => { 
-        submitRunModal.style.display = 'none';
-        resetSubmitRunModal();
-    };
+    document.querySelector('#submit-run-modal .close-button').onclick = () => { submitRunModal.style.display = 'none'; resetSubmitRunModal(); };
+
     document.getElementById('submit-run-form').onsubmit = async (e) => {
         e.preventDefault();
         const timeInMs = parseTimeToMilliseconds(document.getElementById('run-time').value);
         if (isNaN(timeInMs)) return alert('Invalid time format.');
+        
         if (state.editingRunId) {
-            const updatedRunData = {
-                playerName: document.getElementById('run-player').value, timeInMs,
-                dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value,
-            };
+            const updatedRunData = { playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value };
             await update(ref(db, `runs/${state.editingRunId}`), updatedRunData);
             alert('Run updated successfully!');
             fetchAndDisplayLeaderboard();
         } else {
             const variables = {};
-            document.querySelectorAll('#run-submission-filters input').forEach(input => {
-                variables[input.dataset.varId] = input.dataset.varValue;
-            });
-            if (state.category.type !== 'fullgame') {
-                variables['level'] = document.getElementById('level-select').value;
+            let categoryId, categoryName;
+            const leaderboardType = document.getElementById('type-select').value;
+            
+            if (leaderboardType === 'fullgame') {
+                const categorySelect = document.getElementById('modal-category-select');
+                categoryId = categorySelect.value;
+                categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+                document.querySelectorAll('#modal-subcategories-container select').forEach(s => { variables[s.dataset.varId] = s.value; });
+            } else {
+                const mainCategoryQ = query(ref(db, 'categories'), orderByChild('hack_id'), equalTo(state.hack.id));
+                const catSnapshot = await get(mainCategoryQ);
+                const category = snapshotToArray(catSnapshot).find(c => c.type === leaderboardType);
+                categoryId = category.id;
+                categoryName = category.name;
+
+                const levelId = document.getElementById('modal-level-select').value;
+                variables['level'] = levelId;
+                if (leaderboardType === 'level_singlestar') {
+                    const starSelect = document.querySelector('#modal-stars-container select');
+                    if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
+                }
             }
+
             const runRef = push(ref(db, 'runs'));
-            const newRun = {
-                hack_id: state.hack.id, category_id: state.category.id, hackName: state.hack.name, categoryName: state.category.name,
-                playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value,
-                videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString()
-            };
+            const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
             await set(runRef, newRun);
             alert('Run submitted for review!');
         }
@@ -689,4 +767,4 @@
     }
 </script>
 </body>
-        </html>
+</html>
