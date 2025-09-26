@@ -346,7 +346,7 @@
         });
     }
 
-    // --- Admin Panel Logic ---
+    // --- Admin Panel ---
     function initAdminPage() {
         document.getElementById('login-section').style.display = state.user ? 'none' : 'block';
         document.getElementById('admin-content').style.display = state.user ? 'block' : 'none';
@@ -566,6 +566,7 @@
                 if (!dRes.ok) { continue; }
                 const details = (await dRes.json()).data;
                 const srcCategoryToSlugMap = new Map();
+                const srcLevelToSlugMap = new Map();
 
                 allUpdates[`/hacks/${hackId}`] = { name: gameName, year: details.released || null, imageUrl: details.assets['cover-large']?.uri || '', slug: hackId, order: i, srcId: details.id, created_at: details.created || new Date().toISOString() };
 
@@ -575,35 +576,37 @@
                     allUpdates[`/categories/${catId}`] = { name: c.name, type: c.type === 'per-level' ? (c.name.toLowerCase().includes('rta') ? 'level_rta' : 'level_singlestar') : 'fullgame', order: idx, hack_id: hackId, srcId: c.id };
                 }
 
-                for (const v of (details.variables?.data || [])) {
-                    // This is the crucial fix: only import variables that are explicitly marked as a subcategory.
-                    if (!v['is-subcategory']) continue;
-                    
-                    const varId = slugify(`${hackId}-${v.name}`);
-                    const varData = { name: v.name, order: i, srcId: v.id, hack_id: hackId };
-                    
-                    // Check if this subcategory is tied to a specific main category
-                    if (v.scope.type === 'single-category' && srcCategoryToSlugMap.has(v.scope.category)) {
-                        varData.category_id = srcCategoryToSlugMap.get(v.scope.category);
-                    }
-                    allUpdates[`/variables/${varId}`] = varData;
-                    
-                    if (v.values.values) {
-                        for (const [o_idx, [id, val]] of Object.entries(v.values.values).entries()) {
-                            const optId = slugify(`${varId}-${val.label}`);
-                            allUpdates[`/options/${optId}`] = { name: val.label, order: o_idx, srcId: id, variable_id: varId };
-                        }
-                    }
-                }
-
                 for (const [l_idx, level] of (details.levels?.data || []).entries()) {
                     const levelId = slugify(`${hackId}-${level.name}`);
+                    srcLevelToSlugMap.set(level.id, levelId);
                     allUpdates[`/levels/${levelId}`] = { name: level.name, order: l_idx, srcId: level.id, hack_id: hackId };
-                    const starVar = (details.variables?.data || []).find(v => v.scope.type === 'single-level' && v.scope.level === level.id);
-                    if (starVar?.values.values) {
-                         for (const [s_idx, [id, val]] of Object.entries(starVar.values.values).entries()) {
-                            const starId = slugify(`${levelId}-${val.label}`);
-                            allUpdates[`/stars/${starId}`] = { name: val.label, order: s_idx, srcId: id, level_id: levelId };
+                }
+
+                for (const v of (details.variables?.data || [])) {
+                    // This is a "Star" variable, NOT a subcategory. Its values are the stars.
+                    if (v.scope.type === 'single-level') {
+                        const levelId = srcLevelToSlugMap.get(v.scope.level);
+                        if (levelId && v.values.values) {
+                            for (const [s_idx, [id, val]] of Object.entries(v.values.values).entries()) {
+                                const starId = slugify(`${levelId}-${val.label}`);
+                                allUpdates[`/stars/${starId}`] = { name: val.label, order: s_idx, srcId: id, level_id: levelId };
+                            }
+                        }
+                    } 
+                    // This IS a subcategory. Save it to /variables.
+                    else if (v['is-subcategory']) {
+                        const varId = slugify(`${hackId}-${v.name}`);
+                        const varData = { name: v.name, order: i, srcId: v.id, hack_id: hackId };
+                        if (v.scope.type === 'single-category' && srcCategoryToSlugMap.has(v.scope.category)) {
+                            varData.category_id = srcCategoryToSlugMap.get(v.scope.category);
+                        }
+                        allUpdates[`/variables/${varId}`] = varData;
+                        
+                        if (v.values.values) {
+                            for (const [o_idx, [id, val]] of Object.entries(v.values.values).entries()) {
+                                const optId = slugify(`${varId}-${val.label}`);
+                                allUpdates[`/options/${optId}`] = { name: val.label, order: o_idx, srcId: id, variable_id: varId };
+                            }
                         }
                     }
                 }
