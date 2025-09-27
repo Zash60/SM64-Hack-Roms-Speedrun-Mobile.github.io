@@ -11,14 +11,23 @@
             --bg-color: #1a1a1a; --surface-color: #2c2c2c; --primary-color: #4a90e2;
             --text-color: #e0e0e0; --text-secondary-color: #a0a0e0; --border-color: #444;
         }
+        /* --- Animações e Transições --- */
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+
         body { font-family: 'Roboto', sans-serif; margin: 0; background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         a { color: var(--primary-color); text-decoration: none; cursor: pointer; transition: color 0.2s ease; }
         a:hover { color: #8bb9f2; text-decoration: underline; }
         header { background-color: var(--surface-color); padding: 1rem 0; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 999; }
         header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
-        header nav a { margin-left: 15px; font-weight: bold; padding-bottom: 4px; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
-        header nav a.active { border-bottom-color: var(--primary-color); color: var(--text-color); }
+        header nav a { margin-left: 15px; font-weight: bold; }
         h1, h2, h3, h4 { font-weight: 700; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 0; }
         h4 { font-size: 1.1em; margin-top: 20px; border-bottom: none; padding-bottom: 4px; border-left: 3px solid var(--primary-color); padding-left: 10px;}
         h5 { margin-bottom: 5px; color: var(--text-secondary-color); font-size: 0.9em; text-transform: uppercase; }
@@ -47,8 +56,6 @@
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7); animation: fadeIn 0.3s; }
         .modal-content { background-color: var(--surface-color); margin: 5% auto; padding: 20px; border: 1px solid var(--border-color); width: 90%; max-width: 700px; border-radius: 8px; animation: fadeIn 0.4s ease-out; }
         .page-container { padding: 2rem 0; animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
         .game-card { display: block; background-color: var(--surface-color); border-radius: 8px; overflow: hidden; text-align: center; border: 1px solid var(--border-color); transition: transform 0.2s ease, box-shadow 0.2s ease; animation: fadeIn 0.5s ease-out forwards; opacity: 0; }
         .game-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.3); }
@@ -81,18 +88,13 @@
         .status-approved { background-color: #28a745; }
         .status-pending { background-color: #fd7e14; }
         .status-rejected { background-color: #dc3545; }
-        .profile-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        @media (min-width: 768px) { .profile-grid { grid-template-columns: 300px 1fr; } }
-        .profile-summary-stat { display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding: 8px 0; }
-        .profile-summary-stat:last-child { border-bottom: none; }
-        .profile-summary-stat span:first-child { font-weight: bold; }
     </style>
 </head>
 <body>
     <header>
         <div class="container">
             <h1>SM64 Hack Roms Speedrun Mobile</h1>
-            <nav id="main-nav"><a id="home-link">Home</a><span id="auth-links-container"></span></nav>
+            <nav><a id="home-link">Home</a><span id="auth-links-container"></span></nav>
         </div>
     </header>
     <main class="container">
@@ -161,27 +163,17 @@
         </div>
         <div id="page-profile" class="page-container" style="display: none;">
             <h2 id="profile-welcome">Your Runs</h2>
-            <div class="profile-grid">
-                <div>
-                    <div class="card">
-                        <h4>Summary</h4>
-                        <div id="profile-summary"></div>
-                    </div>
-                </div>
-                <div>
-                    <div class="card">
-                        <h4>Approved</h4>
-                        <div id="profile-runs-approved"></div>
-                    </div>
-                    <div class="card">
-                        <h4>Pending Review</h4>
-                        <div id="profile-runs-pending"></div>
-                    </div>
-                     <div class="card">
-                        <h4>Rejected</h4>
-                        <div id="profile-runs-rejected"></div>
-                    </div>
-                </div>
+            <div class="card">
+                <h4>Approved</h4>
+                <div id="profile-runs-approved"></div>
+            </div>
+            <div class="card">
+                <h4>Pending Review</h4>
+                <div id="profile-runs-pending"></div>
+            </div>
+             <div class="card">
+                <h4>Rejected</h4>
+                <div id="profile-runs-rejected"></div>
             </div>
         </div>
     </main>
@@ -249,7 +241,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
 
-    let state = { user: null, editingRunId: null, isAdmin: false };
+    let state = { user: null, editingRunId: null };
 
     // --- Utility Functions ---
     function showPage(pageId) { document.querySelectorAll('.page-container').forEach(p => p.style.display = 'none'); document.getElementById(pageId).style.display = 'block'; }
@@ -277,17 +269,10 @@
 
     // --- Main Logic & Routing ---
     document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; };
+        document.getElementById('home-link').onclick = (e) => { e.preventDefault(); window.location.hash = ''; showPage('page-home'); };
         document.getElementById('register-modal').querySelector('.close-button').onclick = () => { document.getElementById('register-modal').style.display = 'none'; };
         document.getElementById('login-modal').querySelector('.close-button').onclick = () => { document.getElementById('login-modal').style.display = 'none'; };
-        onAuthStateChanged(auth, async user => {
-            if (user) {
-                const adminRef = ref(db, `admins/${user.uid}`);
-                const adminSnapshot = await get(adminRef);
-                state.isAdmin = adminSnapshot.exists();
-            } else {
-                state.isAdmin = false;
-            }
+        onAuthStateChanged(auth, user => {
             state.user = user;
             updateAuthUI();
             handleRouteChange();
@@ -297,33 +282,25 @@
     function updateAuthUI() {
         const authLinks = document.getElementById('auth-links-container');
         if (state.user) {
-            let adminLink = state.isAdmin ? `<a id="admin-link">Admin</a>` : '';
-            authLinks.innerHTML = `<a id="profile-link">Welcome, ${state.user.displayName}</a>${adminLink}<a id="logout-link">Logout</a>`;
+            authLinks.innerHTML = `<a id="profile-link">Profile</a><a id="admin-link">Admin</a><a id="logout-link">Logout</a>`;
             document.getElementById('profile-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#profile'; };
-            if (state.isAdmin) { document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; }; }
+            document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
             document.getElementById('logout-link').onclick = async (e) => { e.preventDefault(); await signOut(auth); window.location.hash = ''; };
         } else {
-            authLinks.innerHTML = `<a id="login-link">Login</a><a id="register-link">Register</a>`;
+            authLinks.innerHTML = `<a id="login-link">Login</a><a id="register-link">Register</a><a id="admin-link">Admin</a>`;
             document.getElementById('login-link').onclick = (e) => { e.preventDefault(); document.getElementById('login-modal').style.display = 'block'; };
             document.getElementById('register-link').onclick = (e) => { e.preventDefault(); document.getElementById('register-modal').style.display = 'block'; };
+            document.getElementById('admin-link').onclick = (e) => { e.preventDefault(); window.location.hash = '#admin'; };
         }
     }
 
     window.addEventListener('hashchange', handleRouteChange);
     function handleRouteChange() {
         const hash = window.location.hash;
-        document.querySelectorAll('#main-nav a').forEach(link => link.classList.remove('active'));
-
-        if (hash.startsWith('#hack/')) {
-            showHackDetails(hash.substring(6));
-        } else if (hash === '#admin') {
-            showPage('page-admin'); initAdminPage(); document.getElementById('admin-link')?.classList.add('active');
-        } else if (hash === '#profile') {
-            showProfilePage(); document.getElementById('profile-link')?.classList.add('active');
-        } else {
-            showPage('page-home'); if (!document.querySelector('#games-grid .game-card')) fetchAndDisplayHacks();
-            document.getElementById('home-link').classList.add('active');
-        }
+        if (hash.startsWith('#hack/')) showHackDetails(hash.substring(6));
+        else if (hash === '#admin') { showPage('page-admin'); initAdminPage(); }
+        else if (hash === '#profile') { showProfilePage(); }
+        else { showPage('page-home'); if (!document.querySelector('#games-grid .game-card')) fetchAndDisplayHacks(); }
     }
 
     async function fetchAndDisplayHacks() {
@@ -427,7 +404,7 @@
     }
 
     async function fetchAndDisplayLeaderboard() {
-        const isMod = state.isAdmin;
+        const isMod = !!state.user;
         document.querySelector('#actions-header').style.display = isMod ? '' : 'none';
         const tbody = document.querySelector('.leaderboard-table tbody');
         tbody.innerHTML = `<tr><td colspan="${isMod ? 5 : 4}"><div class="loader"></div></td></tr>`;
@@ -455,31 +432,22 @@
 
     // --- Admin Panel ---
     function initAdminPage() {
-        if (!state.isAdmin) {
-            document.getElementById('login-section').style.display = 'block';
-            document.getElementById('admin-content').style.display = 'none';
-        } else {
-            document.getElementById('login-section').style.display = 'none';
-            document.getElementById('admin-content').style.display = 'block';
+        document.getElementById('login-section').style.display = state.user ? 'none' : 'block';
+        document.getElementById('admin-content').style.display = state.user ? 'block' : 'none';
+        if (state.user) {
             loadAdminData();
+            const syncBtn = document.getElementById('sync-src-btn');
+            if (!syncBtn.dataset.listener) { syncBtn.addEventListener('click', syncWithSpeedrunCom); syncBtn.dataset.listener = 'true'; }
+            document.getElementById('add-hack-form').onsubmit = handleAddHack;
         }
         document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
             const email = e.target.querySelector('#email').value;
             const password = e.target.querySelector('#password').value;
-            try { await signInWithEmailAndPassword(auth, email, password); document.getElementById('login-error').textContent = ''; } 
-            catch (error) { document.getElementById('login-error').textContent = "Login failed or you are not an admin."; }
+            try { await signInWithEmailAndPassword(auth, email, password); document.getElementById('login-error').textContent = ''; } catch (error) { document.getElementById('login-error').textContent = error.message; }
         };
     }
     
-    async function loadAdminData() { 
-        loadExistingHacksAdmin();
-        loadPendingRuns();
-        const syncBtn = document.getElementById('sync-src-btn');
-        if (!syncBtn.dataset.listener) { syncBtn.addEventListener('click', syncWithSpeedrunCom); syncBtn.dataset.listener = 'true'; }
-        document.getElementById('add-hack-form').onsubmit = handleAddHack;
-    }
-
     async function handleAddHack(e) {
         e.preventDefault();
         const name = document.getElementById('add-hack-name').value;
@@ -490,6 +458,8 @@
             alert('Hack added!'); e.target.reset(); loadExistingHacksAdmin(); 
         } catch (error) { alert('Error: ' + error.message); }
     }
+
+    async function loadAdminData() { await Promise.all([ loadExistingHacksAdmin(), loadPendingRuns() ]); }
 
     async function loadExistingHacksAdmin() {
         const listContainer = document.getElementById('existing-hacks-list');
@@ -614,29 +584,20 @@
         showPage('page-profile');
         if (!state.user) { window.location.hash = ''; return; }
         document.getElementById('profile-welcome').textContent = `Welcome, ${state.user.displayName}`;
-        const containers = { approved: document.getElementById('profile-runs-approved'), pending: document.getElementById('profile-runs-pending'), rejected: document.getElementById('profile-runs-rejected'), summary: document.getElementById('profile-summary') };
+        const containers = { approved: document.getElementById('profile-runs-approved'), pending: document.getElementById('profile-runs-pending'), rejected: document.getElementById('profile-runs-rejected') };
         Object.values(containers).forEach(c => c.innerHTML = '<div class="loader"></div>');
         const q = query(ref(db, 'runs'), orderByChild('userId'), equalTo(state.user.uid));
         const snapshot = await get(q);
         const userRuns = snapshot.exists() ? snapshotToArray(snapshot).sort((a,b) => (b.submittedAt || '').localeCompare(a.submittedAt || '')) : [];
-        containers.approved.innerHTML = 'No approved runs.';
-        containers.pending.innerHTML = 'No pending runs.';
-        containers.rejected.innerHTML = 'No rejected runs.';
-        const counts = { approved: 0, pending: 0, rejected: 0 };
+        Object.values(containers).forEach(c => c.innerHTML = 'No runs in this category.');
         userRuns.forEach(run => {
             const container = containers[run.status];
             if (container) {
-                if (container.innerHTML.startsWith('No')) container.innerHTML = '';
-                counts[run.status]++;
+                if (container.innerHTML.startsWith('No runs')) container.innerHTML = '';
                 const item = createHTMLElement('div', 'admin-list-item', `<span><strong><a href="#hack/${run.hack_id}">${run.hackName}</a></strong> - ${run.categoryName} (${formatTime(run.timeInMs)})</span><span class="status-badge status-${run.status}">${run.status}</span>`);
                 container.appendChild(item);
             }
         });
-        containers.summary.innerHTML = `
-            <div class="profile-summary-stat"><span>Approved Runs</span><span>${counts.approved}</span></div>
-            <div class="profile-summary-stat"><span>Pending Runs</span><span>${counts.pending}</span></div>
-            <div class="profile-summary-stat"><span>Rejected Runs</span><span>${counts.rejected}</span></div>
-        `;
     }
 
     // --- Authentication Modals ---
@@ -808,8 +769,9 @@
                     if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
                 }
             }
+            const runRef = push(ref(db, 'runs'));
             const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: state.user.displayName, userId: state.user.uid, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
-            await push(ref(db, 'runs'), newRun);
+            await set(runRef, newRun);
             alert('Run submitted for review!');
         }
         submitRunModal.style.display = 'none';
