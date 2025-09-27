@@ -313,6 +313,7 @@
     function handleRouteChange() {
         const hash = window.location.hash;
         document.querySelectorAll('#main-nav a').forEach(link => link.classList.remove('active'));
+
         if (hash.startsWith('#hack/')) {
             showHackDetails(hash.substring(6));
         } else if (hash === '#admin') {
@@ -470,6 +471,7 @@
             catch (error) { document.getElementById('login-error').textContent = "Login failed or you are not an admin."; }
         };
     }
+    
     async function loadAdminData() { 
         loadExistingHacksAdmin();
         loadPendingRuns();
@@ -477,21 +479,136 @@
         if (!syncBtn.dataset.listener) { syncBtn.addEventListener('click', syncWithSpeedrunCom); syncBtn.dataset.listener = 'true'; }
         document.getElementById('add-hack-form').onsubmit = handleAddHack;
     }
+
     async function handleAddHack(e) {
         e.preventDefault();
         const name = document.getElementById('add-hack-name').value;
         const hackId = slugify(name);
         const newHack = { name, year: Number(document.getElementById('add-hack-year').value), imageUrl: document.getElementById('add-hack-image').value, slug: hackId, created_at: new Date().toISOString() };
-        try { await set(ref(db, `hacks/${hackId}`), newHack); alert('Hack added!'); e.target.reset(); loadExistingHacksAdmin(); } 
-        catch (error) { alert('Error: ' + error.message); }
+        try { 
+            await set(ref(db, `hacks/${hackId}`), newHack); 
+            alert('Hack added!'); e.target.reset(); loadExistingHacksAdmin(); 
+        } catch (error) { alert('Error: ' + error.message); }
     }
-    async function loadExistingHacksAdmin() { /* ... unchanged ... */ }
-    async function loadAdminItemsInline(container, path, placeholder, parentIdColumn, parentId) { /* ... unchanged ... */ }
-    async function deleteHackAndChildren(hackId, hackName) { /* ... unchanged ... */ }
-    async function loadPendingRuns() { /* ... unchanged ... */ }
-    async function updateRunStatus(runId, status) { /* ... unchanged ... */ }
-    async function deleteRun(runId) { /* ... unchanged ... */ }
 
+    async function loadExistingHacksAdmin() {
+        const listContainer = document.getElementById('existing-hacks-list');
+        listContainer.innerHTML = '<div class="loader"></div>';
+        const q = query(ref(db, 'hacks'), orderByChild('name'));
+        const snapshot = await get(q);
+        const hacks = snapshot.exists() ? snapshotToArray(snapshot) : [];
+        listContainer.innerHTML = '';
+        hacks.forEach(hack => {
+            const item = createHTMLElement('div', 'card');
+            item.innerHTML = `<div class="hack-item-header"><span><strong>${hack.name}</strong> (${hack.year || 'N/A'})</span><div><button class="btn btn-primary btn-sm manage-btn">Manage <i class="fa-solid fa-chevron-down"></i></button><button class="btn btn-danger btn-sm delete-btn">Delete</button></div></div><div class="hack-manage-details"></div>`;
+            const detailsDiv = item.querySelector('.hack-manage-details'), manageBtn = item.querySelector('.manage-btn');
+            
+            manageBtn.onclick = () => {
+                const isVisible = detailsDiv.style.display === 'block';
+                detailsDiv.style.display = isVisible ? 'none' : 'block';
+                manageBtn.querySelector('i').className = isVisible ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-up';
+                if (!isVisible && detailsDiv.innerHTML === '') {
+                    detailsDiv.innerHTML = '<h4>Categories</h4><div class="categories-list"></div><h4>Levels</h4><div class="levels-list"></div>';
+                    loadAdminItemsInline(detailsDiv.querySelector('.categories-list'), 'categories', 'Category', 'hack_id', hack.id);
+                    loadAdminItemsInline(detailsDiv.querySelector('.levels-list'), 'levels', 'Level', 'hack_id', hack.id);
+                }
+            };
+            item.querySelector('.delete-btn').onclick = () => deleteHackAndChildren(hack.id, hack.name);
+            listContainer.appendChild(item);
+        });
+    }
+
+    async function loadAdminItemsInline(container, path, placeholder, parentIdColumn, parentId) {
+        container.innerHTML = '<div class="loader"></div>';
+        const q = query(ref(db, path), orderByChild(parentIdColumn), equalTo(parentId));
+        const snapshot = await get(q);
+        const data = snapshot.exists() ? snapshotToArray(snapshot).sort((a,b) => (a.name || '').localeCompare(b.name || '')) : [];
+        
+        container.innerHTML = `<form class="admin-add-form"><input type="text" placeholder="Add New ${placeholder}" required><button type="submit" class="btn btn-success btn-sm">Add</button></form>`;
+        
+        container.querySelector('form').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = e.target.querySelector('input');
+            const name = input.value;
+            const newId = slugify(`${parentId}-${name}`);
+            const newData = { name, [parentIdColumn]: parentId, order: 999 };
+            await set(ref(db, `${path}/${newId}`), newData);
+            loadAdminItemsInline(container, path, placeholder, parentIdColumn, parentId);
+        };
+
+        data.forEach(itemData => {
+            const itemEl = createHTMLElement('div', 'admin-list-item');
+            itemEl.innerHTML = `<div class="inline-edit-container"><span>${itemData.name}</span><input type="text" value="${itemData.name}" style="display:none;"></div><div><button class="btn-icon save-btn" style="display:none;"><i class="fa fa-save"></i></button><button class="btn-icon edit-btn"><i class="fa fa-pencil-alt"></i></button><button class="btn-icon delete-btn"><i class="fa fa-trash-alt"></i></button></div>`;
+            
+            const nameSpan = itemEl.querySelector('span'), input = itemEl.querySelector('input');
+            const saveBtn = itemEl.querySelector('.save-btn'), editBtn = itemEl.querySelector('.edit-btn');
+
+            const saveChanges = async () => {
+                const newName = input.value.trim();
+                if (newName && newName !== itemData.name) {
+                    await update(ref(db, `${path}/${itemData.id}`), { name: newName });
+                    nameSpan.textContent = newName;
+                }
+                input.style.display = 'none'; nameSpan.style.display = 'inline';
+                saveBtn.style.display = 'none'; editBtn.style.display = 'inline';
+            };
+            
+            editBtn.onclick = () => { input.style.display = 'inline-block'; nameSpan.style.display = 'none'; saveBtn.style.display = 'inline'; editBtn.style.display = 'none'; input.focus(); };
+            saveBtn.onclick = saveChanges;
+            input.onkeydown = (e) => { if (e.key === 'Enter') saveChanges(); };
+            itemEl.querySelector('.delete-btn').onclick = async () => {
+                if (confirm(`Delete '${itemData.name}'?`)) {
+                    await remove(ref(db, `${path}/${itemData.id}`));
+                    loadAdminItemsInline(container, path, placeholder, parentIdColumn, parentId);
+                }
+            };
+            container.appendChild(itemEl);
+        });
+    }
+
+    async function deleteHackAndChildren(hackId, hackName) {
+        if (!confirm(`This will permanently delete '${hackName}' and ALL its related categories, levels, variables, options, stars, and runs.\n\nThis cannot be undone. Are you sure?`)) return;
+
+        try {
+            const deleteUpdates = {};
+            deleteUpdates[`/hacks/${hackId}`] = null;
+            const childPaths = ['categories', 'levels', 'variables', 'runs', 'options', 'stars'];
+            for (const path of childPaths) {
+                const q = query(ref(db, path), orderByChild('hack_id'), equalTo(hackId));
+                const snapshot = await get(q);
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => { deleteUpdates[`/${path}/${child.key}`] = null; });
+                }
+            }
+            await update(ref(db), deleteUpdates);
+            alert(`'${hackName}' and all its data have been deleted.`);
+            loadAdminData();
+        } catch (error) {
+            alert('An error occurred during deletion: ' + error.message);
+            console.error("Deletion error:", error);
+        }
+    }
+
+    async function loadPendingRuns() {
+        const listContainer = document.getElementById('pending-runs-list');
+        const q = query(ref(db, 'runs'), orderByChild('status'), equalTo('pending'));
+        onValue(q, (snapshot) => {
+            listContainer.innerHTML = '<div class="loader"></div>';
+            const runs = snapshot.exists() ? snapshotToArray(snapshot).sort((a,b) => (b.submittedAt || '').localeCompare(a.submittedAt || '')) : [];
+            listContainer.innerHTML = runs.length === 0 ? 'No runs pending review.' : '';
+            runs.forEach(run => {
+                const embedUrl = getVideoEmbedUrl(run.videoUrl);
+                const videoHTML = embedUrl ? `<div class="video-container"><iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>` : '';
+                const item = createHTMLElement('div', 'card', `<div><strong>${run.hackName} - ${run.categoryName}</strong><br>Player: ${run.playerName} | Time: ${formatTime(run.timeInMs)} | <a href="${run.videoUrl}" target="_blank">Video Link</a>${videoHTML}<div style="margin-top:10px;"><button class="btn btn-success approve-btn">Approve</button><button class="btn btn-danger reject-btn">Reject</button></div></div>`);
+                item.querySelector('.approve-btn').onclick = () => updateRunStatus(run.id, 'approved');
+                item.querySelector('.reject-btn').onclick = () => updateRunStatus(run.id, 'rejected');
+                listContainer.appendChild(item);
+            });
+        }, { onlyOnce: false });
+    }
+    async function updateRunStatus(runId, status) { await update(ref(db, `runs/${runId}`), { status }); }
+    async function deleteRun(runId) { if (confirm(`Delete this run?`)) { await remove(ref(db, `runs/${runId}`)); fetchAndDisplayLeaderboard(); } }
+    
     // --- Profile Dashboard ---
     async function showProfilePage() {
         showPage('page-profile');
@@ -523,23 +640,283 @@
     }
 
     // --- Authentication Modals ---
-    document.getElementById('register-form').onsubmit = async (e) => { /* ... unchanged ... */ };
-    document.getElementById('user-login-form').onsubmit = async (e) => { /* ... unchanged ... */ };
+    document.getElementById('register-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('register-username').value;
+        const email = document.getElementById('register-email').value;
+        const password = document.getElementById('register-password').value;
+        const errorP = document.getElementById('register-error');
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: username });
+            await set(ref(db, `users/${userCredential.user.uid}`), { username });
+            errorP.textContent = '';
+            document.getElementById('register-modal').style.display = 'none';
+        } catch (error) { errorP.textContent = error.message; }
+    };
+    document.getElementById('user-login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('user-login-email').value;
+        const password = document.getElementById('user-login-password').value;
+        const errorP = document.getElementById('user-login-error');
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            errorP.textContent = '';
+            document.getElementById('login-modal').style.display = 'none';
+        } catch (error) { errorP.textContent = error.message; }
+    };
 
     // --- Run Submission & Editing ---
     const submitRunModal = document.getElementById('submit-run-modal');
-    function resetSubmitRunModal() { /* ... unchanged ... */ }
-    async function openSubmitRunModal() { /* ... unchanged ... */ }
-    async function renderSubcategoriesInModal(categoryId, container) { /* ... unchanged ... */ }
-    async function renderStarsInModal(levelId, container) { /* ... unchanged ... */ }
-    function openEditRunModal(run) { /* ... unchanged ... */ }
+    function resetSubmitRunModal() {
+        state.editingRunId = null;
+        document.getElementById('modal-action-title').textContent = 'Submit';
+        document.getElementById('modal-submit-btn').textContent = 'Submit for Review';
+        document.getElementById('run-submission-filters').innerHTML = '';
+        document.getElementById('submit-run-category-name').innerHTML = '';
+        document.getElementById('submit-run-form').reset();
+    }
+
+    async function openSubmitRunModal() {
+        if (!state.user) {
+            alert("Please login or register to submit a run.");
+            document.getElementById('login-modal').style.display = 'block';
+            return;
+        }
+        resetSubmitRunModal();
+        if (!state.hack) return;
+
+        document.getElementById('run-player').value = state.user.displayName;
+        const filtersContainer = document.getElementById('run-submission-filters');
+        document.getElementById('submit-run-hack-name').textContent = state.hack.name;
+        filtersContainer.innerHTML = '<div class="loader"></div>';
+        
+        const currentLeaderboardType = document.getElementById('type-select').value;
+        const currentCategoryId = state.category?.id;
+        const currentLevelId = document.getElementById('level-select').value;
+
+        try {
+            switch(currentLeaderboardType) {
+                case 'fullgame': {
+                    const categoriesQ = query(ref(db, 'categories'), orderByChild('hack_id'), equalTo(state.hack.id));
+                    const catSnapshot = await get(categoriesQ);
+                    const allCategories = catSnapshot.exists() ? snapshotToArray(catSnapshot) : [];
+                    const fullGameCategories = allCategories.filter(c => c.type === 'fullgame').sort((a,b) => a.order - b.order);
+                    
+                    filtersContainer.innerHTML = `<div class="form-group"><label>Category</label><select id="modal-category-select">${fullGameCategories.map(c => `<option value="${c.id}" ${c.id === currentCategoryId ? 'selected' : ''}>${c.name}</option>`).join('')}</select></div><div id="modal-subcategories-container"></div>`;
+
+                    const categorySelect = document.getElementById('modal-category-select');
+                    const renderSubcategories = async () => renderSubcategoriesInModal(categorySelect.value, document.getElementById('modal-subcategories-container'));
+                    categorySelect.onchange = renderSubcategories;
+                    await renderSubcategories();
+                    break;
+                }
+                case 'level_rta':
+                case 'level_singlestar': {
+                    const levelsQ = query(ref(db, 'levels'), orderByChild('hack_id'), equalTo(state.hack.id));
+                    const levelSnapshot = await get(levelsQ);
+                    const levels = levelSnapshot.exists() ? snapshotToArray(levelSnapshot).sort((a,b) => a.order - b.order) : [];
+                    filtersContainer.innerHTML = `<div class="form-group"><label>Level</label><select id="modal-level-select">${levels.map(l => `<option value="${l.id}" ${l.id === currentLevelId ? 'selected' : ''}>${l.name}</option>`).join('')}</select></div><div id="modal-stars-container"></div>`;
+                    
+                    if (currentLeaderboardType === 'level_singlestar') {
+                        const levelSelect = document.getElementById('modal-level-select');
+                        const renderStars = async () => renderStarsInModal(levelSelect.value, document.getElementById('modal-stars-container'));
+                        levelSelect.onchange = renderStars;
+                        await renderStars();
+                    }
+                    break;
+                }
+            }
+            document.getElementById('run-date').value = new Date().toISOString().split('T')[0];
+            submitRunModal.style.display = 'block';
+        } catch (error) {
+            console.error("Error building submission modal:", error);
+            filtersContainer.innerHTML = '<p style="color:red;">Could not load submission options.</p>';
+        }
+    }
+
+    async function renderSubcategoriesInModal(categoryId, container) {
+        container.innerHTML = '<div class="loader"></div>';
+        const variablesQ = query(ref(db, 'variables'), orderByChild('hack_id'), equalTo(state.hack.id));
+        const variablesSnapshot = await get(variablesQ);
+        const allVariables = variablesSnapshot.exists() ? snapshotToArray(variablesSnapshot) : [];
+        const relevantVariables = allVariables.filter(v => !v.category_id || v.category_id === categoryId).sort((a,b) => a.order - b.order);
+        let html = '';
+        for(const v of relevantVariables) {
+            const optionsQ = query(ref(db, 'options'), orderByChild('variable_id'), equalTo(v.id));
+            const optionsSnapshot = await get(optionsQ);
+            const options = optionsSnapshot.exists() ? snapshotToArray(optionsSnapshot).sort((a,b) => a.order - b.order) : [];
+            html += `<div class="form-group"><label>${v.name}</label><select data-var-id="${v.id}">${options.map(opt => `<option value="${opt.id}">${opt.name}</option>`).join('')}</select></div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    async function renderStarsInModal(levelId, container) {
+        container.innerHTML = '<div class="loader"></div>';
+        const starsQ = query(ref(db, 'stars'), orderByChild('level_id'), equalTo(levelId));
+        const starsSnapshot = await get(starsQ);
+        const stars = starsSnapshot.exists() ? snapshotToArray(starsSnapshot).sort((a,b) => a.order - b.order) : [];
+        if (stars.length > 0) {
+            container.innerHTML = `<div class="form-group"><label>Star</label><select data-var-id="star">${stars.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select></div>`;
+        } else { container.innerHTML = ''; }
+    }
+
+    function openEditRunModal(run) {
+        resetSubmitRunModal();
+        state.editingRunId = run.id;
+        document.getElementById('modal-action-title').textContent = 'Edit';
+        document.getElementById('submit-run-hack-name').textContent = run.hackName;
+        document.getElementById('submit-run-category-name').innerHTML = `<h4>${run.categoryName}</h4>`;
+        document.getElementById('modal-submit-btn').textContent = 'Save Changes';
+        document.getElementById('run-player').value = run.playerName;
+        document.getElementById('run-time').value = formatTime(run.timeInMs);
+        document.getElementById('run-date').value = run.dateAchieved;
+        document.getElementById('run-video').value = run.videoUrl;
+        submitRunModal.style.display = 'block';
+    }
+
     document.getElementById('submit-run-btn').onclick = openSubmitRunModal;
-    document.querySelector('#submit-run-modal .close-button').onclick = () => { /* ... unchanged ... */ };
-    document.getElementById('submit-run-form').onsubmit = async (e) => { /* ... unchanged ... */ };
+    document.querySelector('#submit-run-modal .close-button').onclick = () => { submitRunModal.style.display = 'none'; resetSubmitRunModal(); };
+
+    document.getElementById('submit-run-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const timeInMs = parseTimeToMilliseconds(document.getElementById('run-time').value);
+        if (isNaN(timeInMs)) return alert('Invalid time format.');
+        if (state.editingRunId) {
+            const updatedRunData = { playerName: document.getElementById('run-player').value, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value };
+            await update(ref(db, `runs/${state.editingRunId}`), updatedRunData);
+            alert('Run updated successfully!');
+            fetchAndDisplayLeaderboard();
+        } else {
+            const variables = {};
+            let categoryId, categoryName;
+            const leaderboardType = document.getElementById('type-select').value;
+            if (leaderboardType === 'fullgame') {
+                const categorySelect = document.getElementById('modal-category-select');
+                categoryId = categorySelect.value;
+                categoryName = categorySelect.options[categorySelect.selectedIndex].text;
+                document.querySelectorAll('#modal-subcategories-container select').forEach(s => { variables[s.dataset.varId] = s.value; });
+            } else {
+                const mainCategoryQ = query(ref(db, 'categories'), orderByChild('hack_id'), equalTo(state.hack.id));
+                const catSnapshot = await get(mainCategoryQ);
+                const category = snapshotToArray(catSnapshot).find(c => c.type === leaderboardType);
+                categoryId = category.id; categoryName = category.name;
+                const levelId = document.getElementById('modal-level-select').value;
+                variables['level'] = levelId;
+                if (leaderboardType === 'level_singlestar') {
+                    const starSelect = document.querySelector('#modal-stars-container select');
+                    if (starSelect) variables[starSelect.dataset.varId] = starSelect.value;
+                }
+            }
+            const newRun = { hack_id: state.hack.id, category_id: categoryId, hackName: state.hack.name, categoryName: categoryName, playerName: state.user.displayName, userId: state.user.uid, timeInMs, dateAchieved: document.getElementById('run-date').value, videoUrl: document.getElementById('run-video').value, variables, status: 'pending', submittedAt: new Date().toISOString() };
+            await push(ref(db, 'runs'), newRun);
+            alert('Run submitted for review!');
+        }
+        submitRunModal.style.display = 'none';
+        resetSubmitRunModal();
+    };
 
     // --- Sync Logic ---
-    async function fetchAllSRCGames(offset = 0, allGames = []) { /* ... unchanged ... */ }
-    async function syncWithSpeedrunCom() { /* ... unchanged ... */ }
+    async function fetchAllSRCGames(offset = 0, allGames = []) {
+        const url = `https://www.speedrun.com/api/v1/series/sm64romhacks/games?max=200&offset=${offset}`;
+        try {
+            const res = await fetch(url);
+            if (res.status === 404) return allGames;
+            if (!res.ok) throw new Error(`API fetch failed: ${res.status}`);
+            const data = await res.json();
+            if (data.data.length === 0) return allGames;
+            allGames.push(...data.data);
+            if (data.pagination.size === 200) { return fetchAllSRCGames(offset + 200, allGames); }
+            return allGames;
+        } catch (error) { console.error("Failed to fetch games from SRC:", error); throw error; }
+    }
+    async function syncWithSpeedrunCom() {
+        const statusDiv = document.getElementById('sync-status'), syncBtn = document.getElementById('sync-src-btn'), force = document.getElementById('force-sync-checkbox').checked;
+        syncBtn.disabled = true;
+        statusDiv.innerHTML = '<div class="loader"></div>Starting sync...';
+        if (force && !confirm("DELETE ALL DATA? This cannot be undone. Are you sure?")) {
+            statusDiv.innerHTML = "Sync cancelled."; syncBtn.disabled = false; return;
+        }
+
+        try {
+            if (force) {
+                statusDiv.innerHTML = `<div class="loader"></div>Deleting all old data...`;
+                await set(ref(db), null);
+            }
+            statusDiv.innerHTML = '<div class="loader"></div>Fetching all games from speedrun.com...';
+            const allGames = await fetchAllSRCGames();
+            const allUpdates = {};
+
+            for (const [i, game] of allGames.entries()) {
+                const gameName = game.names.international;
+                statusDiv.innerHTML = `<div class="loader"></div>(${i + 1}/${allGames.length}) Processing: <strong>${gameName}</strong>...`;
+                const hackId = slugify(gameName);
+
+                if (!force) {
+                    const existingSnap = await get(ref(db, `hacks/${hackId}`));
+                    if (existingSnap.exists()) { continue; }
+                }
+
+                const dRes = await fetch(`https://www.speedrun.com/api/v1/games/${game.id}?embed=categories,levels,variables`);
+                if (!dRes.ok) { continue; }
+                const details = (await dRes.json()).data;
+                const srcCategoryToSlugMap = new Map();
+                const srcLevelToSlugMap = new Map();
+
+                allUpdates[`/hacks/${hackId}`] = { name: gameName, year: details.released || null, imageUrl: details.assets['cover-large']?.uri || '', slug: hackId, order: i, srcId: details.id, created_at: details.created || new Date().toISOString() };
+
+                for (const [idx, c] of (details.categories?.data || []).entries()) {
+                    const catId = slugify(`${hackId}-${c.name}`);
+                    srcCategoryToSlugMap.set(c.id, catId);
+                    allUpdates[`/categories/${catId}`] = { name: c.name, type: c.type === 'per-level' ? (c.name.toLowerCase().includes('rta') ? 'level_rta' : 'level_singlestar') : 'fullgame', order: idx, hack_id: hackId, srcId: c.id };
+                }
+
+                for (const [l_idx, level] of (details.levels?.data || []).entries()) {
+                    const levelId = slugify(`${hackId}-${level.name}`);
+                    srcLevelToSlugMap.set(level.id, levelId);
+                    allUpdates[`/levels/${levelId}`] = { name: level.name, order: l_idx, srcId: level.id, hack_id: hackId };
+                }
+
+                for (const v of (details.variables?.data || [])) {
+                    if (v.scope.type === 'single-level') {
+                        const levelId = srcLevelToSlugMap.get(v.scope.level);
+                        if (levelId && v.values.values) {
+                            for (const [s_idx, [id, val]] of Object.entries(v.values.values).entries()) {
+                                const starId = slugify(`${levelId}-${val.label}`);
+                                allUpdates[`/stars/${starId}`] = { name: val.label, order: s_idx, srcId: id, level_id: levelId };
+                            }
+                        }
+                    } 
+                    else if (v['is-subcategory']) {
+                        const varId = slugify(`${hackId}-${v.name}`);
+                        const varData = { name: v.name, order: i, srcId: v.id, hack_id: hackId };
+                        if (v.scope.type === 'single-category' && srcCategoryToSlugMap.has(v.scope.category)) {
+                            varData.category_id = srcCategoryToSlugMap.get(v.scope.category);
+                        }
+                        allUpdates[`/variables/${varId}`] = varData;
+                        
+                        if (v.values.values) {
+                            for (const [o_idx, [id, val]] of Object.entries(v.values.values).entries()) {
+                                const optId = slugify(`${varId}-${val.label}`);
+                                allUpdates[`/options/${optId}`] = { name: val.label, order: o_idx, srcId: id, variable_id: varId };
+                            }
+                        }
+                    }
+                }
+            }
+            
+            statusDiv.innerHTML = `<div class="loader"></div>Committing all changes...`;
+            await update(ref(db), allUpdates);
+            statusDiv.innerHTML = `<strong style="color: #28a745;">Sync complete! Processed ${allGames.length} games.</strong>`;
+            await loadAdminData();
+            await fetchAndDisplayHacks();
+        } catch (error) {
+            console.error("Sync Error:", error);
+            statusDiv.innerHTML = `<strong style="color: #dc3545;">Sync Error:</strong> ${error.message}`;
+        } finally {
+            syncBtn.disabled = false;
+        }
+    }
 </script>
 </body>
 </html>
